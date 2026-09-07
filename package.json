@@ -11,10 +11,10 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "concurrently -k -n portal,resources -c cyan,blue \"npm run dev -w @ocean-cloud/portal\" \"npm run dev -w @ocean-cloud/resources\"",
+    "dev": "concurrently -k -n portal,resources,geographic,marine -c cyan,blue,green,magenta \"npm run dev -w @ocean-cloud/portal\" \"npm run dev -w @ocean-cloud/resources\" \"npm run dev -w @ocean-cloud/geographic-information\" \"npm run dev -w @ocean-cloud/marine-information\"",
     "build": "npm run build --workspaces --if-present",
     "lint": "oxlint apps packages --deny-warnings",
-    "preview": "concurrently -k \"npm run preview -w @ocean-cloud/portal\" \"npm run preview -w @ocean-cloud/resources\"",
+    "preview": "concurrently -k -n portal,resources,geographic,marine \"npm run preview -w @ocean-cloud/portal\" \"npm run preview -w @ocean-cloud/resources\" \"npm run preview -w @ocean-cloud/geographic-information\" \"npm run preview -w @ocean-cloud/marine-information\"",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "npm run format:check && npm run lint && npm run build"

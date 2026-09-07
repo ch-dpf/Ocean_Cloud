@@ -1,0 +1,56 @@
+.section {
+  margin-top: 26px;
+}
+.section h3 {
+  font-size: 14px;
+}
+.tasks {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  max-width: 100%;
+}
+.tasks button {
+  min-width: 166px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  text-align: left;
+  gap: 8px;
+  font-size: 12px;
+}
+.tasks small {
+  grid-column: 1 / -1;
+  color: #91a1ad;
+}
+.tasks .selected {
+  border-color: #339bd0;
+  background: #f0f8fd;
+}
+.tasks [data-status='failed'] {
+  color: #b94747;
+}
+.tasks [data-status='succeeded'] {
+  color: #23816c;
+}
+.tasks [data-status='running'] {
+  color: #238bbf;
+}
+.stage {
+  font-size: 12px;
+  margin: 10px 0;
+  overflow-wrap: anywhere;
+}
+.logs {
+  background: #132c40;
+  color: #d5e6ef;
+  font-size: 11px;
+  line-height: 1.8;
+  padding: 16px;
+  border-radius: 8px;
+  overflow: auto;
+  max-height: 280px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+}

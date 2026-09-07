@@ -3,8 +3,7 @@ import { PageHeader } from '@ocean-cloud/ui'
 import { OceanHero } from '../../features/dashboard/components/OceanHero/OceanHero'
 import { WorkspaceMetrics } from '../../features/dashboard/components/WorkspaceMetrics/WorkspaceMetrics'
 import { WorkspaceGuide } from '../../features/dashboard/components/WorkspaceGuide/WorkspaceGuide'
-import { ApplicationCard } from '../../features/applications/components/ApplicationCard/ApplicationCard'
-import { APPLICATION_CATALOG } from '../../config/applications'
+import { ApplicationCatalog } from '../../features/applications/components/ApplicationCatalog/ApplicationCatalog'
 export function DashboardPage() {
   return (
     <>
@@ -13,11 +12,6 @@ export function DashboardPage() {
         title="工作台"
         subtitle=" / Overview"
         description="从这里，开始连接海洋数据与应用。"
-        actions={
-          <span className={styles.environment}>
-            <i /> 本地开发环境
-          </span>
-        }
       />
       <OceanHero />
       <WorkspaceMetrics />
@@ -27,11 +21,7 @@ export function DashboardPage() {
         </h2>
         <a href="#/applications">查看全部 ↗</a>
       </div>
-      <div className={styles.appGrid}>
-        {APPLICATION_CATALOG.map((application) => (
-          <ApplicationCard key={application.id} application={application} />
-        ))}
-      </div>
+      <ApplicationCatalog />
       <WorkspaceGuide />
     </>
   )

@@ -9,10 +9,9 @@ export function TopBar({ pageTitle }: TopBarProps) {
         工作空间 <span>/</span> <b>{pageTitle}</b>
       </div>
       <div className={styles.headerRight}>
-        <span className={styles.devLabel}>DEVELOPMENT</span>
         <span className={styles.avatar}>云</span>
-        <div className={styles.userInfo}>
-          本地用户<small>开发工作空间</small>
+        <div className={styles.workspaceInfo}>
+          云海平台<small>默认工作空间</small>
         </div>
       </div>
     </header>

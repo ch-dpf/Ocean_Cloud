@@ -8,6 +8,7 @@
     "react": "^19.2.8"
   },
   "dependencies": {
+    "@ocean-cloud/bridge": "*",
     "@ocean-cloud/http": "*"
   }
 }

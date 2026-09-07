@@ -14,8 +14,8 @@ export function OceanHero() {
           <br />
           让每一份海洋数据，创造更大的价值。
         </p>
-        <a className={styles.whiteButton} href="#/apps/resources">
-          进入资源中心 <span>↗</span>
+        <a className={styles.whiteButton} href="#/applications">
+          进入应用中心 <span>↗</span>
         </a>
       </div>
       <div className={styles.oceanArt} aria-hidden="true">

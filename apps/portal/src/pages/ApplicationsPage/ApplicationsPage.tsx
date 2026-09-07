@@ -1,7 +1,5 @@
-import styles from './ApplicationsPage.module.css'
 import { PageHeader } from '@ocean-cloud/ui'
-import { MICRO_APPLICATIONS } from '../../config/applications'
-import { ApplicationCard } from '../../features/applications/components/ApplicationCard/ApplicationCard'
+import { ApplicationCatalog } from '../../features/applications/components/ApplicationCatalog/ApplicationCatalog'
 export function ApplicationsPage() {
   return (
     <>
@@ -9,12 +7,9 @@ export function ApplicationsPage() {
         eyebrow="APPLICATIONS"
         title="应用中心"
         description="连接你的业务应用，构建统一工作空间。"
+        actions={<a href="#/application-management">管理应用 →</a>}
       />
-      <div className={styles.appGrid}>
-        {MICRO_APPLICATIONS.map((application) => (
-          <ApplicationCard key={application.id} application={application} />
-        ))}
-      </div>
+      <ApplicationCatalog />
     </>
   )
 }

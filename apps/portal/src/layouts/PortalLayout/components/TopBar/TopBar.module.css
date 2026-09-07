@@ -24,12 +24,6 @@
   align-items: center;
   gap: 12px;
 }
-.devLabel {
-  font-size: 8px;
-  letter-spacing: 1.5px;
-  color: #92a7b4;
-  margin-right: 14px;
-}
 .avatar {
   background: #eaf3f9;
   color: #5794b8;
@@ -40,10 +34,10 @@
   place-items: center;
   font-size: 12px;
 }
-.userInfo {
+.workspaceInfo {
   font-size: 11px;
 }
-.userInfo small {
+.workspaceInfo small {
   display: block;
   font-size: 9px;
   margin-top: 4px;
@@ -54,8 +48,7 @@
     height: 58px;
     padding: 0 20px;
   }
-  .devLabel,
-  .userInfo {
+  .workspaceInfo {
     display: none;
   }
 }

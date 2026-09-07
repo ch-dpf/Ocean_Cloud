@@ -1,0 +1,100 @@
+.dialog {
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #dce6ee;
+  border-radius: 14px;
+  width: min(560px, calc(100vw - 32px));
+  max-height: 88vh;
+  color: #193248;
+  box-shadow: 0 22px 90px #16364b33;
+}
+.dialog::backdrop {
+  background: #19324866;
+}
+.dialog form {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(88vh - 2px);
+}
+.dialog header,
+.dialog footer {
+  flex-shrink: 0;
+}
+.dialog header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 26px;
+  border-bottom: 1px solid #e7edf2;
+}
+.dialog header h2 {
+  font-size: 20px;
+  margin: 5px 0 0;
+}
+.fields {
+  min-height: 0;
+  padding: 22px 26px;
+  display: grid;
+  gap: 17px;
+  overflow-y: auto;
+}
+.fields > label {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.fields input:not([type='checkbox']),
+.fields textarea,
+.fields select {
+  font: inherit;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 7px;
+  border: 1px solid #dce6ee;
+  background: white;
+  color: #193248;
+}
+.fields input:disabled {
+  background: #f3f6f8;
+  color: #81919e;
+}
+.fields small {
+  font-weight: 400;
+  color: #81919e;
+  line-height: 1.6;
+}
+.switches {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.switches label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.error {
+  color: #b34242;
+  margin: 0;
+}
+.dialog footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid #e7edf2;
+  padding: 16px 26px;
+}
+.primary {
+  background: #228bc0;
+  color: white;
+  border-color: #228bc0;
+}
+.primary:hover {
+  background: #157aab;
+}
+.dialog button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}

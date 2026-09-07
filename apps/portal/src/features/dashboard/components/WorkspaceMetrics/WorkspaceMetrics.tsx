@@ -1,34 +1,43 @@
 import styles from './WorkspaceMetrics.module.css'
-import { MICRO_APPLICATIONS } from '../../../../config/applications'
+import { useApplications } from '../../../applications/hooks/useApplications'
 export function WorkspaceMetrics() {
+  const { applications, error } = useApplications()
+  const count = (value: number) =>
+    error ? '—' : String(value).padStart(2, '0')
   return (
     <div className={styles.metrics}>
       <article>
-        <span>已接入应用</span>
+        <span>已登记应用</span>
         <strong>
-          {String(MICRO_APPLICATIONS.length).padStart(2, '0')}
+          {count(applications.length)}
           <small>个</small>
         </strong>
-        <p>
-          <i /> 资源中心已注册
-        </p>
+        <p>由应用管理统一维护</p>
       </article>
       <article>
-        <span>数据资源</span>
+        <span>可用应用</span>
         <strong>
-          03<small>项</small>
+          {count(
+            applications.filter(
+              (app) => app.status === 'published' && app.enabled,
+            ).length,
+          )}
+          <small>个</small>
         </strong>
-        <p>示例数据 · 用于功能演示</p>
+        <p>已有发布版本且处于启用状态</p>
       </article>
       <article>
-        <span>平台架构</span>
-        <strong className={styles.metricText}>应用级微前端</strong>
-        <p>独立运行 · 独立部署</p>
+        <span>待发布应用</span>
+        <strong>
+          {count(applications.filter((app) => !app.activeReleaseId).length)}
+          <small>个</small>
+        </strong>
+        <p>尚未完成首次发布</p>
       </article>
       <article>
         <span>工作空间</span>
-        <strong className={styles.metricText}>Ocean_Cloud</strong>
-        <p>开发工作空间</p>
+        <strong className={styles.metricText}>默认工作空间</strong>
+        <p>集中管理应用与业务入口</p>
       </article>
     </div>
   )

@@ -1,5 +1,7 @@
 node_modules/
 dist/
+dist-ssr/
+.cache/
 .env
 *.local
 *.log
@@ -8,13 +10,14 @@ dist/
 *.test.*
 *.spec.*
 /AGENTS.md
-/docs/
 /scripts/
 /apps/*/README.md
 .codex/
 .idea/
 .vscode/
 coverage/
+test-results/
+playwright-report/
 *.tsbuildinfo
 .env.*
 !.env.example
