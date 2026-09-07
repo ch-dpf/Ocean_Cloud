@@ -1,0 +1,51 @@
+.tableScroll {
+  overflow: auto;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+  text-align: left;
+}
+.table th {
+  font-size: 11px;
+  font-weight: 500;
+  color: #8d9eaa;
+  background: #f7fafc;
+  padding: 14px 22px;
+}
+.table td {
+  padding: 23px 22px;
+  font-size: 12px;
+  color: #7890a0;
+  border-bottom: 1px solid #edf2f5;
+}
+.table td strong {
+  font-weight: 500;
+  color: #35566d;
+}
+.table td small {
+  display: block;
+  margin-top: 8px;
+  color: #a3b0ba;
+  font-size: 10px;
+}
+.detailButton {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: #398fbe;
+  font-size: 11px;
+}
+.tableFooter {
+  display: flex;
+  justify-content: space-between;
+  padding: 19px 22px;
+  color: #99a8b3;
+  font-size: 11px;
+}
+.empty {
+  padding: 70px;
+  text-align: center;
+  color: #8399a8;
+}

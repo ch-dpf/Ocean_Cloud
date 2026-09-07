@@ -1,0 +1,48 @@
+.dialog {
+  border: 1px solid #dce6ec;
+  border-radius: 14px;
+  padding: 28px;
+  width: min(480px, 90vw);
+  color: #28485f;
+  box-shadow: 0 25px 80px #183f6322;
+}
+.dialog::backdrop {
+  background: #17384d55;
+}
+.detailHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.detailHeading h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.detailHeading button {
+  font-size: 22px;
+  border: 0;
+  padding: 4px 10px;
+}
+.dialog p {
+  font-size: 12px;
+  margin-top: 18px;
+}
+.dialog dl {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 16px;
+  font-size: 12px;
+  padding: 20px 0;
+}
+.dialog dt {
+  color: #8a9fab;
+}
+.dialog dd {
+  margin: 0;
+}
+.hint {
+  padding: 12px;
+  background: #f2f7fa;
+  border-radius: 6px;
+}

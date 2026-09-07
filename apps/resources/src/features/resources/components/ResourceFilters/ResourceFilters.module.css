@@ -1,0 +1,38 @@
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px;
+}
+.filters {
+  display: flex;
+  gap: 6px;
+}
+.filters button {
+  border: 0;
+  font-size: 12px;
+  padding: 9px 17px;
+}
+.filters .selected {
+  background: #eaf5fc;
+  color: #258cc5;
+}
+.searchInput {
+  border: 1px solid #dce6ee;
+  background: #f9fbfc;
+  border-radius: 7px;
+  padding: 10px 13px;
+  width: 280px;
+  font-size: 12px;
+}
+@media (max-width: 700px) {
+  .toolbar {
+    flex-direction: column;
+  }
+  .toolbar input {
+    width: 100%;
+  }
+  .filters button {
+    padding: 8px 14px;
+  }
+}

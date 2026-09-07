@@ -1,0 +1,17 @@
+.container {
+  text-align: center;
+  padding: 80px 20px;
+}
+.code {
+  font-size: 80px;
+  color: #65a9ce;
+  font-weight: 600;
+  letter-spacing: 6px;
+}
+.container a {
+  display: inline-block;
+  background: #277fae;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+}

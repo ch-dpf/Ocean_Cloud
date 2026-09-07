@@ -1,0 +1,30 @@
+{
+  "name": "ocean-cloud",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n portal,resources -c cyan,blue \"npm run dev -w @ocean-cloud/portal\" \"npm run dev -w @ocean-cloud/resources\"",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "oxlint apps packages --deny-warnings",
+    "preview": "concurrently -k \"npm run preview -w @ocean-cloud/portal\" \"npm run preview -w @ocean-cloud/resources\"",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check:conventions": "node scripts/checkConventions.mjs",
+    "check": "npm run format:check && npm run check:conventions && npm run lint && npm test && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "oxlint": "^1.81.0",
+    "prettier": "^3.9.6",
+    "typescript": "~6.0.2"
+  }
+}

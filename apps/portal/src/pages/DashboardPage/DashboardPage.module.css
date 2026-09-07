@@ -1,0 +1,42 @@
+.environment {
+  font-size: 10px;
+  background: white;
+  border: 1px solid #e1e9ed;
+  border-radius: 30px;
+  padding: 8px 12px;
+  color: #6e8798;
+}
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 29px 0 17px;
+}
+.sectionHeading h2 {
+  font-size: 17px;
+  margin: 0;
+  font-weight: 550;
+}
+.sectionHeading h2 span {
+  font-size: 10px;
+  font-weight: 400;
+  color: #a3afb7;
+  margin-left: 10px;
+}
+.sectionHeading > a {
+  font-size: 11px;
+  color: #7092a8;
+}
+.appGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+@media (max-width: 760px) {
+  .environment {
+    display: none;
+  }
+  .appGrid {
+    grid-template-columns: 1fr;
+  }
+}

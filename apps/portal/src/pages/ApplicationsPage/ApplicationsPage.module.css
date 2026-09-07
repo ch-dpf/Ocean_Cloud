@@ -1,0 +1,10 @@
+.appGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+@media (max-width: 760px) {
+  .appGrid {
+    grid-template-columns: 1fr;
+  }
+}

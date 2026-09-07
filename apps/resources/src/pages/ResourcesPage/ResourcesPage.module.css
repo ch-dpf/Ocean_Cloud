@@ -1,0 +1,35 @@
+.resourcePage {
+  padding: 8px;
+  max-width: 1400px;
+  margin: auto;
+}
+.notice {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  background: #eaf5fc;
+  color: #598aa8;
+  border: 1px solid #d9edf8;
+  padding: 15px 18px;
+  border-radius: 8px;
+  font-size: 12px;
+  margin: 24px 0;
+}
+.notice span {
+  white-space: nowrap;
+}
+.resourcePanel {
+  background: white;
+  border: 1px solid #e0e9ef;
+  border-radius: 10px;
+  overflow: hidden;
+}
+@media (max-width: 700px) {
+  .notice {
+    display: block;
+  }
+  .notice span {
+    display: block;
+    margin-top: 8px;
+  }
+}

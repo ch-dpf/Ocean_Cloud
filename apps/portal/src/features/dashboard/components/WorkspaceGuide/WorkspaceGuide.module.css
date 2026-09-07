@@ -1,0 +1,44 @@
+.bottomPanel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #eff5f8;
+  border: 1px solid #e6eef2;
+  border-radius: 9px;
+  padding: 21px 25px;
+  margin-top: 22px;
+}
+.bottomPanel > div {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+.smallIcon {
+  font-size: 29px;
+  color: #7598ae;
+}
+.bottomPanel h3 {
+  font-size: 12px;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+.bottomPanel p {
+  font-size: 10px;
+  margin: 0;
+}
+.bottomPanel > a {
+  font-size: 10px;
+  color: #688da5;
+}
+@media (max-width: 760px) {
+  .bottomPanel {
+    gap: 12px;
+    padding: 18px;
+  }
+  .bottomPanel > a {
+    white-space: nowrap;
+  }
+  .bottomPanel p {
+    max-width: 210px;
+  }
+}

@@ -1,0 +1,29 @@
+[
+  {
+    "id": "OC-001",
+    "name": "近海测绘示例影像",
+    "kind": "imagery",
+    "format": "GeoTIFF",
+    "sizeLabel": "128 MB",
+    "updatedAt": "2026-09-01",
+    "description": "近海测绘影像示例，用于展示资源目录结构。"
+  },
+  {
+    "id": "OC-002",
+    "name": "海洋观测站点",
+    "kind": "vector",
+    "format": "GeoJSON",
+    "sizeLabel": "2.4 MB",
+    "updatedAt": "2026-09-02",
+    "description": "海洋观测站位示例，用于展示矢量资源元数据。"
+  },
+  {
+    "id": "OC-003",
+    "name": "海底地形示例数据",
+    "kind": "terrain",
+    "format": "GeoTIFF",
+    "sizeLabel": "64 MB",
+    "updatedAt": "2026-09-03",
+    "description": "海底地形示例，用于展示地形数据资源。"
+  }
+]

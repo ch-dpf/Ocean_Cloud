@@ -1,0 +1,139 @@
+.hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 310px;
+  border-radius: 13px;
+  background: linear-gradient(110deg, #103c5e 0%, #14648d 57%, #5aafcd 100%);
+  color: white;
+  padding: 30px 36px;
+}
+.heroCopy {
+  position: relative;
+  z-index: 1;
+}
+.heroTag {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: #b3d9ee;
+}
+.hero h2 {
+  font-size: 35px;
+  line-height: 1.5;
+  font-weight: 500;
+  letter-spacing: 2px;
+  margin: 14px 0 9px;
+}
+.hero h2 span {
+  color: #8fd1ef;
+}
+.hero p {
+  color: #b6d5e5;
+  font-size: 11px;
+  line-height: 1.9;
+}
+.whiteButton {
+  display: inline-flex;
+  gap: 35px;
+  align-items: center;
+  background: #f7fcff;
+  color: #256084;
+  border-radius: 6px;
+  padding: 11px 15px;
+  font-size: 11px;
+  margin-top: 6px;
+}
+.oceanArt {
+  position: absolute;
+  right: 7%;
+  top: 25px;
+  width: 300px;
+  height: 270px;
+  display: grid;
+  place-items: center;
+  transform: rotate(-9deg);
+}
+.oceanArt img {
+  width: 177px;
+  filter: drop-shadow(0 20px 12px #063e6366);
+  opacity: 0.95;
+}
+.orbit {
+  position: absolute;
+  border: 1px solid #b9e8ff30;
+  border-radius: 50%;
+  width: 270px;
+  height: 270px;
+}
+.orbitTwo {
+  width: 350px;
+  height: 350px;
+}
+.orbitThree {
+  width: 430px;
+  height: 430px;
+}
+.orbitOne:after {
+  content: '';
+  position: absolute;
+  top: 25px;
+  left: 46px;
+  width: 7px;
+  height: 7px;
+  background: #b3e5fa;
+  border-radius: 50%;
+  box-shadow: 0 0 14px #abebff;
+}
+.coordinate {
+  position: absolute;
+  bottom: 6px;
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: #bde3f2;
+  transform: rotate(9deg);
+}
+.heroBottom {
+  position: absolute;
+  bottom: 14px;
+  right: 21px;
+  font-size: 7px;
+  letter-spacing: 2px;
+  opacity: 0.5;
+}
+@media (min-width: 1500px) {
+  .hero {
+    min-height: 350px;
+    padding: 40px;
+  }
+  .hero h2 {
+    font-size: 40px;
+  }
+  .oceanArt {
+    right: 13%;
+    top: 45px;
+  }
+}
+@media (max-width: 1050px) {
+  .oceanArt {
+    right: 0;
+    opacity: 0.65;
+  }
+  .heroCopy {
+    max-width: 65%;
+  }
+}
+@media (max-width: 760px) {
+  .hero {
+    padding: 25px;
+    min-height: 300px;
+  }
+  .hero h2 {
+    font-size: 28px;
+  }
+  .heroCopy {
+    max-width: 100%;
+  }
+  .oceanArt {
+    right: -110px;
+    opacity: 0.25;
+  }
+}

@@ -1,0 +1,75 @@
+.appCard {
+  display: block;
+  background: white;
+  border: 1px solid #e3ebf0;
+  border-radius: 10px;
+  padding: 22px;
+  transition:
+    transform 0.2s,
+    border-color 0.2s;
+}
+.appCard[href]:hover {
+  transform: translateY(-3px);
+  border-color: #7bc4e7;
+}
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 19px;
+}
+.appIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #eaf5fc;
+  color: #449bc9;
+  font-size: 26px;
+}
+.badge,
+.mutedBadge {
+  font-size: 9px;
+  color: #56a28c;
+  background: #f0f8f4;
+  border: 1px solid #e0efe8;
+  border-radius: 20px;
+  padding: 4px 8px;
+}
+.mutedBadge {
+  color: #9aa8b1;
+  background: #f6f8f9;
+  border-color: #edf1f3;
+}
+.appCard h3 {
+  font-size: 15px;
+  margin-bottom: 10px;
+  font-weight: 550;
+}
+.appCard p {
+  font-size: 11px;
+  max-width: 290px;
+  margin-bottom: 23px;
+}
+.upcoming .appIcon {
+  background: #f0f5f8;
+  color: #839fac;
+}
+@media (max-width: 1050px) {
+  .appCard {
+    padding: 16px;
+  }
+}
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #edf1f4;
+  padding-top: 15px;
+  font-size: 10px;
+  color: #98a8b2;
+}
+.cardFooter b {
+  font-weight: 500;
+  color: #438fb9;
+}
