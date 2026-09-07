@@ -31,7 +31,13 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
     </>
   )
   return application.status === 'available' ? (
-    <a className={styles.appCard} href={`#${application.path}`}>
+    <a
+      className={styles.appCard}
+      href={application.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`${application.name}（在新标签页打开）`}
+    >
       {content}
     </a>
   ) : (

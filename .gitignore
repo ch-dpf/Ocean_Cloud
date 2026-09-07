@@ -7,3 +7,14 @@ dist/
 **/__tests__/
 *.test.*
 *.spec.*
+/AGENTS.md
+/docs/
+/scripts/
+/apps/*/README.md
+.codex/
+.idea/
+.vscode/
+coverage/
+*.tsbuildinfo
+.env.*
+!.env.example
