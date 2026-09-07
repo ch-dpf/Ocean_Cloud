@@ -56,8 +56,8 @@ HTTP 错误不自动导航，尤其接口 404 不应把当前页面替换成 404
 - npm run format / npm run format:check：格式化与验证。
 - npm run check:conventions：组件目录、220 行上限、跨应用导入与请求边界。
 - npm run lint：覆盖 apps 和 packages，警告视为失败。
-- npm test：通信协议及真实本地 HTTP 请求测试。
+- npm test：仅运行本地保留的通信协议及 HTTP 测试，测试文件不随仓库分发。
 - npm run build：strict 类型检查与独立构建。
-- npm run check：依次运行全部检查。
+- npm run check：依次运行格式、工程约定、Lint 检查和构建，不依赖本地测试文件。
 
 命名语义、职责划分和 CSS 类名仍需代码审查；自动检查并不等同于完整架构审查。

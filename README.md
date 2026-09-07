@@ -54,8 +54,8 @@ npm run dev
 | `npm run format:check`      | 检查格式                                   |
 | `npm run check:conventions` | 检查组件目录、文件长度、请求边界和样式引用 |
 | `npm run lint`              | 检查 apps 与 packages，警告视为失败        |
-| `npm test`                  | 运行通信契约与本地 HTTP 集成测试           |
-| `npm run check`             | 执行全部工程检查、测试和构建               |
+| `npm test`                  | 运行本地保留的测试脚本（不随仓库分发）     |
+| `npm run check`             | 执行格式、规范、Lint 检查和构建            |
 
 `preview` 使用与开发服务相同的 5173 / 5174 端口，需先停止 `dev`，并执行 `npm run build`。
 
@@ -95,7 +95,6 @@ Ocean_Cloud/
 │  ├─ theme/                   基础主题样式
 │  └─ ui/                      公共 UI 与浏览器 Hook
 ├─ scripts/                    工程约定检查
-├─ tests/                      通信与 HTTP 测试
 ├─ docs/                       架构、开发规范和接口说明
 ├─ AGENTS.md                   仓库协作约定
 └─ package.json                工作空间与统一命令
@@ -150,7 +149,9 @@ npm run check
 
 Vite preview 用于检查产物，不作为生产服务器。
 
-## 测试范围
+## 验证说明
+
+测试文件只在开发者本地保留，不提交到远程仓库。新克隆使用 npm run check 完成格式、规范、Lint 和构建验收；下述 npm test 仅适用于本地已有测试脚本的环境。
 
 `npm test` 验证主子应用消息契约，以及通过本地 HTTP 服务验证 Axios 请求参数、JSON 请求体、Token、HTTP 状态码分类、业务码、超时、网络失败、取消和订阅退订，不依赖真实业务后端。
 

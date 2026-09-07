@@ -106,5 +106,5 @@ API 404 走请求事件，页面 404 走路由，两者分开。
 
 ## 验证与参考
 
-npm test 使用 Node 本地 HTTP 服务真实验证请求参数、JSON、动态 Token、13 种状态码、业务错误、超时、网络失败、取消及退订；不依赖外部后端。
+本地保留的测试脚本可通过 npm test 使用 Node 本地 HTTP 服务验证请求参数、JSON、动态 Token、13 种状态码、业务错误、超时、网络失败、取消及退订；不依赖外部后端。测试文件不随仓库分发，npm run check 不依赖这些文件。
 实现参考 [Axios 官方文档](https://axios-http.com/docs/interceptors) 与 [错误处理](https://axios-http.com/docs/handling_errors)。

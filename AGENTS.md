@@ -6,4 +6,5 @@
 - 业务请求统一使用应用 services/httpClient.ts，不直接使用 Axios 或 fetch。
 - 错误必须保留 Promise rejection；接口 404 不跳转页面 404。
 - 改动后执行 npm run check，涉及 UI 验证浏览器行为。
+- 测试文件只在本地保留，不提交或上传；npm run check 不依赖本地测试脚本。
 - 所有中文文件使用 UTF-8。工具直接运行，禁止调用 RTK。
