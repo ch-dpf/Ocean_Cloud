@@ -71,7 +71,9 @@
   border-radius: 6px;
   color: #4e5969;
   text-decoration: none;
-  transition: background-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
   cursor: pointer;
 }
 
@@ -166,7 +168,9 @@
   cursor: pointer;
   flex: 0 0 auto;
   font-family: inherit;
-  transition: background-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
 }
 
 .sidebarCollapse:hover {
@@ -253,18 +257,39 @@
     position: static;
     width: 100%;
     height: auto;
+    overflow: visible;
+  }
+
+  .brand,
+  .sidebarCollapsed .brand {
+    height: 56px;
+    justify-content: flex-start;
+    margin: 0 16px;
   }
 
   .sidebarCollapsed .logoName,
-  .sidebarCollapsed .sidebarNavText,
-  .sidebarCollapsed .sidebarCollapseText,
-  .sidebarCollapsed .sidebarBottom {
+  .sidebarCollapsed .sidebarNavText {
     display: block;
   }
 
-  .sidebarCollapsed .sidebarNavItem,
-  .sidebarCollapsed .sidebarCollapse {
+  .sidebarNav {
+    flex: 0 0 auto;
+    flex-direction: row;
+    gap: 4px;
+    margin-top: 0;
+    padding: 0 8px 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .sidebarNavItem,
+  .sidebarCollapsed .sidebarNavItem {
+    flex: 0 0 auto;
     justify-content: flex-start;
     padding: 0 12px;
+  }
+
+  .sidebarCollapse {
+    display: none;
   }
 }
