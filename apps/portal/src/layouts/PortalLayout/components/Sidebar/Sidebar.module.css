@@ -1,162 +1,270 @@
 .sidebar {
-  width: 226px;
-  background: #fff;
-  border-right: 1px solid #e6edf1;
   position: fixed;
-  inset: 0 auto 0 0;
+  top: 0;
+  left: 0;
+  width: 216px;
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 30px 20px;
-  z-index: 2;
+  background-color: #ffffff;
+  border-right: 1px solid #e5ecef;
+  overflow: hidden;
+  z-index: 10;
 }
+
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 8px;
-  font-size: 22px;
-  font-weight: 650;
-  letter-spacing: 2px;
-}
-.brand img {
-  width: 42px;
+  gap: 10px;
   height: 44px;
+  flex: 0 0 auto;
+  margin-top: 20px;
+  margin-left: 18px;
+}
+
+.logoIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  flex: 0 0 auto;
+}
+
+.logoIcon img {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
-.brand small {
-  display: block;
-  font-size: 9px;
-  letter-spacing: 2px;
-  margin-top: 6px;
-  color: #7997aa;
-}
-.workspace {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #f7f9fb;
-  border: 1px solid #eaf0f4;
-  padding: 12px 10px;
-  border-radius: 8px;
-  margin: 34px 0 28px;
-  font-size: 12px;
-}
-.workspace > span {
-  display: grid;
-  place-items: center;
-  background: #e4eff6;
-  color: #4780a5;
-  border-radius: 7px;
-  width: 30px;
-  height: 30px;
+
+.logoName {
+  font-family: Source Han Sans CN;
+  font-weight: 500;
   font-size: 16px;
+  line-height: 100%;
+  white-space: nowrap;
 }
-.workspace small {
-  display: block;
-  font-size: 8px;
-  color: #92a2ad;
-  margin-top: 5px;
+
+/* 下方：导航栏 */
+.sidebarNav {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  margin-top: 27px;
+  padding: 0 8px;
 }
-.navLabel {
-  font-size: 10px;
-  color: #a3b0ba;
-  padding: 0 12px;
-  margin-bottom: 12px;
-  letter-spacing: 1px;
-}
-.navigation {
-  display: grid;
-  gap: 6px;
-}
-.navigation a {
+
+.sidebarNavItem {
   display: flex;
   align-items: center;
-  gap: 13px;
-  padding: 13px 14px;
-  color: #6d8190;
-  border-radius: 7px;
-  font-size: 13px;
-}
-.navigation a span {
-  font-size: 19px;
-}
-.navigation a:hover {
-  background: #f5f9fc;
-}
-.navigation .active {
-  background: #eaf5fc;
-  color: #2386bf;
-  font-weight: 600;
-}
-.sidebarBottom {
-  margin-top: auto;
-  padding-top: 30px;
-}
-.helpCard {
-  background: linear-gradient(135deg, #f3fafd, #eef5f9);
-  padding: 17px 14px;
-  border-radius: 8px;
-  font-size: 11px;
-  color: #5287a5;
-  overflow: hidden;
-}
-.helpCard p {
-  font-size: 10px;
-  margin: 8px 0;
-}
-.miniWave {
-  font-size: 40px;
-  letter-spacing: 10px;
-  height: 30px;
-  line-height: 1;
-  color: #b6dbea;
-}
-.sidebarBottom > a {
-  display: flex;
   gap: 8px;
-  font-size: 11px;
-  color: #8a9aa7;
-  margin-top: 24px;
+  padding: 0 12px;
+  height: 40px;
+  border-radius: 6px;
+  color: #4e5969;
+  text-decoration: none;
+  transition: background-color 0.2s, color 0.2s;
+  cursor: pointer;
+}
+
+.sidebarNavItem:hover {
+  background-color: #e8f1fd;
+  color: #1267d6;
+}
+
+.sidebarNavItemActive {
+  background-color: #e8f1fd;
+  color: #1267d6;
+}
+
+/* 导航图标：默认层 + 蓝色叠加层 */
+.sidebarNavIcon {
+  position: relative;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
 }
-.sidebarBottom small {
-  margin-left: auto;
-  font-size: 9px;
+
+.sidebarNavIcon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
-@media (max-width: 1050px) {
-  .sidebar {
-    width: 190px;
-    padding: 25px 14px;
-  }
-  .brand {
-    font-size: 18px;
-  }
+
+.sidebarNavIconDefault {
+  transition: opacity 0.2s;
 }
+
+.sidebarNavIconActive {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+/* 仅双图层图标：hover/active 时隐藏默认层、显示蓝色层 */
+.sidebarNavItem:hover .sidebarNavIconDual .sidebarNavIconDefault,
+.sidebarNavItemActive .sidebarNavIconDual .sidebarNavIconDefault {
+  opacity: 0;
+}
+
+.sidebarNavItem:hover .sidebarNavIconActive,
+.sidebarNavItemActive .sidebarNavIconActive {
+  opacity: 1;
+}
+
+.sidebarNavText {
+  font-family: Source Han Sans CN;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 100%;
+  white-space: nowrap;
+}
+
+.sidebarBottom {
+  flex: 0 0 auto;
+  padding: 12px 8px;
+}
+
+.helpCard {
+  padding: 12px;
+  border-radius: 8px;
+  background-color: #f2f6fa;
+  margin-bottom: 8px;
+}
+
+.miniWave {
+  margin-top: 4px;
+  color: #1267d6;
+  font-size: 14px;
+}
+
+/* 底部：收起侧边栏按钮 */
+.sidebarCollapse {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 40px;
+  width: 100%;
+  padding: 0 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #4e5969;
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-family: inherit;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.sidebarCollapse:hover {
+  background-color: #e8f1fd;
+  color: #1267d6;
+}
+
+.sidebarCollapseIcon {
+  position: relative;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.sidebarCollapseIcon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.sidebarCollapseIconDefault {
+  transition: opacity 0.2s;
+}
+
+.sidebarCollapseIconActive {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.sidebarCollapse:hover .sidebarCollapseIconDefault {
+  opacity: 0;
+}
+
+.sidebarCollapse:hover .sidebarCollapseIconActive {
+  opacity: 1;
+}
+
+.sidebarCollapseText {
+  font-family: Source Han Sans CN;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 100%;
+  white-space: nowrap;
+}
+
+/* 收起态：仅露出图标 */
+.sidebarCollapsed {
+  width: 56px;
+}
+
+.sidebarCollapsed .brand {
+  justify-content: center;
+  margin-left: 0;
+}
+
+.sidebarCollapsed .logoName,
+.sidebarCollapsed .sidebarNavText,
+.sidebarCollapsed .sidebarCollapseText,
+.sidebarCollapsed .sidebarBottom {
+  display: none;
+}
+
+.sidebarCollapsed .sidebarNavItem,
+.sidebarCollapsed .sidebarCollapse {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebarCollapsed .sidebarNavIcon {
+  margin: 0 auto;
+}
+
+/* 移动端：取消固定定位，恢复堆叠 */
 @media (max-width: 760px) {
-  .sidebar {
+  .sidebar,
+  .sidebarCollapsed {
     position: static;
     width: 100%;
-    padding: 16px;
+    height: auto;
   }
-  .brand {
-    font-size: 18px;
+
+  .sidebarCollapsed .logoName,
+  .sidebarCollapsed .sidebarNavText,
+  .sidebarCollapsed .sidebarCollapseText,
+  .sidebarCollapsed .sidebarBottom {
+    display: block;
   }
-  .brand img {
-    width: 30px;
-    height: 32px;
-  }
-  .workspace,
-  .navLabel,
-  .sidebarBottom {
-    display: none;
-  }
-  .navigation {
-    display: flex;
-    margin-top: 15px;
-  }
-  .navigation a {
-    flex: 1;
-    padding: 9px;
-    justify-content: center;
+
+  .sidebarCollapsed .sidebarNavItem,
+  .sidebarCollapsed .sidebarCollapse {
+    justify-content: flex-start;
+    padding: 0 12px;
   }
 }

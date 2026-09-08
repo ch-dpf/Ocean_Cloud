@@ -1,5 +1,6 @@
 export const NAVIGATION_ITEMS = [
-  { path: '/', label: '工作台', icon: '▦' },
-  { path: '/applications', label: '应用中心', icon: '▥' },
-  { path: '/application-management', label: '应用管理', icon: '⚙' },
+  { path: '/', label: '工作台', icon: '/icons/WorkBench.svg', activeIcon: '/icons/WorkBench_blue.svg' },
+  { path: '/dataservice', label: '数据服务', icon: '/icons/DataService.svg', activeIcon: '/icons/DataService_blue.svg' },
+  { path: '/visualization', label: '可视化应用', icon: '/icons/Visualization.svg', activeIcon: '/icons/Visualization_blue.svg' },
+  { path: '/system-management', label: '系统管理', icon: '/icons/SystemManagement.svg', activeIcon: '/icons/SystemManagement_blue.svg' },
 ] as const

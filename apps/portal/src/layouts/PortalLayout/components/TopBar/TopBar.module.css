@@ -1,54 +1,129 @@
+/* 顶部栏：固定高 56 */
 .header {
-  height: 76px;
-  background: #fff;
-  border-bottom: 1px solid #e6edf1;
+  height: 64px;
+  flex: 0 0 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 38px;
+  padding: 0 20px 0 24px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5ecef;
 }
-.breadcrumb {
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.headerTitle {
+  font-family: Source Han Sans CN;
+  font-weight: 400;
   font-size: 12px;
-  color: #93a1ad;
+  line-height: 100%;
+  color: #3f5665;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.breadcrumb span {
-  margin: 0 15px;
-  color: #c5d0d7;
-}
-.breadcrumb b {
-  font-weight: 500;
-  color: #4e687b;
-}
+
 .headerRight {
   display: flex;
   align-items: center;
-  gap: 12px;
 }
-.avatar {
-  background: #eaf3f9;
-  color: #5794b8;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
+
+.headerSearch {
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #d5e0e9;
+}
+
+.headerSearchInput {
+  border: none;
+  vertical-align: middle;
+  margin-right: 53px;
+  background: transparent;
+  font-family: inherit;
   font-size: 12px;
+  color: #3f5665;
+  outline: none;
+  width: 180px;
 }
-.workspaceInfo {
-  font-size: 11px;
+
+.headerSearchInput::placeholder {
+  color: #9aa7b2;
 }
-.workspaceInfo small {
-  display: block;
-  font-size: 9px;
-  margin-top: 4px;
-  color: #9aabb7;
+
+.headerSearchInput:focus {
+  border: none;
+  outline: none;
 }
+
+.headerSearchIcon {
+  width: 16px;
+  height: 16px;
+  margin: 10px;
+  vertical-align: middle;
+}
+
+.headerSchema {
+  background-color: #ffffff;
+  border: none;
+  outline: none;
+  margin-left: 20px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.headerSchemaIcon {
+  vertical-align: middle;
+  background-color: #ffffff;
+  border: none;
+  outline: none;
+  width: 16px;
+  height: 16px;
+}
+
+.headerNotification {
+  margin-left: 20px;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.headerNotificationIcon {
+  width: 16px;
+  height: 16px;
+  vertical-align: baseline;
+  transform: translateY(-1px);
+}
+
+.headerUser {
+  margin-left: 20px;
+  border: 0;
+  background: transparent;
+  color: #3f5665;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 0;
+}
+
 @media (max-width: 760px) {
   .header {
     height: 58px;
-    padding: 0 20px;
+    padding: 0 16px;
   }
-  .workspaceInfo {
+  .headerSearch {
     display: none;
+  }
+  .headerSearchInput {
+    width: auto;
   }
 }
