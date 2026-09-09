@@ -1,6 +1,11 @@
 import { SubsystemHome } from '@ocean-cloud/ui'
 import type { SubsystemNavigation } from '@ocean-cloud/ui'
-export function GeographicInformationPage(navigation: SubsystemNavigation) {
+type GeographicInformationPageProps = SubsystemNavigation & {
+  readonly showChrome?: boolean
+}
+export function GeographicInformationPage(
+  navigation: GeographicInformationPageProps,
+) {
   return (
     <SubsystemHome
       {...navigation}

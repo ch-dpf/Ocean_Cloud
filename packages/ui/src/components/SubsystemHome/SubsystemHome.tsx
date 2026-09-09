@@ -9,6 +9,8 @@ interface SubsystemHomeProps extends SubsystemNavigation {
   readonly eyebrow: string
   readonly description: string
   readonly tone: 'geographic' | 'marine'
+  /** 为 false 时隐藏自带头部与页脚，供应用自己的布局壳（如共享 TopBar + 侧边栏）接管 */
+  readonly showChrome?: boolean
 }
 export function SubsystemHome({
   title,
@@ -18,28 +20,31 @@ export function SubsystemHome({
   portalUrl,
   isEmbedded,
   onNavigateHome,
+  showChrome = true,
 }: SubsystemHomeProps) {
   return (
     <div className={styles.page} data-tone={tone}>
-      <header className={styles.header}>
-        <div className={styles.brand}>
-          <span className={styles.brandIcon}>
-            {tone === 'geographic' ? '▧' : '≈'}
-          </span>
-          <span>
-            云海平台 <span className={styles.separator}>/</span> {title}
-          </span>
-        </div>
-        {isEmbedded ? (
-          <button type="button" onClick={onNavigateHome}>
-            返回云海平台
-          </button>
-        ) : (
-          <a className={styles.backLink} href={portalUrl}>
-            ← 返回云海平台
-          </a>
-        )}
-      </header>
+      {showChrome && (
+        <header className={styles.header}>
+          <div className={styles.brand}>
+            <span className={styles.brandIcon}>
+              {tone === 'geographic' ? '▧' : '≈'}
+            </span>
+            <span>
+              云海平台 <span className={styles.separator}>/</span> {title}
+            </span>
+          </div>
+          {isEmbedded ? (
+            <button type="button" onClick={onNavigateHome}>
+              返回云海平台
+            </button>
+          ) : (
+            <a className={styles.backLink} href={portalUrl}>
+              ← 返回云海平台
+            </a>
+          )}
+        </header>
+      )}
       <main className={styles.main}>
         <section className={styles.hero}>
           <div>
@@ -85,9 +90,11 @@ export function SubsystemHome({
           </aside>
         </div>
       </main>
-      <footer className={styles.footer}>
-        © {new Date().getFullYear()} Ocean Cloud · {title}
-      </footer>
+      {showChrome && (
+        <footer className={styles.footer}>
+          © {new Date().getFullYear()} Ocean Cloud · {title}
+        </footer>
+      )}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import {
   NotFound,
   RequestErrorNotice,
+  TopBar,
   useHashRoute,
   usePlatformBridge,
 } from '@ocean-cloud/ui'
@@ -16,11 +17,13 @@ export function App() {
   return (
     <>
       <RequestErrorNotice client={httpClient} />
+      <TopBar pageTitle="海洋信息" />
       {pathname === '/' ? (
         <MarineInformationPage
           portalUrl={portalUrl}
           isEmbedded={isEmbedded}
           onNavigateHome={navigateHome}
+          showChrome={false}
         />
       ) : (
         <NotFound />
