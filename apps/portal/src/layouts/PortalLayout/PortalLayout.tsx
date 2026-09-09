@@ -1,8 +1,8 @@
 import styles from './PortalLayout.module.css'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import { Sidebar } from './components/Sidebar/Sidebar'
-import { TopBar } from '@ocean-cloud/ui'
+import { Sidebar, TopBar } from '@ocean-cloud/ui'
+import { NAVIGATION_ITEMS } from '../../config/navigation'
 interface PortalLayoutProps {
   readonly pathname: string
   readonly pageTitle: string
@@ -20,11 +20,12 @@ export function PortalLayout({
         pathname={pathname}
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((v) => !v)}
+        navigationItems={NAVIGATION_ITEMS}
       />
       <div
         className={`${styles.mainLayout}${collapsed ? ` ${styles.mainLayoutCollapsed}` : ''}`}
       >
-        <TopBar pageTitle={pageTitle} />
+        <TopBar pageTitle={`${pageTitle} / 全部`} />
         <main className={styles.main}>{children}</main>
         <footer className={styles.footer}>
           © {new Date().getFullYear()} Ocean Cloud · 云海平台

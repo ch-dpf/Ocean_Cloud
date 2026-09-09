@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import styles from './GeographicInformationLayout.module.css'
-import { Sidebar } from './components/Sidebar/Sidebar'
-import { TopBar } from '@ocean-cloud/ui'
+import { Sidebar, TopBar } from '@ocean-cloud/ui'
+import { NAVIGATION_ITEMS } from '../../config/navigation'
+import { SidebarHeaderSlot, SidebarFooterSlot } from './components/SidebarSlots'
 interface GeographicInformationLayoutProps {
   readonly pathname: string
   readonly pageTitle: string
@@ -20,11 +21,14 @@ export function GeographicInformationLayout({
         pathname={pathname}
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((v) => !v)}
+        navigationItems={NAVIGATION_ITEMS}
+        headerSlot={<SidebarHeaderSlot />}
+        footerSlot={<SidebarFooterSlot />}
       />
       <div
         className={`${styles.mainLayout}${collapsed ? ` ${styles.mainLayoutCollapsed}` : ''}`}
       >
-        <TopBar pageTitle={pageTitle} />
+        <TopBar pageTitle={`GIS${pageTitle}`} />
         <main className={styles.main}>{children}</main>
         <footer className={styles.footer}>
           © {new Date().getFullYear()} Ocean Cloud · 地理信息

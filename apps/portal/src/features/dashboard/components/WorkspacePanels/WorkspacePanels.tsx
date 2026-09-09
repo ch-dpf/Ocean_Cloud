@@ -6,11 +6,53 @@ export function WorkspacePanels() {
   return (
     <div className={styles.workspacePanels}>
       <div className={styles.row}>
-        <section
-          className={styles.resourceUsageTrend}
-          aria-label="资源使用趋势"
-        />
-        <section className={styles.runStatus} aria-label="运行状态" />
+        <section className={styles.resourceUsageTrend} aria-label="资源使用趋势">
+          <div className={styles.trendHeader}>
+            <span style={{ fontFamily: 'Noto Sans SC', fontWeight: 700, fontStyle: 'Bold', fontSize: '15px' }}>资源使用趋势&nbsp;&nbsp;</span>
+            <span style={{ fontFamily: 'Noto Sans SC', fontWeight: 400, fontStyle: 'Normal', fontSize: '11px', color: '#576E85' }}> 最近24小时</span>
+          </div>
+          <div className={styles.trendLegend}>
+            <span style={{ fontFamily: 'Noto Sans SC', fontWeight: 400, fontStyle: 'Regular', fontSize: '10px', color: '#095ED4' }}>
+              <i style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#095ED4' }} />
+              CPU
+            </span>
+            <span style={{ fontFamily: 'Noto Sans SC', fontWeight: 400, fontStyle: 'Regular', fontSize: '10px', color: '#089466' }}>
+              <i style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#089466' }} />
+              内存
+            </span>
+            <span style={{ fontFamily: 'Noto Sans SC', fontWeight: 400, fontStyle: 'Regular', fontSize: '10px', color: '#576E85' }}>
+              <i style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#576E85' }} />
+              磁盘
+            </span>
+          </div>
+        </section>
+
+        <section className={styles.runStatus} aria-label="运行状态">
+          <div className={styles.runStatusHeader}>
+            <span style={{ fontFamily: 'Noto Sans SC', fontWeight: 700, fontStyle: 'Bold', fontSize: '15px' }}>运行状态</span>
+            {/* TODO: 查看全部跳转链接待接入 */}
+            <a style={{ fontFamily: 'Noto Sans SC', fontWeight: 400, fontStyle: 'Normal', fontSize: '11px', color: '#1267d6' }}>查看全部 →</a>
+          </div>
+          {/* 一行三个占位框 */}
+          <div className={styles.statusOverview}>
+            <div className={styles.statusOverviewItem}>
+              <div><span style={{ fontFamily: 'Noto Sans SC', fontWeight: 400, fontStyle: 'Regular', fontSize: '11px', color: '#576E85' }}>运行中任务</span></div>
+              <div><span style={{ fontFamily: 'Noto Sans SC', fontWeight: 700, fontStyle: 'Bold', fontSize: '19px', color: '#095ED4' }}>--</span></div>
+            </div>
+            <div className={styles.statusOverviewItem}>
+              <div><span style={{ fontFamily: 'Noto Sans SC', fontWeight: 400, fontStyle: 'Regular', fontSize: '11px', color: '#576E85' }}>需要关注</span></div>
+              <div><span style={{ fontFamily: 'Noto Sans SC', fontWeight: 700, fontStyle: 'Bold', fontSize: '19px', color: '#E03833' }}>--</span></div>
+            </div>
+          </div>
+          <div className={styles.statusDetail}>
+            <div className={styles.statusDetailItem}>
+            </div>
+            <div className={styles.statusDetailItem}>
+            </div>
+            <div className={styles.statusDetailItem}>
+            </div>
+          </div>
+        </section>
       </div>
 
       <div className={styles.row}>

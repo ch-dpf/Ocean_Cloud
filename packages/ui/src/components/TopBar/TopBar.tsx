@@ -11,7 +11,7 @@ export function TopBar({ pageTitle }: TopBarProps) {
   const [isDark, setIsDark] = useState(false)
   const currentUser = (() => {
     try {
-      const raw = localStorage.getItem('username')
+      const raw = sessionStorage.getItem('username')
       return raw ?? ''
     } catch {
       return ''
@@ -19,8 +19,8 @@ export function TopBar({ pageTitle }: TopBarProps) {
   })()
   function handleLogout() {
     try {
-      localStorage.removeItem('username')
-      localStorage.removeItem('token')
+      sessionStorage.removeItem('username')
+      sessionStorage.removeItem('token')
     } catch {
       // 忽略存储异常
     }

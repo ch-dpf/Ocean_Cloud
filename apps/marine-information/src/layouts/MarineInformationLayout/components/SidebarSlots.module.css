@@ -1,0 +1,85 @@
+/* 返回平台首页 */
+.home {
+  margin-left: 14px;
+  margin-top: 14px;
+}
+
+.homeLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 188px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 7px;
+  background-color: #f7fafd;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.homeArrow {
+  font-family: Noto Sans SC;
+  font-weight: 700;
+  font-size: 17px;
+  color: #1267d6;
+}
+
+.homeText {
+  font-family: Noto Sans SC;
+  font-weight: 400;
+  font-size: 13px;
+  color: #1267d6;
+  white-space: nowrap;
+}
+
+/* 工作空间标题 */
+.workspaceTitle {
+  margin-top: 27px;
+  margin-left: 24px;
+}
+
+.workspaceName {
+  font-family: Noto Sans SC;
+  font-weight: 700;
+  font-size: 16px;
+  color: #13293d;
+}
+
+.workspaceDesc {
+  font-family: Noto Sans SC;
+  font-weight: 400;
+  font-size: 11px;
+  color: #576e85;
+}
+
+/* 切换业务模块 */
+.switch {
+  padding: 0 8px 8px;
+}
+
+.switchLink {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 70px;
+  padding: 0 12px;
+  border-radius: 7px;
+  background-color: #f7fafd;
+  text-decoration: none;
+}
+
+
+.switchLabel {
+  font-family: Noto Sans SC;
+  font-weight: 400;
+  font-size: 11px;
+  color: #576e85;
+}
+
+.switchTarget {
+  font-family: Noto Sans SC;
+  font-weight: 700;
+  font-size: 13px;
+  color: #1267d6;
+}

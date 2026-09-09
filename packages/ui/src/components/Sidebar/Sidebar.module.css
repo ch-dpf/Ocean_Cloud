@@ -11,27 +11,13 @@
   overflow: hidden;
   z-index: 10;
 }
-.sidebarHome {
-  margin-left: 14px;
-  margin-top: 14px;
+
+/* 插槽区域：内容由各应用注入 */
+.sidebarSlot {
+  flex: 0 0 auto;
 }
-.sidebarHomeButton {
-  background-color: #F7FAFD;
-  width: 188px;
-  height: 38px;
-  border-radius: 7px;
-  text-align: left;
-  line-height: 100%;
-  border: none;
-}
-.sidebarHomeButton:hover {
-  background-color: #F7FAFD;
-}
-.sidebarGIStitle {
-  margin-top: 27px;
-  margin-left: 24px;
-}
-/* 下方：导航栏 */
+
+/* 导航栏 */
 .sidebarNav {
   flex: 1 1 0;
   min-height: 0;
@@ -48,44 +34,73 @@
   align-items: center;
   gap: 8px;
   padding: 0 12px;
+  margin-bottom: 12px;
   height: 40px;
   border-radius: 6px;
   color: #4e5969;
   text-decoration: none;
   transition:
-    background-color 0.2s,
-    color 0.2s;
+  background-color 0.2s,
+  color 0.2s;
   cursor: pointer;
-  margin-bottom: 10px;
 }
 
 .sidebarNavItem:hover {
-  background-color: #E3F0FF;
-  color: #095ED4;
+  background-color: #e8f1fd;
+  color: #1267d6;
 }
 
 .sidebarNavItemActive {
-  background-color: #E3F0FF;
-  color: #095ED4;
+  background-color: #e8f1fd;
+  color: #1267d6;
 }
 
-/* 导航图标 */
+/* 导航图标：默认层 + 蓝色叠加层 */
 .sidebarNavIcon {
+  position: relative;
   flex-shrink: 0;
   width: 16px;
   height: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  line-height: 1;
+}
+
+.sidebarNavIcon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.sidebarNavIconDefault {
+  transition: opacity 0.2s;
+}
+
+.sidebarNavIconActive {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+/* 仅双图层图标：hover/active 时隐藏默认层、显示蓝色层 */
+.sidebarNavItem:hover .sidebarNavIconDual .sidebarNavIconDefault,
+.sidebarNavItemActive .sidebarNavIconDual .sidebarNavIconDefault {
+  opacity: 0;
+}
+
+.sidebarNavItem:hover .sidebarNavIconActive,
+.sidebarNavItemActive .sidebarNavIconActive {
+  opacity: 1;
 }
 
 .sidebarNavText {
- font-family: Noto Sans SC;
- font-weight: 700;
- font-style: Bold;
- font-size: 14px;
+  font-family: Source Han Sans CN;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 100%;
+  white-space: nowrap;
 }
 
 /* 底部：收起侧边栏按钮 */
@@ -94,6 +109,7 @@
   align-items: center;
   gap: 5px;
   height: 40px;
+  margin-top: 12px;
   width: 100%;
   padding: 0 12px;
   border: none;
@@ -114,6 +130,7 @@
 }
 
 .sidebarCollapseIcon {
+  position: relative;
   flex-shrink: 0;
   width: 24px;
   height: 24px;
@@ -121,26 +138,48 @@
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  font-size: 18px;
-  line-height: 1;
+}
+
+.sidebarCollapseIcon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.sidebarCollapseIconDefault {
+  transition: opacity 0.2s;
+}
+
+.sidebarCollapseIconActive {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.sidebarCollapse:hover .sidebarCollapseIconDefault {
+  opacity: 0;
+}
+
+.sidebarCollapse:hover .sidebarCollapseIconActive {
+  opacity: 1;
 }
 
 .sidebarCollapseText {
-  font-family:
-    Source Han Sans CN,
-    'Microsoft YaHei',
-    sans-serif;
+  font-family: Source Han Sans CN;
   font-weight: 400;
   font-size: 14px;
   line-height: 100%;
   white-space: nowrap;
 }
 
-/* 收起态：仅露出图标 */
+/* 收起态：仅保留 logo、导航图标、收起按钮，插槽隐藏 */
 .sidebarCollapsed {
   width: 56px;
 }
 
+.sidebarCollapsed .sidebarSlot,
 .sidebarCollapsed .sidebarNavText,
 .sidebarCollapsed .sidebarCollapseText {
   display: none;
@@ -152,8 +191,7 @@
   padding: 0;
 }
 
-.sidebarCollapsed .sidebarNavIcon,
-.sidebarCollapsed .sidebarCollapseIcon {
+.sidebarCollapsed .sidebarNavIcon {
   margin: 0 auto;
 }
 
@@ -165,6 +203,10 @@
     width: 100%;
     height: auto;
     overflow: visible;
+  }
+
+  .sidebarCollapsed .sidebarSlot {
+    display: block;
   }
 
   .sidebarCollapsed .sidebarNavText {

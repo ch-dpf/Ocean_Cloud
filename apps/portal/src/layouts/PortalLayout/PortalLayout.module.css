@@ -15,10 +15,9 @@
 }
 .main {
   flex: 1 1 0;
-  max-width: 1510px;
   width: 100%;
   margin: 0 auto;
-  padding: 34px 38px 22px;
+  padding: 22px 38px 22px;
   box-sizing: border-box;
 }
 .footer {

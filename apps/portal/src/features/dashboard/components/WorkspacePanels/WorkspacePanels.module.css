@@ -20,11 +20,58 @@
 .resourceUsageTrend {
   width: 66%;
 }
-
+.trendHeader{
+  margin-top: 16px;
+  margin-left: 18px;
+}
+.trendLegend{
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  margin-top: 16px;
+  margin-left: 18px;
+}
 .runStatus {
   width: 33%;
 }
-
+.runStatusHeader{
+  margin-top: 16px;
+  margin-left: 18px;
+  margin-right: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.statusOverview{
+  display: flex;
+  justify-content: space-evenly;
+  margin-top: 16px;
+}
+.statusOverviewItem{
+  height: 45px;
+  width: 40%;
+  border-radius: 7px;
+  background-color: #F7FAFD;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 8px;
+  padding-left: 12px;
+  padding-right: 20px;
+}
+.statusDetail{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 16px;
+  gap: 12px;
+}
+.statusDetailItem{
+  height: 44px;
+  width: 90%;
+  border-radius: 7px;
+  background-color: #FFFFFF;
+  border: 1px solid #dee5ed;
+}
 .fileStoreDetail {
   width: 35%;
   height: 300px;
