@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import styles from './GeographicInformationLayout.module.css'
 import { Sidebar } from './components/Sidebar/Sidebar'
-import { TopBar } from './components/TopBar/TopBar'
+import { TopBar } from '@ocean-cloud/ui'
 interface GeographicInformationLayoutProps {
   readonly pathname: string
   readonly pageTitle: string

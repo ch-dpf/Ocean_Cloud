@@ -6,30 +6,26 @@ import moonIconUrl from './assets/Moon.svg'
 import notificationIconUrl from './assets/Notification.svg'
 interface TopBarProps {
   readonly pageTitle: string
-  /** 不传则回退读取 localStorage 的 username */
-  readonly userName?: string
-  /** 不传则按默认行为清除本地登录信息并跳转 #/login */
-  readonly onLogout?: () => void
 }
-function readStoredUserName() {
-  try {
-    return localStorage.getItem('username') ?? ''
-  } catch {
-    return ''
-  }
-}
-function defaultLogout() {
-  try {
-    localStorage.removeItem('username')
-    localStorage.removeItem('token')
-  } catch {
-    // 忽略存储异常
-  }
-  location.hash = '#/login'
-}
-export function TopBar({ pageTitle, userName, onLogout }: TopBarProps) {
+export function TopBar({ pageTitle }: TopBarProps) {
   const [isDark, setIsDark] = useState(false)
-  const currentUser = userName ?? readStoredUserName()
+  const currentUser = (() => {
+    try {
+      const raw = localStorage.getItem('username')
+      return raw ?? ''
+    } catch {
+      return ''
+    }
+  })()
+  function handleLogout() {
+    try {
+      localStorage.removeItem('username')
+      localStorage.removeItem('token')
+    } catch {
+      // 忽略存储异常
+    }
+    location.hash = '#/login'
+  }
   return (
     <header className={styles.header}>
       <div className={styles.headerLeft}>
@@ -70,7 +66,7 @@ export function TopBar({ pageTitle, userName, onLogout }: TopBarProps) {
         <button
           type="button"
           className={styles.headerUser}
-          onClick={() => (onLogout ? onLogout() : defaultLogout())}
+          onClick={handleLogout}
           title="退出登录"
         >
           {currentUser || '用户'}

@@ -1,6 +1,7 @@
 import styles from './Sidebar.module.css'
 import { Brand } from '@ocean-cloud/ui'
 import { NAVIGATION_ITEMS } from '../../../../config/navigation'
+import { PORTAL_ORIGIN, MARINE_INFORMATION_ORIGIN } from '../../../../config/application'  
 interface SidebarProps {
   readonly pathname: string
   readonly collapsed: boolean
@@ -17,10 +18,10 @@ export function Sidebar({
     >
       <Brand collapsed={collapsed} />
       <div className={styles.sidebarHome}>
-        <button className={styles.sidebarHomeButton}>
+        <a href={PORTAL_ORIGIN}><button className={styles.sidebarHomeButton}>
           <span style={{ fontFamily: 'Noto Sans SC', fontWeight: 700, fontStyle: 'Bold', fontSize: '17px', color: '#095ED4' }}>←</span>
           <span style={{ fontFamily: 'Noto Sans SC', fontWeight: 400, fontStyle: 'Regular', fontSize: '13px', color: '#095ED4' }}>&nbsp;&nbsp;&nbsp;返回平台首页</span>
-        </button>
+        </button></a>
       </div>
       <div className={styles.sidebarGIStitle}>
         <div>
@@ -49,6 +50,11 @@ export function Sidebar({
         })}
       </nav>
       {/* 底部：收起侧边栏 */}
+      <a href={MARINE_INFORMATION_ORIGIN}>
+        <button>
+          <span>切换至海洋模块</span>
+        </button>
+      </a>
       <button
         type="button"
         className={styles.sidebarCollapse}

@@ -2,7 +2,7 @@ import styles from './PortalLayout.module.css'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Sidebar } from './components/Sidebar/Sidebar'
-import { TopBar } from './components/TopBar/TopBar'
+import { TopBar } from '@ocean-cloud/ui'
 interface PortalLayoutProps {
   readonly pathname: string
   readonly pageTitle: string

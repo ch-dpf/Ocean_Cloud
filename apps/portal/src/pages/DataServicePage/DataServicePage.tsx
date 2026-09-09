@@ -1,4 +1,5 @@
 import styles from './DataServicePage.module.css'
+import { GEOGRAPHIC_INFORMATION_ORIGIN, MARINE_INFORMATION_ORIGIN } from '../../config/application'
 
 const CAPABILITIES = ['数据管理', '数据处理', '数据发布']
 
@@ -10,6 +11,7 @@ const MODULES = [
     title: 'GIS模块',
     description: '影像、矢量、地形、倾斜模型与电子海图',
     buttonLabel: '进入 GIS 模块',
+    link: GEOGRAPHIC_INFORMATION_ORIGIN,
   },
   {
     key: 'ocean',
@@ -18,6 +20,7 @@ const MODULES = [
     title: '海洋模块',
     description: '海洋环境、声呐、多波束、浅剖与装备轨迹',
     buttonLabel: '进入 海洋模块',
+    link: MARINE_INFORMATION_ORIGIN,
   },
 ] as const
 
@@ -53,12 +56,12 @@ export function DataServicePage() {
                   </div>
                 ))}
               </dl>
-              <button
+              <a href={module.link}><button
                 type="button"
                 className={`${styles.cardButton} ${styles[module.key]}`}
               >
                 {module.buttonLabel} <span aria-hidden="true">→</span>
-              </button>
+              </button></a>
             </div>
           </article>
         ))}
