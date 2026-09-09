@@ -1,30 +1,23 @@
 import {
-  NotFound,
   RequestErrorNotice,
   useHashRoute,
   usePlatformBridge,
 } from '@ocean-cloud/ui'
-import { GeographicInformationPage } from './pages/GeographicInformationPage/GeographicInformationPage'
+import { GeographicInformationLayout } from './layouts/GeographicInformationLayout/GeographicInformationLayout'
+import { resolveGeographicRoute } from './routes/geographicRoutes'
 import { PORTAL_ORIGIN } from './config/application'
 import { httpClient } from './services/httpClient'
 export function App() {
   const pathname = useHashRoute()
-  const { isEmbedded, portalUrl, navigateHome } = usePlatformBridge({
+  usePlatformBridge({
     appId: 'geographic-information',
     portalOrigin: PORTAL_ORIGIN,
   })
+  const route = resolveGeographicRoute(pathname)
   return (
-    <>
+    <GeographicInformationLayout pathname={pathname} pageTitle={route.title}>
       <RequestErrorNotice client={httpClient} />
-      {pathname === '/' ? (
-        <GeographicInformationPage
-          portalUrl={portalUrl}
-          isEmbedded={isEmbedded}
-          onNavigateHome={navigateHome}
-        />
-      ) : (
-        <NotFound />
-      )}
-    </>
+      {route.element}
+    </GeographicInformationLayout>
   )
 }

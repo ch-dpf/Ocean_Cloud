@@ -9,6 +9,7 @@ interface SubsystemHomeProps extends SubsystemNavigation {
   readonly eyebrow: string
   readonly description: string
   readonly tone: 'geographic' | 'marine'
+  readonly showChrome?: boolean
 }
 export function SubsystemHome({
   title,
@@ -18,29 +19,10 @@ export function SubsystemHome({
   portalUrl,
   isEmbedded,
   onNavigateHome,
+  showChrome = true,
 }: SubsystemHomeProps) {
-  return (
-    <div className={styles.page} data-tone={tone}>
-      <header className={styles.header}>
-        <div className={styles.brand}>
-          <span className={styles.brandIcon}>
-            {tone === 'geographic' ? '▧' : '≈'}
-          </span>
-          <span>
-            云海平台 <span className={styles.separator}>/</span> {title}
-          </span>
-        </div>
-        {isEmbedded ? (
-          <button type="button" onClick={onNavigateHome}>
-            返回云海平台
-          </button>
-        ) : (
-          <a className={styles.backLink} href={portalUrl}>
-            ← 返回云海平台
-          </a>
-        )}
-      </header>
-      <main className={styles.main}>
+  const main = (
+    <main className={styles.main}>
         <section className={styles.hero}>
           <div>
             <div className={styles.eyebrow}>{eyebrow}</div>
@@ -85,6 +67,30 @@ export function SubsystemHome({
           </aside>
         </div>
       </main>
+  )
+  if (!showChrome) return main
+  return (
+    <div className={styles.page} data-tone={tone}>
+      <header className={styles.header}>
+        <div className={styles.brand}>
+          <span className={styles.brandIcon}>
+            {tone === 'geographic' ? '▧' : '≈'}
+          </span>
+          <span>
+            云海平台 <span className={styles.separator}>/</span> {title}
+          </span>
+        </div>
+        {isEmbedded ? (
+          <button type="button" onClick={onNavigateHome}>
+            返回云海平台
+          </button>
+        ) : (
+          <a className={styles.backLink} href={portalUrl}>
+            ← 返回云海平台
+          </a>
+        )}
+      </header>
+      {main}
       <footer className={styles.footer}>
         © {new Date().getFullYear()} Ocean Cloud · {title}
       </footer>

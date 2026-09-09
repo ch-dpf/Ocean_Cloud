@@ -1,0 +1,62 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #1267d6;
+  font-weight: 600;
+}
+
+.page h1 {
+  font-size: 24px;
+  margin: 0 0 6px;
+  color: #193248;
+}
+
+.page p {
+  margin: 0 0 22px;
+  font-size: 13px;
+  color: #81919e;
+}
+
+.placeholder {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  border: 1px solid #dfebf0;
+  border-radius: 12px;
+  background: #f5f8fa;
+  padding: 32px;
+}
+
+.icon {
+  font-size: 28px;
+  color: #1267d6;
+  background: #e8f1fd;
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+}
+
+.placeholder h2 {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 8px;
+  color: #4e687b;
+}
+
+.placeholder p {
+  font-size: 12px;
+  margin: 0;
+  color: #9aa7b2;
+}

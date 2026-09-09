@@ -1,0 +1,61 @@
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  flex: 0 0 auto;
+  margin-top: 20px;
+  margin-left: 18px;
+}
+
+.logoIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.logoIcon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.logoName {
+  font-family:
+    Source Han Sans CN,
+    'Microsoft YaHei',
+    sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 100%;
+  white-space: nowrap;
+}
+
+/* 收起态：隐藏文字、居中图标 */
+.brandCollapsed {
+  justify-content: center;
+  margin-left: 0;
+}
+
+.brandCollapsed .logoName {
+  display: none;
+}
+
+/* 移动端：恢复横向展示 */
+@media (max-width: 760px) {
+  .brand,
+  .brandCollapsed {
+    height: 56px;
+    justify-content: flex-start;
+    margin: 0 16px;
+  }
+
+  .brandCollapsed .logoName {
+    display: block;
+  }
+}
