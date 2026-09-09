@@ -1,31 +1,61 @@
-.sectionHeading {
+.dashboardPage {
+  width: 100%;
+}
+
+.pageHeader {
   display: flex;
+  height: 50px;
   align-items: center;
   justify-content: space-between;
-  margin: 29px 0 17px;
 }
-.sectionHeading h2 {
-  font-size: 17px;
+
+.pageHeader h1 {
   margin: 0;
-  font-weight: 550;
+  color: #13293d;
+  font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 29px;
+  letter-spacing: 0;
 }
-.sectionHeading h2 span {
-  font-size: 10px;
-  font-weight: 400;
-  color: #a3afb7;
-  margin-left: 10px;
-}
-.sectionHeading > a {
+
+.pageHeader p {
+  margin: 0;
+  color: #576e85;
+  font-family: 'Source Han Sans CN', 'Microsoft YaHei', sans-serif;
   font-size: 11px;
-  color: #7092a8;
+  line-height: 16px;
 }
-.appGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+
+.dataStatus {
+  display: inline-flex;
+  width: 159px;
+  height: 30px;
+  align-items: center;
+  padding: 0 11px;
+  border: 1px solid #d8e1e5;
+  border-radius: 15px;
+  background: #ffffff;
+  color: #1267d6;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
 }
-@media (max-width: 760px) {
-  .appGrid {
-    grid-template-columns: 1fr;
+
+.dataStatus > span {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: #168765;
+}
+
+@media (max-width: 600px) {
+  .pageHeader {
+    height: auto;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
   }
 }

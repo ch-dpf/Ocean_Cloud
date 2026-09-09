@@ -3,15 +3,23 @@
   min-height: 100vh;
 }
 .mainLayout {
-  margin-left: 226px;
+  margin-left: 216px;
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.mainLayoutCollapsed {
+  margin-left: 56px;
 }
 .main {
+  flex: 1 1 0;
   max-width: 1510px;
-  margin: auto;
+  width: 100%;
+  margin: 0 auto;
   padding: 34px 38px 22px;
-  min-height: calc(100vh - 122px);
+  box-sizing: border-box;
 }
 .footer {
   height: 46px;
@@ -23,7 +31,10 @@
 }
 @media (max-width: 1050px) {
   .mainLayout {
-    margin-left: 190px;
+    margin-left: 216px;
+  }
+  .mainLayoutCollapsed {
+    margin-left: 56px;
   }
   .main {
     padding: 26px 22px;
@@ -33,7 +44,8 @@
   .shell {
     display: block;
   }
-  .mainLayout {
+  .mainLayout,
+  .mainLayoutCollapsed {
     margin-left: 0;
   }
   .main {

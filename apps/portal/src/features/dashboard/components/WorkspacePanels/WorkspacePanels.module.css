@@ -1,0 +1,178 @@
+.workspacePanels {
+  width: 100%;
+}
+
+.row {
+  display: flex;
+  width: 95%;
+  justify-content: space-between;
+  margin: 10px auto 0;
+}
+
+.resourceUsageTrend,
+.runStatus {
+  height: 300px;
+  border: 1px solid #dee5ed;
+  border-radius: 10px;
+  background-color: #ffffff;
+}
+
+.resourceUsageTrend {
+  width: 66%;
+}
+
+.runStatus {
+  width: 33%;
+}
+
+.fileStoreDetail {
+  width: 35%;
+  height: 300px;
+  padding: 18px 20px 15px;
+  overflow: hidden;
+  border: 1px solid #dee5ed;
+  border-radius: 8px;
+  background-color: #ffffff;
+}
+
+.panelHeader {
+  display: flex;
+  min-height: 24px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panelHeader h2,
+.apiHeader h2 {
+  margin: 0;
+  color: #13293d;
+  font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.storageContent {
+  height: 237px;
+  margin-top: 4px;
+}
+
+.storageList {
+  display: grid;
+  height: 100%;
+  grid-template-rows: repeat(7, minmax(0, 1fr));
+  align-content: start;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.storageList li {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.storageList li > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #576e85;
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.track {
+  display: block;
+  height: 5px;
+  margin-top: 4px;
+  border-radius: 3px;
+  background: #e8eef3;
+}
+
+.apiUsageTrend {
+  width: 64%;
+  height: 300px;
+  padding: 12px 18px 10px;
+  overflow: hidden;
+  border: 1px solid #dee5ed;
+  border-radius: 8px;
+  background-color: #ffffff;
+}
+
+.apiHeader {
+  display: flex;
+  min-height: 32px;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.apiHeader span {
+  color: #576e85;
+  font-size: 11px;
+}
+
+.apiMetrics {
+  display: flex;
+  justify-content: space-between;
+}
+
+.apiMetrics > span {
+  display: flex;
+  width: 30%;
+  height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  border: 1px solid #dee5ed;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #576e85;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.apiMetrics b {
+  color: #095ed4;
+  font-size: 16px;
+}
+
+.apiState {
+  display: flex;
+  height: 203px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 3px;
+  color: #7a8d9a;
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .resourceUsageTrend,
+  .runStatus,
+  .fileStoreDetail,
+  .apiUsageTrend {
+    width: 100%;
+  }
+
+  .fileStoreDetail,
+  .apiUsageTrend {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+}
+
+@media (max-width: 430px) {
+  .apiMetrics > span {
+    padding: 0 6px;
+    font-size: 10px;
+  }
+}

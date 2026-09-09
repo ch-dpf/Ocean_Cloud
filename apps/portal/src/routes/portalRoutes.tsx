@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react'
 import type { MicroApplication } from '../types/application'
 import { DashboardPage } from '../pages/DashboardPage/DashboardPage'
-import { ApplicationsPage } from '../pages/ApplicationsPage/ApplicationsPage'
-import { AboutPage } from '../pages/AboutPage/AboutPage'
+
 import { NotFoundPage } from '../pages/NotFoundPage/NotFoundPage'
 import { ApplicationLaunch } from '../features/applications/components/ApplicationLaunch/ApplicationLaunch'
-import { ApplicationManagementPage } from '../pages/ApplicationManagementPage/ApplicationManagementPage'
+import { DataServicePage } from '../pages/DataServicePage/DataServicePage'
+import { VisualizationPage } from '../pages/VisualizationPage/VisualizationPage'
+import { SystemManagementPage } from '../pages/SystemManagementPage/SystemManagementPage'
 import { ApplicationRecycleBinPage } from '../pages/ApplicationRecycleBinPage/ApplicationRecycleBinPage'
 interface PortalRoute {
   readonly title: string
@@ -17,12 +18,9 @@ const STATIC_ROUTES: Readonly<Record<string, PortalRoute>> = {
     element: <ApplicationRecycleBinPage />,
   },
   '/': { title: '工作台', element: <DashboardPage /> },
-  '/applications': { title: '应用中心', element: <ApplicationsPage /> },
-  '/application-management': {
-    title: '应用管理',
-    element: <ApplicationManagementPage />,
-  },
-  '/about': { title: '关于平台', element: <AboutPage /> },
+  '/dataservice': { title: '数据服务', element: <DataServicePage /> },
+  '/visualization': { title: '可视化应用', element: <VisualizationPage /> },
+  '/system-management': { title: '系统管理', element: <SystemManagementPage /> },
 }
 export function resolvePortalRoute(
   pathname: string,

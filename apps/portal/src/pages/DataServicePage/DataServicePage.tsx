@@ -1,0 +1,68 @@
+import styles from './DataServicePage.module.css'
+
+const CAPABILITIES = ['数据管理', '数据处理', '数据发布']
+
+const MODULES = [
+  {
+    key: 'gis',
+    icon: '/icons/GISIcon.svg',
+    iconAlt: 'GIS 图标',
+    title: 'GIS模块',
+    description: '影像、矢量、地形、倾斜模型与电子海图',
+    buttonLabel: '进入 GIS 模块',
+  },
+  {
+    key: 'ocean',
+    icon: '/icons/OceanIcon.svg',
+    iconAlt: '海洋图标',
+    title: '海洋模块',
+    description: '海洋环境、声呐、多波束、浅剖与装备轨迹',
+    buttonLabel: '进入 海洋模块',
+  },
+] as const
+
+export function DataServicePage() {
+  return (
+    <div className={styles.dataServicePage}>
+      <header className={styles.pageHeader}>
+        <h1>数据服务</h1>
+        <p>选择 GIS 或海洋服务域，进入独立的数据管理、处理与发布工作空间</p>
+      </header>
+
+      <div className={styles.content}>
+        {MODULES.map((module) => (
+          <article className={styles.card} key={module.key}>
+            <header className={styles.cardHeader}>
+              <span className={`${styles.icon} ${styles[module.key]}`}>
+                <img src={module.icon} alt={module.iconAlt} />
+              </span>
+              <div className={styles.cardTitle}>
+                <h2>{module.title}</h2>
+                <p>{module.description}</p>
+              </div>
+            </header>
+
+            <div className={styles.divider} />
+
+            <div className={styles.cardBody}>
+              <dl className={styles.capabilities}>
+                {CAPABILITIES.map((capability) => (
+                  <div key={capability}>
+                    <dt>{capability}</dt>
+                    <dd>--</dd>
+                  </div>
+                ))}
+              </dl>
+              <button
+                type="button"
+                className={`${styles.cardButton} ${styles[module.key]}`}
+              >
+                {module.buttonLabel} <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  )
+}
