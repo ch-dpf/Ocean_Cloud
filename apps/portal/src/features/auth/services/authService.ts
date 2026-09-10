@@ -1,18 +1,42 @@
-import type { AuthSession, LoginCredentials } from '../types/auth'
+import { httpClient } from '../../../services/httpClient'
+import type {
+  LoginCredentials,
+  LoginRequest,
+  LoginResponse,
+} from '../types/auth'
 import { clearAuthSession, setAuthSession } from '../utils/authToken'
+import { getClientLoginMeta, getOrCreateDeviceId } from '../utils/clientMeta'
 import { HOME_PATH, LOGIN_PATH } from '../constants'
 
 /**
- * 登录：暂不鉴权，输入账号密码即建立本地会话。
- * 后端 /auth/login 就绪后，替换为 httpClient.post('/auth/login', credentials) 并以其返回的 token 为准。
+ * 登录：向 /api/auth/login 发起真实请求。
+ * 请求体包含 platform/deviceId/browser/os/userAgent，与后端契约一致。
+ * 成功后只把 token + username 存入 sessionStorage（关闭浏览器即失效）。
+ * role/roleType/platform 不持久化。
  */
-export function login(credentials: LoginCredentials): AuthSession {
-  const session: AuthSession = {
-    token: `local-${Date.now()}`,
+export async function login(credentials: LoginCredentials): Promise<void> {
+  const deviceId = getOrCreateDeviceId()
+  const clientMeta = getClientLoginMeta()
+
+  const requestBody: LoginRequest = {
     username: credentials.username,
+    password: credentials.password,
+    platform: 'OCEAN_CLOUD',
+    deviceId,
+    ...clientMeta,
   }
-  setAuthSession(session.token, session.username)
-  return session
+
+  const response = await httpClient.post<LoginResponse>(
+    '/auth/login',
+    requestBody,
+  )
+
+  if (response.code !== 200 || !response.data) {
+    throw new Error(response.message || '登录失败')
+  }
+
+  const { token, username } = response.data
+  setAuthSession(token, username)
 }
 
 /** 退出登录：清理会话并跳回登录页 */

@@ -1,327 +1,47 @@
-/* 登录页：左右分栏，设计令牌来自页面设计稿 */
-
-.loginContainer {
-  width: 100vw;
+.loginPage {
+  width: 100%;
   height: 100vh;
   display: flex;
-  overflow: hidden;
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    'PingFang SC',
-    'Microsoft YaHei',
-    sans-serif;
-  color: #1d2129;
+  justify-content: space-between;
 }
-
-/* ========== 左侧品牌展示区（55%） ========== */
-.loginLeft {
-  flex: 0 0 55%;
-  position: relative;
-  background: linear-gradient(135deg, #0a2463 0%, #165dff 50%, #0ea5a1 100%);
-  color: #fff;
+.loginPageLeft {
+  width: 55%;
+  height: 100%;
+  background-image: url('./loginbg.png');
+  background-size: cover;
+  background-position: center;
+  padding-left: 30px;
+  padding-top: 50px;
+}
+.loginPageIntro {
+  margin-top: 100px;
+  margin-left: 18px;
+}
+.loginPageTakeSpace {
+  height: 60%;
+}
+.loginPageShow {
+  margin-left: 18px;
+}
+.loginPageRight {
+  width: 45%;
+  height: 100%;
+  background-color: #ffffff;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 60px;
-  overflow: hidden;
-}
-
-/* 背景装饰：GIS 网格纹理 + 光斑 */
-.loginLeft::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.loginLeft::after {
-  content: '';
-  position: absolute;
-  width: 600px;
-  height: 600px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(15, 198, 194, 0.3) 0%,
-    transparent 70%
-  );
-  top: -200px;
-  right: -200px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Logo 区域 */
-.logoSection {
-  position: relative;
-  z-index: 1;
-  display: flex;
+  padding-top: 200px;
   align-items: center;
-  gap: 12px;
 }
-
-.logoIcon {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-}
-
-.logoText {
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: 2px;
-}
-
-/* 品牌核心内容 */
-.brandContent {
-  position: relative;
-  z-index: 1;
-  max-width: 520px;
-}
-
-.brandTitle {
-  font-size: 48px;
-  font-weight: 700;
-  line-height: 1.2;
-  margin: 0 0 16px;
-}
-
-.brandSubtitle {
-  font-size: 18px;
-  font-weight: 400;
-  line-height: 1.6;
-  opacity: 0.9;
-  margin: 0 0 48px;
-}
-
-.featureList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.loginForm {
+  width: 400px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
-
-.featureItem {
+.footer {
+  height: 200px;
+  background-color: #ffffff;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 16px;
-  opacity: 0.95;
-}
-
-.featureIcon {
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-}
-
-/* 底部版权 */
-.footerCopyright {
-  position: relative;
-  z-index: 1;
-  text-align: center;
-  font-size: 12px;
-  opacity: 0.7;
-}
-
-/* ========== 右侧登录表单区（45%） ========== */
-.loginRight {
-  flex: 0 0 45%;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-}
-
-.formWrapper {
-  width: 100%;
-  max-width: 400px;
-}
-
-.formHeader {
-  margin-bottom: 40px;
-}
-
-.formTitle {
-  font-size: 28px;
-  font-weight: 600;
-  color: #1d2129;
-  margin: 0 0 8px;
-}
-
-.formSubtitle {
-  font-size: 14px;
-  font-weight: 400;
-  color: #4e5969;
-  margin: 0;
-}
-
-.formItem {
-  margin-bottom: 20px;
-}
-
-.formLabel {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: #1d2129;
-  margin-bottom: 8px;
-}
-
-.inputWrapper {
-  position: relative;
-  width: 100%;
-}
-
-.formInput {
-  width: 100%;
-  height: 48px;
-  padding: 0 16px 0 44px;
-  border: 1px solid #c9cdd4;
-  border-radius: 8px;
-  font-size: 16px;
-  color: #1d2129;
-  background: #fff;
-  transition: all 0.2s ease;
-  outline: none;
-  box-sizing: border-box;
-}
-
-.formInput::placeholder {
-  color: #86909c;
-}
-
-/* 隐藏 Edge/IE 在密码框里注入的原生小眼睛和清空按钮（与自定义眼睛重复） */
-.formInput::-ms-reveal,
-.formInput::-ms-clear {
-  display: none;
-}
-
-.formInput:focus {
-  border-color: #165dff;
-  box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.1);
-}
-
-.inputIcon {
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
-}
-
-.inputSuffix {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-}
-
-/* 选项行：记住我 + 忘记密码 */
-.formOptions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 16px 0 24px;
-}
-
-.rememberMe {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #4e5969;
-  cursor: pointer;
-}
-
-.rememberMe input[type='checkbox'] {
-  width: 16px;
-  height: 16px;
-  accent-color: #165dff;
-  cursor: pointer;
-}
-
-.forgotLink {
-  font-size: 14px;
-  color: #165dff;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.forgotLink:hover {
-  text-decoration: underline;
-}
-
-/* 登录按钮 */
-.loginBtn {
-  width: 100%;
-  height: 48px;
-  border: none;
-  border-radius: 8px;
-  background: #165dff;
-  color: #fff;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s ease;
-  margin-bottom: 24px;
-}
-
-.loginBtn:hover {
-  background: #0e42d2;
-}
-
-/* 表单底部：注册入口 */
-.formFooter {
-  text-align: center;
-  font-size: 14px;
-  color: #4e5969;
-}
-
-.registerLink {
-  color: #165dff;
-  text-decoration: none;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.registerLink:hover {
-  text-decoration: underline;
-}
-
-/* ========== 响应式适配 ========== */
-@media (max-width: 960px) {
-  .loginContainer {
-    flex-direction: column;
-  }
-
-  .loginLeft {
-    flex: 0 0 auto;
-    padding: 40px;
-  }
-
-  .loginRight {
-    flex: 1;
-    padding: 40px 20px;
-  }
-
-  .brandTitle {
-    font-size: 32px;
-  }
+  flex-direction: column;
+  justify-content: flex-end;
 }

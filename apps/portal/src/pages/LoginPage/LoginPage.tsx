@@ -1,137 +1,275 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { brandLogoUrl } from '@ocean-cloud/ui'
+import { Brand } from '@ocean-cloud/ui'
 import styles from './LoginPage.module.css'
+import { Toast } from './Toast'
+import type { ToastData } from './Toast'
 import {
   login,
   navigateAfterLogin,
 } from '../../features/auth/services/authService'
-import checkIcon from './assets/check.svg'
-import userIcon from './assets/user.svg'
-import lockIcon from './assets/lock.svg'
 import eyeIcon from './assets/eye.svg'
-
-const FEATURES = [
-  '多源海洋数据一体化处理与可视化',
-  '高精度GIS空间分析与坐标转换',
-  '云端协同工作，数据实时共享',
-] as const
 
 export function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [toast, setToast] = useState<ToastData | null>(null)
 
-  // TODO: 表单校验、错误提示与加载态由你完善
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    login({ username, password })
-    navigateAfterLogin()
+    setLoading(true)
+    try {
+      await login({ username, password })
+      setToast({ id: Date.now(), type: 'success', text: '登录成功' })
+      navigateAfterLogin()
+    } catch (error) {
+      const msg =
+        error instanceof Error ? error.message : '登录失败，请检查网络连接'
+      setToast({ id: Date.now(), type: 'error', text: msg })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <section className={styles.loginContainer}>
-      {/* 左侧品牌展示区 */}
-      <div className={styles.loginLeft}>
-        <div className={styles.logoSection}>
-          <img className={styles.logoIcon} src={brandLogoUrl} alt="云海" />
-          <span className={styles.logoText}>云海</span>
+    <div className={styles.loginPage}>
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
+
+      <div className={styles.loginPageLeft}>
+        <Brand />
+        <div className={styles.loginPageIntro}>
+          <div style={{ marginBottom: '20px' }}>
+            <span
+              style={{
+                fontFamily: 'Noto Sans',
+                fontWeight: 500,
+                fontStyle: 'Medium',
+                fontSize: '38px',
+              }}
+            >
+              海洋数据，一站管理
+            </span>
+          </div>
+          <div>
+            <span
+              style={{
+                fontFamily: 'Noto Sans',
+                fontWeight: 500,
+                fontStyle: 'Medium',
+                fontSize: '16px',
+              }}
+            >
+              连接数据管理、切片处理与服务发布
+            </span>
+          </div>
+          <div>
+            <span
+              style={{
+                fontFamily: 'Noto Sans',
+                fontWeight: 500,
+                fontStyle: 'Medium',
+                fontSize: '16px',
+              }}
+            >
+              让每一份海洋数据从存储走向应用
+            </span>
+          </div>
         </div>
-
-        <div className={styles.brandContent}>
-          <h1 className={styles.brandTitle}>
-            地理数据
-            <br />
-            尽在云海
-          </h1>
-          <p className={styles.brandSubtitle}>
-            专业的GIS空间分析与海洋数据处理平台，为科研、海事、环保等领域提供一站式数据解决方案
-          </p>
-
-          <ul className={styles.featureList}>
-            {FEATURES.map((feature) => (
-              <li key={feature} className={styles.featureItem}>
-                <img className={styles.featureIcon} src={checkIcon} alt="" />
-                {feature}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className={styles.footerCopyright}>
-          © 2026 云海 SeaCloud GIS Platform. All rights reserved.
+        <div className={styles.loginPageTakeSpace}></div>
+        <div className={styles.loginPageShow}>
+          <span
+            style={{
+              fontFamily: 'Noto Sans',
+              fontWeight: 500,
+              fontStyle: 'Medium',
+              fontSize: '13px',
+            }}
+          >
+            数据管理 / 数据处理 / 结果发布 / 可视化应用
+          </span>
         </div>
       </div>
 
-      {/* 右侧登录表单区 */}
-      <div className={styles.loginRight}>
-        <div className={styles.formWrapper}>
-          <div className={styles.formHeader}>
-            <h2 className={styles.formTitle}>欢迎登录云海</h2>
-            <p className={styles.formSubtitle}>
-              地理信息与海洋数据协同处理平台
+      <div className={styles.loginPageRight}>
+        <div className={styles.loginForm}>
+          <div>
+            <h2
+              style={{
+                margin: 0,
+                fontFamily: 'Noto Sans',
+                fontWeight: 700,
+                fontSize: '30px',
+                color: '#173042',
+              }}
+            >
+              登录云海
+            </h2>
+            <p
+              style={{
+                margin: '20px 0 0',
+                fontFamily: 'Noto Sans',
+                fontWeight: 500,
+                fontSize: '14px',
+                color: '#3F5665',
+              }}
+            >
+              欢迎回来，请使用平台账号登录
             </p>
           </div>
 
-          <form className={styles.formBody} onSubmit={handleSubmit}>
-            <div className={styles.formItem}>
-              <label className={styles.formLabel}>账号</label>
-              <div className={styles.inputWrapper}>
-                <img className={styles.inputIcon} src={userIcon} alt="" />
-                <input
-                  className={styles.formInput}
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="请输入账号/邮箱"
-                  autoComplete="username"
-                />
-              </div>
+          <form
+            onSubmit={handleSubmit}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              marginTop: '32px',
+            }}
+          >
+            <div>
+              <label
+                style={{
+                  display: 'block',
+                  fontFamily: 'Noto Sans',
+                  fontWeight: 500,
+                  fontSize: '13px',
+                  color: '#13293d',
+                  marginBottom: '8px',
+                }}
+              >
+                账号
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="请输入账号"
+                autoComplete="username"
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  height: '40px',
+                  padding: '0 12px',
+                  border: '1px solid #d5e0e9',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  boxSizing: 'border-box',
+                  outline: 'none',
+                }}
+              />
             </div>
 
-            <div className={styles.formItem}>
-              <label className={styles.formLabel}>密码</label>
-              <div className={styles.inputWrapper}>
-                <img className={styles.inputIcon} src={lockIcon} alt="" />
+            <div>
+              <label
+                style={{
+                  display: 'block',
+                  fontFamily: 'Noto Sans',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  color: '#173042',
+                  marginBottom: '8px',
+                }}
+              >
+                密码
+              </label>
+              <div style={{ position: 'relative' }}>
                 <input
-                  className={styles.formInput}
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="请输入密码"
                   autoComplete="current-password"
+                  disabled={loading}
+                  style={{
+                    width: '100%',
+                    height: '40px',
+                    padding: '0 40px 0 12px',
+                    border: '1px solid #d5e0e9',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                  }}
                 />
                 <img
-                  className={styles.inputSuffix}
                   src={eyeIcon}
                   alt={showPassword ? '隐藏密码' : '显示密码'}
                   role="button"
-                  onClick={() => setShowPassword((visible) => !visible)}
+                  onClick={() => setShowPassword((v) => !v)}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: '20px',
+                    height: '20px',
+                    cursor: 'pointer',
+                  }}
                 />
               </div>
             </div>
 
-            <div className={styles.formOptions}>
-              <label className={styles.rememberMe}>
-                <input type="checkbox" />
-                记住我
-              </label>
-              {/* TODO: 忘记密码流程待接入 */}
-              <a className={styles.forgotLink}>忘记密码？</a>
-            </div>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontFamily: 'Noto Sans',
+                fontWeight: 400,
+                fontSize: '13px',
+                color: '#576e85',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                style={{
+                  borderRadius: '4px',
+                  border: '1px solid #C6D4D9',
+                  width: '16px',
+                  height: '16px',
+                  accentColor: '#1267d6',
+                }}
+              />
+              记住账号
+            </label>
 
-            <button className={styles.loginBtn} type="submit">
-              登 录
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: '100%',
+                height: '40px',
+                border: 'none',
+                borderRadius: '6px',
+                background: '#1267D6',
+                color: '#fff',
+                fontSize: '16px',
+                fontStyle: 'Medium',
+                fontWeight: 500,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.6 : 1,
+              }}
+            >
+              {loading ? '登录中…' : '登录'}
             </button>
           </form>
 
-          <div className={styles.formFooter}>
-            还没有账号？
-            {/* TODO: 注册流程待接入 */}
-            <a className={styles.registerLink}>立即注册</a>
-          </div>
+          <p
+            style={{
+              textAlign: 'center',
+              fontFamily: 'Noto Sans',
+              fontWeight: 500,
+              fontSize: '13px',
+              color: '#3F5665',
+            }}
+          >
+            忘记密码？请联系管理员
+          </p>
         </div>
       </div>
-    </section>
+    </div>
   )
 }
