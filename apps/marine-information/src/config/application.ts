@@ -1,4 +1,4 @@
 export const PORTAL_ORIGIN =
-  import.meta.env.VITE_PORTAL_ORIGIN || 'http://localhost:5173'
+  import.meta.env.VITE_PORTAL_ORIGIN || 'http://192.168.14.97:5173'
 export const GEOGRAPHIC_INFORMATION_ORIGIN =
-  import.meta.env.VITE_GEOGRAPHIC_INFORMATION_ORIGIN || 'http://localhost:5175'
+  import.meta.env.VITE_GEOGRAPHIC_INFORMATION_ORIGIN || 'http://192.168.14.97:5175'

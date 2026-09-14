@@ -4,7 +4,11 @@ import type {
   LoginRequest,
   LoginResponse,
 } from '../types/auth'
-import { clearAuthSession, setAuthSession } from '../utils/authToken'
+import {
+  clearAuthSession,
+  getAuthToken,
+  setAuthSession,
+} from '../utils/authToken'
 import { getClientLoginMeta, getOrCreateDeviceId } from '../utils/clientMeta'
 import { HOME_PATH, LOGIN_PATH } from '../constants'
 
@@ -39,10 +43,17 @@ export async function login(credentials: LoginCredentials): Promise<void> {
   setAuthSession(token, username)
 }
 
-/** 退出登录：清理会话并跳回登录页 */
-export function logout(): void {
-  clearAuthSession()
-  location.hash = `#${LOGIN_PATH}`
+/** 退出登录：通知后端使 token 失效，清理会话并跳回登录页 */
+export async function logout(): Promise<void> {
+  try {
+    const token = getAuthToken()
+    await httpClient.post('/auth/logout', { token })
+  } catch {
+    // 后端登出失败也继续本地清理
+  } finally {
+    clearAuthSession()
+    location.hash = `#${LOGIN_PATH}`
+  }
 }
 
 export function navigateAfterLogin(): void {

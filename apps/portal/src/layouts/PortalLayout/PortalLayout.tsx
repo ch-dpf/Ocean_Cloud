@@ -3,6 +3,7 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Sidebar, TopBar } from '@ocean-cloud/ui'
 import { NAVIGATION_ITEMS } from '../../config/navigation'
+import { logout } from '../../features/auth/services/authService'
 interface PortalLayoutProps {
   readonly pathname: string
   readonly pageTitle: string
@@ -25,7 +26,10 @@ export function PortalLayout({
       <div
         className={`${styles.mainLayout}${collapsed ? ` ${styles.mainLayoutCollapsed}` : ''}`}
       >
-        <TopBar pageTitle={`${pageTitle} / 全部`} />
+        <TopBar
+          pageTitle={`${pageTitle} / 全部`}
+          onLogout={() => void logout()}
+        />
         <main className={styles.main}>{children}</main>
         <footer className={styles.footer}>
           © {new Date().getFullYear()} Ocean Cloud · 云海平台

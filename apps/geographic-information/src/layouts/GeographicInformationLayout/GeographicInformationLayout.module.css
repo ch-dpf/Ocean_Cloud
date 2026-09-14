@@ -18,16 +18,14 @@
 
 .main {
   flex: 1;
-  max-width: 1510px;
   width: 100%;
-  margin: 0 auto;
-  padding: 34px 38px 22px;
 }
 
 .footer {
+  /* 页脚暂时隐藏，结构与样式保留；需要恢复时改回 display: flex */
+  display: none;
   height: 46px;
   flex: 0 0 auto;
-  display: flex;
   justify-content: space-between;
   padding: 13px 38px;
   font-size: 9px;

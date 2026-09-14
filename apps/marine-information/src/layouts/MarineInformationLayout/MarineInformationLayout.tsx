@@ -4,6 +4,7 @@ import styles from './MarineInformationLayout.module.css'
 import { Sidebar, TopBar } from '@ocean-cloud/ui'
 import { NAVIGATION_ITEMS } from '../../config/navigation'
 import { SidebarHeaderSlot, SidebarFooterSlot } from './components/SidebarSlots'
+import { logout } from '../../features/auth/logout'
 interface MarineInformationLayoutProps {
   readonly pathname: string
   readonly pageTitle: string
@@ -28,7 +29,7 @@ export function MarineInformationLayout({
       <div
         className={`${styles.mainLayout}${collapsed ? ` ${styles.mainLayoutCollapsed}` : ''}`}
       >
-        <TopBar pageTitle={`海洋${pageTitle}`} />
+        <TopBar pageTitle={`海洋${pageTitle}`} onLogout={() => void logout()} />
         <main className={styles.main}>{children}</main>
         <footer className={styles.footer}>
           © {new Date().getFullYear()} Ocean Cloud · 海洋信息

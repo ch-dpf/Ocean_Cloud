@@ -9,6 +9,7 @@ import { VisualizationPage } from '../pages/VisualizationPage/VisualizationPage'
 import { SystemManagementPage } from '../pages/SystemManagementPage/SystemManagementPage'
 import { ApplicationRecycleBinPage } from '../pages/ApplicationRecycleBinPage/ApplicationRecycleBinPage'
 import { LoginPage } from '../pages/LoginPage/LoginPage'
+import { PermissionCenterPage } from '../pages/PermissionCenterPage/PermissionCenterPage'
 interface PortalRoute {
   readonly title: string
   readonly element: ReactNode
@@ -27,6 +28,10 @@ const STATIC_ROUTES: Readonly<Record<string, PortalRoute>> = {
   '/system-management': {
     title: '系统管理',
     element: <SystemManagementPage />,
+  },
+  '/permission-center': {
+    title: '权限中心',
+    element: <PermissionCenterPage />,
   },
 }
 export function resolvePortalRoute(

@@ -6,8 +6,9 @@ import moonIconUrl from './assets/Moon.svg'
 import notificationIconUrl from './assets/Notification.svg'
 interface TopBarProps {
   readonly pageTitle: string
+  readonly onLogout?: () => void
 }
-export function TopBar({ pageTitle }: TopBarProps) {
+export function TopBar({ pageTitle, onLogout }: TopBarProps) {
   const [isDark, setIsDark] = useState(false)
   const currentUser = (() => {
     try {
@@ -18,6 +19,10 @@ export function TopBar({ pageTitle }: TopBarProps) {
     }
   })()
   function handleLogout() {
+    if (onLogout) {
+      onLogout()
+      return
+    }
     try {
       sessionStorage.removeItem('username')
       sessionStorage.removeItem('token')

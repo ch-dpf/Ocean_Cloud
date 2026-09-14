@@ -1,62 +1,392 @@
 .page {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  width: 100%;
+  height: 100%;
 }
-
-.eyebrow {
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: #1267d6;
-  font-weight: 600;
+.geoSideBar {
+  width: 250px;
+  height: 100%;
+  background: #ffffff;
+  border-left: 1px solid #e5e5e5;
+  border-top: 1px solid #e5e5e5;
 }
-
-.page h1 {
-  font-size: 24px;
-  margin: 0 0 6px;
-  color: #193248;
+.geoSideBarTitle {
+  height: 50px;
+  display: flex;
 }
-
-.page p {
-  margin: 0 0 22px;
-  font-size: 13px;
-  color: #81919e;
+.searchBar {
+  display: flex;
 }
-
-.placeholder {
-  min-height: 280px;
+.searchBarInput {
+  width: 170px;
+  background: #ffffff;
+  border: 1px solid #dee5ed;
+  border-radius: 6px;
+  margin-left: 12px;
+  margin-top: 12px;
+}
+.searchBarInput input {
+  width: 150px;
+  height: 34px;
+  padding: 0 11px;
+  border: none;
+}
+.searchBarInput input:focus {
+  outline: none;
+}
+.searchBarInput input:focus::placeholder {
+  color: transparent;
+}
+.searchBarInput img {
+  vertical-align: middle;
+}
+.searchBar button {
+  height: 38px;
+  width: 38px;
+  margin-left: 12px;
+  margin-top: 12px;
+  background: #f7fafd;
+  border: none;
+  border-radius: 6px;
+}
+.geoSideBarDirectory {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  gap: 4px;
+  padding: 12px;
+}
+.geoSideBarDirectoryItem {
+  display: flex;
   align-items: center;
-  text-align: center;
-  border: 1px solid #dfebf0;
-  border-radius: 12px;
-  background: #f5f8fa;
-  padding: 32px;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 6px;
+  color: #4e5969;
+  font-size: 13px;
+  text-decoration: none;
+  cursor: pointer;
 }
-
-.icon {
-  font-size: 28px;
-  color: #1267d6;
+.geoSideBarDirectoryItem:hover {
   background: #e8f1fd;
-  width: 54px;
-  height: 54px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  margin-bottom: 16px;
+  color: #1267d6;
 }
-
-.placeholder h2 {
-  font-size: 14px;
-  font-weight: 500;
-  margin: 0 0 8px;
-  color: #4e687b;
+.geoSideBarDirectoryItemActive {
+  background: #e8f1fd;
+  color: #1267d6;
 }
-
-.placeholder p {
+.geoSideBarDirectoryIcon {
+  position: relative;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.geoSideBarDirectoryIcon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.geoSideBarDirectoryIconDefault {
+  transition: opacity 0.2s;
+}
+.geoSideBarDirectoryIconActive {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.geoSideBarDirectoryItem:hover .geoSideBarDirectoryIconDefault,
+.geoSideBarDirectoryItemActive .geoSideBarDirectoryIconDefault {
+  opacity: 0;
+}
+.geoSideBarDirectoryItem:hover .geoSideBarDirectoryIconActive,
+.geoSideBarDirectoryItemActive .geoSideBarDirectoryIconActive {
+  opacity: 1;
+}
+.geoSideBarDirectoryText {
+  white-space: nowrap;
+}
+.geoSideBarDivider {
+  height: 1px;
+  margin: 8px 12px;
+  background: #e5e5e5;
+}
+.dataDirectory {
+  padding: 0 12px 12px;
+}
+.dataDirectoryTitle {
+  padding: 8px 12px 6px;
+  color: #8394a0;
   font-size: 12px;
+}
+.dataSetAdd {
+  height: 20px;
+  width: 20px;
+  padding: 0;
+  margin-left: 112px;
+  background: #e8f1fd;
+  border: none;
+  border-radius: 3px;
+  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.dataDirectoryList {
   margin: 0;
-  color: #9aa7b2;
+  padding: 0;
+  list-style: none;
+}
+.dataDirectoryItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+  margin-bottom: 6px;
+}
+.dataDirectoryItem:hover {
+  background: #e8f1fd;
+}
+.dataDirectoryItemActive {
+  background: #e8f1fd;
+}
+.dataDirectoryChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #8394a0;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.dataDirectoryChevron:hover,
+.dataDirectoryItemLabel:hover {
+  background: transparent;
+}
+.dataDirectoryItem:hover .dataDirectoryChevron,
+.dataDirectoryItemActive .dataDirectoryChevron {
+  color: #1267d6;
+}
+.dataDirectoryChevronIcon {
+  display: inline-block;
+  font-size: 12px;
+  line-height: 1;
+  transition: transform 0.2s;
+}
+.dataDirectoryChevronOpen {
+  transform: rotate(90deg);
+}
+.dataDirectoryItemLabel {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #13293d;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 13px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.dataDirectoryItemName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dataDirectoryItemCount {
+  flex-shrink: 0;
+  color: #8394a0;
+  font-size: 12px;
+}
+.dataDirectoryItem:hover .dataDirectoryItemLabel,
+.dataDirectoryItemActive .dataDirectoryItemLabel {
+  color: #1267d6;
+}
+.dataDirectoryDataSetList {
+  margin: 2px 0 6px;
+  padding: 0;
+  list-style: none;
+}
+.dataDirectoryDataSetItem {
+  display: block;
+  width: 100%;
+  height: 28px;
+  padding: 0 12px 0 32px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #13293d;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 12px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.dataDirectoryDataSetItem:hover {
+  background: #e8f1fd;
+  color: #1267d6;
+}
+.dataDirectoryDataSetItemActive {
+  background: #e8f1fd;
+  color: #1267d6;
+}
+.dataDirectoryDataSetHint {
+  padding: 0 12px 0 32px;
+  color: #8394a0;
+  font-size: 12px;
+  line-height: 28px;
+}
+.geoContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  padding: 24px;
+}
+.geoContentPlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: auto;
+  text-align: center;
+}
+.geoContentPlaceholder h2 {
+  margin: 0;
+  color: #193248;
+  font-size: 18px;
+}
+.geoContentPlaceholder p {
+  margin: 0;
+  color: #81919e;
+  font-size: 13px;
+}
+.contentPanel {
+  width: 100%;
+}
+.contentHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.contentTitle h2 {
+  margin: 0;
+  color: #193248;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+.contentTitle p {
+  margin: 6px 0 0;
+  color: #576e85;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+}
+.headerActions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+}
+.progressButton {
+  height: 36px;
+  padding: 0 18px;
+  border: 1px solid #dee5ed;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #13293d;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+}
+.progressButton:hover {
+  border-color: #1267d6;
+  color: #1267d6;
+}
+.importButton {
+  height: 36px;
+  flex-shrink: 0;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 6px;
+  background: #1f75f2;
+  color: #ffffff;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 16px;
+  padding: 16px;
+  border: 1px solid #dee5ed;
+  border-radius: 8px;
+  background: #f7fafd;
+}
+.filterField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #576e85;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+}
+.filterField input,
+.filterField select {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #dee5ed;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #13293d;
+  font-family: inherit;
+  font-size: 13px;
+}
+.filterButton,
+.filterButtonGhost {
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 6px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+}
+.filterButton {
+  border: 0;
+  background: #1f75f2;
+  color: #ffffff;
+}
+.filterButtonGhost {
+  border: 1px solid #dee5ed;
+  background: #ffffff;
+  color: #13293d;
 }

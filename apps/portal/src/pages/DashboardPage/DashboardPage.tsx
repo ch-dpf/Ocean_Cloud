@@ -1,8 +1,10 @@
+import { useSystemMetrics } from '../../features/dashboard/hooks/useSystemMetrics'
 import { ResourceSummary } from '../../features/dashboard/components/ResourceSummary/ResourceSummary'
 import { WorkspacePanels } from '../../features/dashboard/components/WorkspacePanels/WorkspacePanels'
 import styles from './DashboardPage.module.css'
 
 export function DashboardPage() {
+  const { status, metrics } = useSystemMetrics()
   return (
     <div className={styles.dashboardPage}>
       <header className={styles.pageHeader}>
@@ -16,8 +18,8 @@ export function DashboardPage() {
         </span>
       </header>
 
-      <ResourceSummary />
-      <WorkspacePanels />
+      <ResourceSummary metrics={metrics} />
+      <WorkspacePanels status={status} metrics={metrics} />
     </div>
   )
 }

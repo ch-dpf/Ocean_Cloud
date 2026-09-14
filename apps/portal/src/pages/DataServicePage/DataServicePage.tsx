@@ -1,26 +1,27 @@
 import styles from './DataServicePage.module.css'
-import { GEOGRAPHIC_INFORMATION_ORIGIN, MARINE_INFORMATION_ORIGIN } from '../../config/application'
 
 const CAPABILITIES = ['数据管理', '数据处理', '数据发布']
 
+// 入口使用同源相对路径：浏览器自动补上当前页面的源，开发、部署地址一致，不写死主机和端口。
+// 待应用注册表服务就绪后，可改回按注册表的 route / launchUrl 在运行时解析。
 const MODULES = [
   {
     key: 'gis',
+    entry: '/apps/geographic-information/',
     icon: '/icons/GISIcon.svg',
     iconAlt: 'GIS 图标',
     title: 'GIS模块',
     description: '影像、矢量、地形、倾斜模型与电子海图',
     buttonLabel: '进入 GIS 模块',
-    link: GEOGRAPHIC_INFORMATION_ORIGIN,
   },
   {
     key: 'ocean',
+    entry: '/apps/marine-information/',
     icon: '/icons/OceanIcon.svg',
     iconAlt: '海洋图标',
     title: '海洋模块',
     description: '海洋环境、声呐、多波束、浅剖与装备轨迹',
     buttonLabel: '进入 海洋模块',
-    link: MARINE_INFORMATION_ORIGIN,
   },
 ] as const
 
@@ -56,12 +57,14 @@ export function DataServicePage() {
                   </div>
                 ))}
               </dl>
-              <a href={module.link}><button
-                type="button"
-                className={`${styles.cardButton} ${styles[module.key]}`}
-              >
-                {module.buttonLabel} <span aria-hidden="true">→</span>
-              </button></a>
+              <a href={module.entry}>
+                <button
+                  type="button"
+                  className={`${styles.cardButton} ${styles[module.key]}`}
+                >
+                  {module.buttonLabel} <span aria-hidden="true">→</span>
+                </button>
+              </a>
             </div>
           </article>
         ))}

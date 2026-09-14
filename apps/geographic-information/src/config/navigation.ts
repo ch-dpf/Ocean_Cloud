@@ -7,7 +7,7 @@ import dataPublishingBlueIcon from '../assets/icons/DataPublishing_blue.svg'
 
 export const NAVIGATION_ITEMS = [
   {
-    path: '/',
+    path: '/data-management',
     label: '数据管理',
     icon: dataManagementIcon,
     activeIcon: dataManagementBlueIcon,
@@ -24,4 +24,11 @@ export const NAVIGATION_ITEMS = [
     icon: dataPublishingIcon,
     activeIcon: dataPublishingBlueIcon,
   },
+] as const
+
+/** 数据管理二级导航 */
+export const DATA_MANAGEMENT_SECTIONS = [
+  { path: '/data-management', label: '全部数据' ,icon: dataManagementIcon,activeIcon: dataManagementBlueIcon},
+  { path: '/data-management/imports', label: '导入记录',icon: dataManagementIcon,activeIcon: dataManagementBlueIcon },
+  { path: '/data-management/recycle-bin', label: '回收站',icon: dataManagementIcon,activeIcon: dataManagementBlueIcon },
 ] as const
