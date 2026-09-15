@@ -1,40 +1,44 @@
+import { Form, Input, Select } from 'antd'
+import type { TableColumnsType } from 'antd'
 import styles from './FileMetaTable.module.css'
-import { Pager } from '../Pager/Pager'
+import { SearchTable } from '@ocean-cloud/ui'
 import {
   DATASET_CATEGORY_LABELS,
   toProcessLabel,
 } from '../../constants/dataset'
 import type { FileMeta } from '../../types/fileMeta'
 
+/** 操作列按钮配置 */
+export interface FileRowAction {
+  readonly label: string
+  /** 未提供时按钮仅作为占位展示（例如恢复接口尚未接入） */
+  readonly onClick?: (record: FileMeta) => void
+  /** 正在处理中的记录 id：该行按钮显示"处理中…" */
+  readonly pendingId?: string | null
+  /** 整体禁用；也可传函数按行判断（例如只开放地形数据的处理） */
+  readonly disabled?: boolean | ((record: FileMeta) => boolean)
+  /** 按钮色调：danger 为红色（删除类），默认蓝色 */
+  readonly tone?: 'default' | 'danger'
+}
+
 interface FileMetaTableProps {
   readonly records: readonly FileMeta[]
   readonly isLoading: boolean
   readonly error: string | null
   readonly current: number
-  readonly lastPage: number
-  /** 总条数，展示在翻页左侧 */
-  readonly total: number
-  /** 每页条数，用于计算跨页连续的序号 */
   readonly pageSize: number
-  readonly onPageChange: (page: number) => void
-  readonly onDelete: (record: FileMeta) => void
-  /** 正在删除的记录 id，用于禁用对应的按钮 */
-  readonly deletingId: string | null
+  readonly total: number
+  /** 页码或每页条数变化 */
+  readonly onPageChange: (page: number, pageSize: number) => void
+  /** 操作列按钮；不传时不渲染操作按钮 */
+  readonly actions?: readonly FileRowAction[]
+  /** 「数据格式」筛选项，由当前数据推导 */
+  readonly dataFormatOptions: readonly string[]
+  /** 点击搜索 */
+  readonly onSearch: () => void
+  /** 点击重置（表单已重置后触发） */
+  readonly onReset: () => void
 }
-
-/** 列定义；增删列只改这里，提示行的 colSpan 也跟着变 */
-const COLUMNS = [
-  '序号',
-  '文件名',
-  '文件路径',
-  '上传时间',
-  // '采集时间',
-  '数据规模',
-  '数据类型',
-  '数据格式',
-  '处理类型',
-  '操作',
-] as const
 
 const SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB']
 
@@ -57,88 +61,145 @@ function formatTime(value: string): string {
   return value.replace('T', ' ').slice(0, 19)
 }
 
+/** 列定义；序号需要按当前页换算，因此每次渲染重建 */
+function buildColumns(
+  current: number,
+  pageSize: number,
+  actions: readonly FileRowAction[] | undefined,
+): TableColumnsType<FileMeta> {
+  return [
+    {
+      title: '序号',
+      key: 'index',
+      width: 70,
+      render: (_, __, index) => (current - 1) * pageSize + index + 1,
+    },
+    {
+      title: '文件名',
+      dataIndex: 'originalName',
+      width: 240,
+      ellipsis: true,
+    },
+    {
+      title: '文件路径',
+      dataIndex: 'storageKey',
+      width: 260,
+      ellipsis: true,
+    },
+    {
+      title: '上传时间',
+      key: 'createTime',
+      width: 170,
+      render: (_, record) => formatTime(record.createTime),
+    },
+    {
+      title: '数据规模',
+      key: 'sizeBytes',
+      width: 110,
+      render: (_, record) => formatFileSize(record.sizeBytes),
+    },
+    {
+      title: '数据类型',
+      key: 'categoryId',
+      width: 120,
+      render: (_, record) => DATASET_CATEGORY_LABELS[Number(record.categoryId)],
+    },
+    {
+      title: '数据格式',
+      dataIndex: 'extension',
+      width: 110,
+    },
+    {
+      title: '处理类型',
+      key: 'process',
+      width: 130,
+      render: (_, record) => toProcessLabel(Number(record.categoryId)),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 190,
+      render: (_, record) => (
+        <span className={styles.actionCell}>
+          {actions?.map((item) => {
+            const isPending = item.pendingId === record.id
+            const isRowDisabled =
+              typeof item.disabled === 'function'
+                ? item.disabled(record)
+                : item.disabled === true
+            return (
+              <button
+                key={item.label}
+                type="button"
+                className={`${styles.actionButton}${
+                  item.tone === 'danger' ? '' : ` ${styles.actionButtonDefault}`
+                }`}
+                onClick={
+                  item.onClick === undefined
+                    ? undefined
+                    : () => item.onClick?.(record)
+                }
+                disabled={isRowDisabled || isPending}
+              >
+                {isPending ? '处理中…' : item.label}
+              </button>
+            )
+          })}
+        </span>
+      ),
+    },
+  ]
+}
+
 export function FileMetaTable({
   records,
   isLoading,
   error,
-  total,
   current,
-  lastPage,
   pageSize,
+  total,
   onPageChange,
-  onDelete,
-  deletingId,
+  actions,
+  dataFormatOptions,
+  onSearch,
+  onReset,
 }: FileMetaTableProps) {
-  const hint = error ? (
-    <span role="alert">{error}</span>
-  ) : isLoading ? (
-    <span role="status">正在加载数据…</span>
-  ) : records.length === 0 ? (
-    <span>暂无数据。</span>
-  ) : null
-  // 不足一页时补空行，保证翻页条位置固定（永远在一页高度的右下角）
-  const filledRows = hint !== null ? 1 : records.length
-  const fillerCount = Math.max(0, pageSize - filledRows)
   return (
-    <>
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            {COLUMNS.map((column) => (
-              <th key={column}>{column}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {hint !== null ? (
-            <tr>
-              <td className={styles.hintCell} colSpan={COLUMNS.length}>
-                {hint}
-              </td>
-            </tr>
-          ) : (
-            records.map((record, index) => (
-              <tr key={record.id}>
-                <td>{(current - 1) * pageSize + index + 1}</td>
-                <td>
-                  <span className={styles.truncate} title={record.originalName}>
-                    {record.originalName}
-                  </span>
-                </td>
-                <td>
-                  <span className={styles.truncate} title={record.storageKey}>
-                    {record.storageKey}
-                  </span>
-                </td>
-                <td>{formatTime(record.createTime)}</td>
-                <td>{formatFileSize(record.sizeBytes)}</td>
-                <td>{DATASET_CATEGORY_LABELS[Number(record.categoryId)]}</td>
-                <td>{record.extension}</td>
-                <td>{toProcessLabel(Number(record.categoryId))}</td>
-                <td>
-                  <button
-                    type="button"
-                    className={styles.deleteButton}
-                    onClick={() => onDelete(record)}
-                    disabled={deletingId === record.id}
-                  >
-                    {deletingId === record.id ? '删除中…' : '删除'}
-                  </button>
-                </td>
-              </tr>
-            ))
-          )}
-          {Array.from({ length: fillerCount }, (_, index) => (
-            <tr key={`filler-${index}`}>
-              <td colSpan={COLUMNS.length}>&nbsp;</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className={styles.footer}>
-        <span className={styles.total}>共 {total} 条</span>
-        <Pager current={current} lastPage={lastPage} onChange={onPageChange} />
-      </div>
-    </>
+    <SearchTable<FileMeta>
+      columns={buildColumns(current, pageSize, actions)}
+      dataSource={records}
+      rowKey="id"
+      loading={isLoading}
+      total={total}
+      current={current}
+      pageSize={pageSize}
+      onPageChange={onPageChange}
+      onSearch={onSearch}
+      onReset={onReset}
+      // 列宽合计，保证窄屏时横向滚动、长文本按列宽截断
+      scrollX={1400}
+      emptyText={error ?? undefined}
+      searchFormItems={
+        <>
+          <Form.Item label="数据格式" name="dataFormat">
+            <Select
+              placeholder="全部类型"
+              allowClear
+              style={{ width: 140 }}
+              options={dataFormatOptions.map((value) => ({
+                value,
+                label: value,
+              }))}
+            />
+          </Form.Item>
+          <Form.Item label="文件名" name="fileName">
+            <Input placeholder="请输入文件名" allowClear />
+          </Form.Item>
+          <Form.Item label="采集时间" name="collectedAt">
+            <input type="date" className={styles.dateInput} />
+          </Form.Item>
+        </>
+      }
+    />
   )
 }

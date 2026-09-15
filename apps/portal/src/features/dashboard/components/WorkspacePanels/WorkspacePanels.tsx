@@ -1,35 +1,17 @@
 import styles from './WorkspacePanels.module.css'
-import type {
-  SystemMetrics,
-  SystemMetricsStatus,
-} from '../../hooks/useSystemMetrics'
+import type { SystemMetrics } from '../../hooks/useSystemMetrics'
 
 interface WorkspacePanelsProps {
-  readonly status: SystemMetricsStatus
   readonly metrics: SystemMetrics | null
 }
 
 const STORAGE_CATEGORIES = ['影像数据', '矢量数据', '模型数据', '海洋数据']
 
-const STATUS_LABEL: Record<SystemMetricsStatus, string> = {
-  connecting: '连接中',
-  open: '实时',
-  error: '连接失败',
-  closed: '已断开',
-}
-
-const STATUS_COLOR: Record<SystemMetricsStatus, string> = {
-  connecting: '#576E85',
-  open: '#089466',
-  error: '#E03833',
-  closed: '#E03833',
-}
-
 function formatPercent(value: number | undefined): string {
   return value != null ? `${value.toFixed(1)}%` : '--'
 }
 
-export function WorkspacePanels({ status, metrics }: WorkspacePanelsProps) {
+export function WorkspacePanels({ metrics }: WorkspacePanelsProps) {
   const cpu = formatPercent(metrics?.cpuUsage)
   const memory = formatPercent(metrics?.memoryUsage)
   const disk = '--' // ws 暂无磁盘字段
@@ -64,7 +46,6 @@ export function WorkspacePanels({ status, metrics }: WorkspacePanelsProps) {
               {' '}
               最近24小时
             </span>
-            
           </div>
           <div className={styles.trendLegend}>
             <span

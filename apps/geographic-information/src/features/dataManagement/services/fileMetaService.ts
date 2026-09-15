@@ -25,6 +25,18 @@ export async function getFileMetaPage(
   return result.data
 }
 
+/** 分页查询回收站（已删除）的数据文件 */
+export async function getDeletedFileMetaPage(
+  query: { readonly current: number; readonly size: number },
+  signal?: AbortSignal,
+): Promise<FileMetaPage> {
+  const result = await httpClient.get<ApiResult<FileMetaPage>>(
+    '/filemeta/deleted/page',
+    { params: { current: query.current, size: query.size }, signal },
+  )
+  return result.data
+}
+
 /** 上传数据文件：多文件通过同一个 files 字段提交，返回后端创建的处理任务 */
 export async function uploadFileMeta(input: {
   readonly dataSetId: string
@@ -46,5 +58,16 @@ export async function uploadFileMeta(input: {
 export async function deleteFileMeta(id: string): Promise<void> {
   await httpClient.delete<ApiResult<unknown>>(
     '/filemeta/' + encodeURIComponent(id),
+  )
+}
+
+/** 对数据文件发起处理任务（切片等） */
+export async function processFileMeta(
+  id: string,
+  processingType: string,
+): Promise<void> {
+  await httpClient.post<ApiResult<unknown>>(
+    '/filemeta/' + encodeURIComponent(id) + '/process',
+    { processingType },
   )
 }

@@ -26,7 +26,7 @@ export interface DatasetPageQuery {
   readonly size: number
   /** 数据集分类 id；不传表示不按分类筛选 */
   readonly categoryId?: number
-  /** 数据集名称，默认 0 表示不按名称筛选 */
+  /** 数据集名称；不传表示不按名称筛选 */
   readonly dataSetName?: string
 }
 

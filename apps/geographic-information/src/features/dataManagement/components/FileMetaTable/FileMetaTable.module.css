@@ -1,46 +1,9 @@
-.table {
-  /* 表体行高：需容下操作列按钮(26px) + 上下内边距(20px) + 下边框(1px)；改按钮高度时同步改这里 */
-  --row-height: 48px;
-  width: 100%;
-  border-collapse: collapse;
-  font-family: 'Noto Sans SC', sans-serif;
-  font-size: 13px;
+.actionCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.table th,
-.table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid #dee5ed;
-  text-align: left;
-}
-/* 表体每格都撑到同一高度，空行、提示行与数据行不会高低不一 */
-.table tbody td {
-  height: var(--row-height);
-}
-.table th {
-  background: #f7fafd;
-  color: #576e85;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.table td {
-  color: #13293d;
-}
-/* 与普通行同高（只覆盖颜色与对齐，内边距继承 .table td），保证任何状态下表格高度一致 */
-.hintCell {
-  color: #81919e;
-  font-size: 13px;
-  text-align: center;
-}
-/* 超长内容截断显示，悬浮由 title 展示完整内容 */
-.truncate {
-  display: inline-block;
-  max-width: 280px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  vertical-align: bottom;
-}
-.deleteButton {
+.actionButton {
   height: 26px;
   padding: 0 12px;
   border: 1px solid #f0c4c4;
@@ -51,21 +14,31 @@
   font-size: 12px;
   cursor: pointer;
 }
-.deleteButton:hover {
+.actionButton:hover {
   border-color: #d64545;
 }
-.deleteButton:disabled {
+.actionButton:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
-.footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 16px;
+/* 默认色调（处理、恢复等）；删除等破坏性操作直接用 .actionButton 的红色 */
+.actionButtonDefault {
+  border-color: #b9d4f6;
+  background: #f4f9ff;
+  color: #1267d6;
 }
-.total {
-  color: #576e85;
-  font-size: 13px;
+.actionButtonDefault:hover:not(:disabled) {
+  border-color: #1267d6;
+}
+/* 采集时间沿用原生日期输入，样式对齐 antd 输入框 */
+.dateInput {
+  width: 160px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #13293d;
+  font-family: inherit;
+  font-size: 14px;
 }

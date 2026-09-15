@@ -42,3 +42,4 @@ export type FileScope =
   | { readonly kind: 'all' }
   | { readonly kind: 'category'; readonly categoryId: number }
   | { readonly kind: 'dataset'; readonly dataSetId: string }
+  | { readonly kind: 'recycleBin' }

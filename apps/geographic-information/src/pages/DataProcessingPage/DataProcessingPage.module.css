@@ -4,197 +4,83 @@
   height: 100%;
 }
 
-.sideBar {
-  width: 250px;
-  height: 100%;
-  background: #ffffff;
-  border-left: 1px solid #e5e5e5;
-  border-top: 1px solid #e5e5e5;
-}
-
-.sideBarHeader {
-  padding: 16px 12px 8px;
-}
-
-.divider {
-  height: 1px;
-  margin: 8px 12px;
-  background: #e5e5e5;
-}
-
-.sideBarTitle {
-  font-family: Noto Sans SC;
-  font-weight: 700;
-  font-style: Bold;
-  font-size: 19px;
-  color: #13293d;
-}
-
-.sideBarSubtitle {
-  margin-top: 4px;
-  font-family: Noto Sans SC;
-  font-weight: 400;
-  font-style: Regular;
-  font-size: 11px;
-  color: #576e85;
-}
-
-.sideBarList {
-  margin: 0;
-  padding: 0 12px 12px;
-  list-style: none;
-}
-
-.sideBarList li {
-  margin-bottom: 6px;
-}
-
-.sideBarItem {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 32px;
-  padding: 0 12px;
-  border-radius: 6px;
-  transition: background-color 0.2s;
-}
-
-.sideBarItem:hover {
-  background-color: #e8f1fd;
-}
-
-.sideBarItemActive {
-  background-color: #e8f1fd;
-}
-
-.sideBarChevron {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 12px;
-  flex-shrink: 0;
-  padding: 0;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  color: #8394a0;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.sideBarChevron:hover,
-.sideBarItemLabel:hover {
-  background: transparent;
-}
-
-.sideBarItem:hover .sideBarChevron,
-.sideBarItemActive .sideBarChevron {
-  color: #1267d6;
-}
-
-.sideBarChevronIcon {
-  display: inline-block;
-  font-size: 12px;
-  line-height: 1;
-  transition: transform 0.2s;
-}
-
-.sideBarChevronOpen {
-  transform: rotate(90deg);
-}
-
-.sideBarItemLabel {
-  flex: 1;
-  min-width: 0;
-  padding: 0;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  color: #13293d;
-  font-family: Noto Sans SC;
-  font-weight: 400;
-  font-style: Regular;
-  font-size: 13px;
-  text-align: left;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.sideBarItem:hover .sideBarItemLabel,
-.sideBarItemActive .sideBarItemLabel {
-  color: #1267d6;
-}
-
-.sideBarItemContent {
-  height: 64px;
-  margin: 4px 0 8px;
-  border-radius: 6px;
-  background: #f7fafd;
-}
-
+/* 二级导航右侧的内容区，表格需要确定高度做内部滚动 */
 .content {
-  flex: 1;
-  min-width: 0;
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: 8px;
+  min-width: 0;
+  min-height: 0;
   padding: 24px;
 }
 
-.eyebrow {
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: #1267d6;
-  font-weight: 600;
-}
-
-.content h1 {
-  font-size: 24px;
-  margin: 0 0 6px;
-  color: #193248;
-}
-
-.content p {
-  margin: 0 0 22px;
-  font-size: 13px;
-  color: #81919e;
-}
-
-.placeholder {
-  min-height: 280px;
+.contentHeader {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  border: 1px solid #dfebf0;
-  border-radius: 12px;
-  background: #f5f8fa;
-  padding: 32px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.icon {
-  font-size: 28px;
-  color: #1267d6;
-  background: #e8f1fd;
-  width: 54px;
-  height: 54px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  margin-bottom: 16px;
+/* 标题左侧色条，与数据管理页面保持一致的辨识度 */
+.contentTitle {
+  padding-left: 12px;
+  border-left: 3px solid #1267d6;
 }
 
-.placeholder h2 {
-  font-size: 14px;
-  font-weight: 500;
-  margin: 0 0 8px;
-  color: #4e687b;
-}
-
-.placeholder p {
-  font-size: 12px;
+.contentTitle h2 {
   margin: 0;
-  color: #9aa7b2;
+  color: #193248;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.contentTitle p {
+  margin: 6px 0 0;
+  color: #576e85;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+}
+
+.createButton {
+  height: 36px;
+  flex-shrink: 0;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 6px;
+  background: #1f75f2;
+  color: #ffffff;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tabs {
+  display: flex;
+  gap: 24px;
+  margin: 20px 0 16px;
+  border-bottom: 1px solid #dee5ed;
+}
+
+.tab {
+  height: 38px;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #576e85;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: #1267d6;
+}
+
+.tabActive {
+  border-bottom-color: #1267d6;
+  color: #1267d6;
+  font-weight: 700;
 }

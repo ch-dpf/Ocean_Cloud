@@ -1,89 +1,77 @@
 import { useState } from 'react'
+import { SubNav } from '@ocean-cloud/ui'
 import styles from './DataPublishingPage.module.css'
+import { DATA_PUBLISHING_SECTIONS } from '../../config/navigation'
+import { PublicationTable } from '../../features/dataPublishing/components/PublicationTable/PublicationTable'
+import {
+  PUBLICATION_PAGE_SIZE,
+  PUBLICATION_STATUS,
+} from '../../features/dataPublishing/constants/publication'
+import { usePublicationPage } from '../../features/dataPublishing/hooks/usePublicationPage'
 
-const SERVICE_TYPES = [
-  '全部服务',
-  '影像服务',
-  '矢量服务',
-  '电子海图服务',
-  '地形服务',
-  '倾斜摄影服务',
-] as const
+interface DataPublishingPageProps {
+  readonly activePath: string
+}
 
-export function DataPublishingPage() {
-  const [selectedType, setSelectedType] = useState<string>(SERVICE_TYPES[0])
-  const [expandedTypes, setExpandedTypes] = useState<Set<string>>(
-    () => new Set(),
-  )
+export function DataPublishingPage({ activePath }: DataPublishingPageProps) {
+  const section =
+    DATA_PUBLISHING_SECTIONS.find((item) => item.path === activePath) ??
+    DATA_PUBLISHING_SECTIONS[0]
+  // 默认只查已发布的服务；清空状态时查询全部
+  const [status, setStatus] = useState<string>(PUBLICATION_STATUS.published)
+  const [pageSize, setPageSize] = useState(PUBLICATION_PAGE_SIZE)
 
-  function toggleType(type: string) {
-    setExpandedTypes((prev) => {
-      const next = new Set(prev)
-      if (next.has(type)) next.delete(type)
-      else next.add(type)
-      return next
-    })
+  const { records, total, current, isLoading, error, goToPage, refresh } =
+    usePublicationPage({ status, size: pageSize })
+
+  /** 每页条数变化时由 hook 回到第 1 页 */
+  function handlePageChange(page: number, size: number) {
+    setPageSize(size)
+    goToPage(page)
+  }
+
+  function handleValuesChange(values: Record<string, unknown>) {
+    const next = values.status
+    setStatus(typeof next === 'string' ? next : '')
+  }
+
+  function handleReset() {
+    setStatus(PUBLICATION_STATUS.published)
+    refresh()
   }
 
   return (
     <section className={styles.page}>
-      <div className={styles.sideBar}>
-        <div className={styles.sideBarHeader}>
-          <div className={styles.sideBarTitle}>全部服务</div>
-          <div className={styles.sideBarSubtitle}>按服务类型筛选</div>
-        </div>
-        <div className={styles.divider} />
-        <ul className={styles.sideBarList}>
-          {SERVICE_TYPES.map((type) => {
-            const isOpen = expandedTypes.has(type)
-            const isSelected = type === selectedType
-            return (
-              <li key={type}>
-                <div
-                  className={`${styles.sideBarItem}${
-                    isSelected ? ` ${styles.sideBarItemActive}` : ''
-                  }`}
-                >
-                  <button
-                    type="button"
-                    className={styles.sideBarChevron}
-                    onClick={() => toggleType(type)}
-                    aria-expanded={isOpen}
-                    aria-label={isOpen ? `收起${type}` : `展开${type}`}
-                  >
-                    <span
-                      className={`${styles.sideBarChevronIcon}${
-                        isOpen ? ` ${styles.sideBarChevronOpen}` : ''
-                      }`}
-                      aria-hidden="true"
-                    >
-                      &gt;
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.sideBarItemLabel}
-                    onClick={() => setSelectedType(type)}
-                    aria-pressed={isSelected}
-                  >
-                    {type}
-                  </button>
-                </div>
-                {isOpen && <div className={styles.sideBarItemContent} />}
-              </li>
-            )
-          })}
-        </ul>
-      </div>
+      <SubNav
+        items={DATA_PUBLISHING_SECTIONS}
+        activePath={section.path}
+        title={section.label}
+        subtitle="按服务类型筛选"
+      />
       <div className={styles.content}>
-        <div className={styles.eyebrow}>DATA PUBLISHING</div>
-        <h1>数据发布</h1>
-        <p>将处理后的数据集发布为可访问的服务与产品。</p>
-        <div className={styles.placeholder}>
-          <span className={styles.icon}>▦</span>
-          <h2>暂无发布记录</h2>
-          <p>发布数据服务后，将在此处查看已发布条目与状态。</p>
+        <div className={styles.contentHeader}>
+          <div className={styles.contentTitle}>
+            <h2>全部服务</h2>
+            <p>
+              {section.pending === true
+                ? `${section.label}接口待接入，暂展示全部服务`
+                : '已发布的地形服务，可直接在 Cesium 中作为地形服务加载'}
+            </p>
+          </div>
         </div>
+
+        <PublicationTable
+          records={records}
+          isLoading={isLoading}
+          error={error}
+          current={current}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={handlePageChange}
+          onValuesChange={handleValuesChange}
+          onSearch={() => refresh()}
+          onReset={handleReset}
+        />
       </div>
     </section>
   )

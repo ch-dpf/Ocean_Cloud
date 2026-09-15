@@ -7,18 +7,29 @@ import { logout } from '../../features/auth/services/authService'
 interface PortalLayoutProps {
   readonly pathname: string
   readonly pageTitle: string
+  /** 二级标题：顶栏展示为「一级 / 二级」 */
+  readonly subTitle?: string
+  readonly flush: boolean
   readonly children: ReactNode
 }
 export function PortalLayout({
   pathname,
   pageTitle,
+  subTitle,
+  flush,
   children,
 }: PortalLayoutProps) {
   const [collapsed, setCollapsed] = useState(false)
+  // 二级路由归一化到一级路径，保持侧边栏父级高亮
+  const navPathname = pathname.startsWith('/logs') ? '/logs' : pathname
+  const topBarTitle =
+    subTitle === undefined
+      ? `${pageTitle} / 全部`
+      : `${pageTitle} / ${subTitle}`
   return (
     <div className={styles.shell}>
       <Sidebar
-        pathname={pathname}
+        pathname={navPathname}
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((v) => !v)}
         navigationItems={NAVIGATION_ITEMS}
@@ -26,11 +37,12 @@ export function PortalLayout({
       <div
         className={`${styles.mainLayout}${collapsed ? ` ${styles.mainLayoutCollapsed}` : ''}`}
       >
-        <TopBar
-          pageTitle={`${pageTitle} / 全部`}
-          onLogout={() => void logout()}
-        />
-        <main className={styles.main}>{children}</main>
+        <TopBar pageTitle={topBarTitle} onLogout={() => void logout()} />
+        <main
+          className={`${styles.main}${flush ? ` ${styles.mainFlush}` : ''}`}
+        >
+          {children}
+        </main>
         <footer className={styles.footer}>
           © {new Date().getFullYear()} Ocean Cloud · 云海平台
           <span>连接海洋，探索无限。</span>

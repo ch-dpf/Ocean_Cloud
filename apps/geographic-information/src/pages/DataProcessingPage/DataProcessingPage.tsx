@@ -1,89 +1,121 @@
 import { useState } from 'react'
+import { Form } from 'antd'
+import { SubNav } from '@ocean-cloud/ui'
 import styles from './DataProcessingPage.module.css'
+import { DATA_PROCESSING_SECTIONS } from '../../config/navigation'
+import { TaskListTable } from '../../features/dataManagement/components/TaskListTable/TaskListTable'
+import {
+  TASK_PAGE_SIZE,
+  TASK_TYPE_PROCESS,
+} from '../../features/dataManagement/constants/task'
+import { useTaskPage } from '../../features/dataManagement/hooks/useTaskPage'
 
-const PROCESS_TYPES = [
-  '全部任务',
-  '影像处理',
-  '矢量处理',
-  '地形处理',
-  '倾斜摄影处理',
-  '电子海图处理',
+/** 页签与任务状态的对应关系；「全部任务」不传 taskStatus */
+const STATUS_TABS = [
+  { label: '全部任务', status: '' },
+  { label: '处理中', status: 'RUNNING' },
+  { label: '待发布', status: 'QUEUED' },
+  { label: '已发布', status: 'COMPLETED' },
 ] as const
 
-export function DataProcessingPage() {
-  const [selectedType, setSelectedType] = useState<string>(PROCESS_TYPES[0])
-  const [expandedTypes, setExpandedTypes] = useState<Set<string>>(
-    () => new Set(),
-  )
+interface DataProcessingPageProps {
+  readonly activePath: string
+}
 
-  function toggleType(type: string) {
-    setExpandedTypes((prev) => {
-      const next = new Set(prev)
-      if (next.has(type)) next.delete(type)
-      else next.add(type)
-      return next
+export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
+  const section =
+    DATA_PROCESSING_SECTIONS.find((item) => item.path === activePath) ??
+    DATA_PROCESSING_SECTIONS[0]
+  // 页签与筛选栏的「任务状态」共用一份状态
+  const [searchForm] = Form.useForm()
+  const [taskStatus, setTaskStatus] = useState('')
+  const [pageSize, setPageSize] = useState(TASK_PAGE_SIZE)
+
+  const { records, total, current, isLoading, error, goToPage, refresh } =
+    useTaskPage({
+      enabled: true,
+      taskType: TASK_TYPE_PROCESS,
+      taskStatus: taskStatus === '' ? undefined : taskStatus,
+      size: pageSize,
     })
+
+  function handleTabClick(status: string) {
+    setTaskStatus(status)
+    // 同步筛选栏里的状态下拉，避免两处显示不一致
+    searchForm.setFieldValue('taskStatus', status === '' ? undefined : status)
+    refresh()
+  }
+
+  function handleValuesChange(values: Record<string, unknown>) {
+    const status = values.taskStatus
+    setTaskStatus(typeof status === 'string' ? status : '')
+  }
+
+  /** 每页条数变化时由 hook 回到第 1 页 */
+  function handlePageChange(page: number, size: number) {
+    setPageSize(size)
+    goToPage(page)
+  }
+
+  function handleReset() {
+    setTaskStatus('')
+    refresh()
   }
 
   return (
     <section className={styles.page}>
-      <div className={styles.sideBar}>
-        <div className={styles.sideBarHeader}>
-          <div className={styles.sideBarTitle}>全部任务</div>
-          <div className={styles.sideBarSubtitle}>按处理类型筛选</div>
+      <SubNav
+        items={DATA_PROCESSING_SECTIONS}
+        activePath={section.path}
+        title={section.label}
+        subtitle="按处理类型筛选"
+      />
+      <div className={styles.content}>
+        <div className={styles.contentHeader}>
+          <div className={styles.contentTitle}>
+            <h2>GIS数据处理</h2>
+            <p>
+              {section.pending === true
+                ? `${section.label}接口待接入，暂展示全部任务`
+                : '对影像、矢量、地形、倾斜模型和电子海图进行转换、切片与服务化处理'}
+            </p>
+          </div>
+          <button type="button" className={styles.createButton}>
+            新建处理任务
+          </button>
         </div>
-        <div className={styles.divider} />
-        <ul className={styles.sideBarList}>
-          {PROCESS_TYPES.map((type) => {
-            const isOpen = expandedTypes.has(type)
-            const isSelected = type === selectedType
+
+        <div className={styles.tabs} role="tablist" aria-label="任务状态">
+          {STATUS_TABS.map((tab) => {
+            const isActive = tab.status === taskStatus
             return (
-              <li key={type}>
-                <div
-                  className={`${styles.sideBarItem}${
-                    isSelected ? ` ${styles.sideBarItemActive}` : ''
-                  }`}
-                >
-                  <button
-                    type="button"
-                    className={styles.sideBarChevron}
-                    onClick={() => toggleType(type)}
-                    aria-expanded={isOpen}
-                    aria-label={isOpen ? `收起${type}` : `展开${type}`}
-                  >
-                    <span
-                      className={`${styles.sideBarChevronIcon}${
-                        isOpen ? ` ${styles.sideBarChevronOpen}` : ''
-                      }`}
-                      aria-hidden="true"
-                    >
-                      &gt;
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.sideBarItemLabel}
-                    onClick={() => setSelectedType(type)}
-                    aria-pressed={isSelected}
-                  >
-                    {type}
-                  </button>
-                </div>
-                {isOpen && <div className={styles.sideBarItemContent} />}
-              </li>
+              <button
+                key={tab.label}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                className={`${styles.tab}${isActive ? ` ${styles.tabActive}` : ''}`}
+                onClick={() => handleTabClick(tab.status)}
+              >
+                {tab.label}
+              </button>
             )
           })}
-        </ul>
-      </div>
-      <div className={styles.content}>
-        <div className={styles.eyebrow}>DATA PROCESSING</div>
-        <h1>数据处理</h1>
-        <p>对地理空间数据执行清洗、转换与分析。</p>
-        <div className={styles.placeholder}>
-          <span className={styles.icon}>▦</span>
-          <h2>暂无处理任务</h2>
-          <p>创建处理流程后，将在此处查看任务进度与结果。</p>
         </div>
+
+        <TaskListTable
+          records={records}
+          isLoading={isLoading}
+          error={error}
+          current={current}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={handlePageChange}
+          searchForm={searchForm}
+          onValuesChange={handleValuesChange}
+          onSearch={() => refresh()}
+          onReset={handleReset}
+        />
       </div>
     </section>
   )

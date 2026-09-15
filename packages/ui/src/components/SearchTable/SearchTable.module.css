@@ -1,0 +1,70 @@
+.root {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid #e8eef7;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+}
+
+.searchBar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 18px 20px 0;
+  padding: 16px 16px 8px;
+  border: 1px solid #edf2f7;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fbfdff 0%, #ffffff 100%);
+}
+
+.searchForm {
+  row-gap: 12px;
+}
+
+.searchActions {
+  margin-bottom: 8px;
+}
+
+.extraActions {
+  flex-shrink: 0;
+}
+
+.tableArea {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  margin-top: 14px;
+  padding: 0 20px 18px;
+}
+
+/* 分页「跳转到 __ 页 确定」里的确定按钮：antd 未提供该按钮样式（只写了容器与输入框），
+   这里补齐成与旁边文字同高的小号按钮，浅灰底 */
+.tableArea :global(.ant-pagination-options-quick-jumper-button) {
+  height: 24px;
+  margin-inline-start: 6px;
+  padding: 0 6px;
+  border: 1px solid #e5e9f0;
+  border-radius: 4px;
+  background: #f5f6f8;
+  color: #576e85;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.tableArea :global(.ant-pagination-options-quick-jumper-button:hover) {
+  border-color: #ccd6e3;
+  background: #eceef2;
+}
+.tableArea :global(.ant-pagination-options-quick-jumper-button:disabled) {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

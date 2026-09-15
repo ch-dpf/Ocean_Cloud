@@ -21,7 +21,11 @@ export function GeographicInformationLayout({
   // 二级路由归一化到一级路径，保持侧边栏父级高亮
   const navPathname = pathname.startsWith('/data-management')
     ? '/data-management'
-    : pathname
+    : pathname.startsWith('/data-processing')
+      ? '/data-processing'
+      : pathname.startsWith('/data-publishing')
+        ? '/data-publishing'
+        : pathname
   const title = subTitle ? `GIS${pageTitle} / ${subTitle}` : `GIS${pageTitle}`
   return (
     <div className={styles.shell}>

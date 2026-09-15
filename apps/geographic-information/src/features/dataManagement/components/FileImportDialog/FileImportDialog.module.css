@@ -51,7 +51,7 @@
   font-size: 12px;
 }
 .options {
-  max-height: 180px;
+  max-height: 220px;
   margin: 0;
   padding: 4px;
   overflow: auto;
@@ -98,6 +98,7 @@
   padding: 8px 10px;
   color: #8394a0;
   font-size: 12px;
+  text-align: center;
 }
 .error {
   margin: 0;

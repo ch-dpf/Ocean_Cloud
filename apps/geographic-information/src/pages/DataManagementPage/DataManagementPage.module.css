@@ -110,6 +110,12 @@
 .geoSideBarDirectoryText {
   white-space: nowrap;
 }
+/* 导航项右侧计数：全部数据展示数据个数（数据目录里展示的是数据集个数） */
+.geoSideBarDirectoryCount {
+  margin-left: auto;
+  color: #8394a0;
+  font-size: 12px;
+}
 .geoSideBarDivider {
   height: 1px;
   margin: 8px 12px;
@@ -264,29 +270,23 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  overflow: hidden;
   padding: 24px;
 }
-.geoContentPlaceholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  margin: auto;
-  text-align: center;
-}
-.geoContentPlaceholder h2 {
-  margin: 0;
-  color: #193248;
-  font-size: 18px;
-}
-.geoContentPlaceholder p {
-  margin: 0;
-  color: #81919e;
-  font-size: 13px;
-}
 .contentPanel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   width: 100%;
+  min-height: 0;
+}
+/* 标题左侧色条：普通页面用主色，回收站用暖色，便于一眼区分 */
+.contentTitle {
+  padding-left: 12px;
+  border-left: 3px solid #1267d6;
+}
+.contentTitleRecycle {
+  border-left-color: #e08c1a;
 }
 .contentHeader {
   display: flex;
@@ -340,53 +340,4 @@
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-}
-.filterBar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  margin: 20px 0 16px;
-  padding: 16px;
-  border: 1px solid #dee5ed;
-  border-radius: 8px;
-  background: #f7fafd;
-}
-.filterField {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #576e85;
-  font-family: 'Noto Sans SC', sans-serif;
-  font-size: 13px;
-}
-.filterField input,
-.filterField select {
-  height: 32px;
-  padding: 0 10px;
-  border: 1px solid #dee5ed;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #13293d;
-  font-family: inherit;
-  font-size: 13px;
-}
-.filterButton,
-.filterButtonGhost {
-  height: 32px;
-  padding: 0 16px;
-  border-radius: 6px;
-  font-family: 'Noto Sans SC', sans-serif;
-  font-size: 13px;
-  cursor: pointer;
-}
-.filterButton {
-  border: 0;
-  background: #1f75f2;
-  color: #ffffff;
-}
-.filterButtonGhost {
-  border: 1px solid #dee5ed;
-  background: #ffffff;
-  color: #13293d;
 }

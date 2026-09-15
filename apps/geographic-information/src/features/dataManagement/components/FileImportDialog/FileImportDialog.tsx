@@ -1,9 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import type { FormEvent } from 'react'
+import type { FormEvent, UIEvent } from 'react'
 import { DATASET_CATEGORY_LABELS } from '../../constants/dataset'
 import { useDatasetOptions } from '../../hooks/useDatasetOptions'
 import { uploadFileMeta } from '../../services/fileMetaService'
-import { Pager } from '../Pager/Pager'
 import styles from './FileImportDialog.module.css'
 
 interface FileImportDialogProps {
@@ -27,6 +26,7 @@ export function FileImportDialog({
   initialDataset,
 }: FileImportDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
+  const optionsRef = useRef<HTMLUListElement>(null)
   const titleId = useId()
   const datasetInputId = useId()
   const fileInputId = useId()
@@ -35,12 +35,26 @@ export function FileImportDialog({
   const [files, setFiles] = useState<readonly File[]>([])
   const [validationError, setValidationError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { datasets, current, lastPage, isLoading, error, goToPage } =
+  const { datasets, isLoading, isLoadingMore, hasMore, error, loadMore } =
     useDatasetOptions(keyword)
 
   useEffect(() => {
     if (!dialogRef.current?.open) dialogRef.current?.showModal()
   }, [])
+
+  // 筛选条件变化后回到列表顶部，否则会停在上一次的滚动位置
+  useEffect(() => {
+    optionsRef.current?.scrollTo({ top: 0 })
+  }, [keyword])
+
+  /** 候选项滚动到底部时继续拉下一页 */
+  function handleOptionsScroll(event: UIEvent<HTMLUListElement>) {
+    const element = event.currentTarget
+    const distanceToBottom =
+      element.scrollHeight - element.scrollTop - element.clientHeight
+    if (distanceToBottom > 24) return
+    loadMore()
+  }
 
   function handleKeywordChange(value: string) {
     setKeyword(value)
@@ -100,7 +114,11 @@ export function FileImportDialog({
             autoComplete="off"
           />
           <p className={styles.hint}>清空输入可查看全部数据集。</p>
-          <ul className={styles.options}>
+          <ul
+            ref={optionsRef}
+            className={styles.options}
+            onScroll={handleOptionsScroll}
+          >
             {error ? (
               <li className={styles.optionState} role="alert">
                 {error}
@@ -137,8 +155,16 @@ export function FileImportDialog({
                 )
               })
             )}
+            {!error && !isLoading && datasets.length > 0 && (
+              <li className={styles.optionState} role="status">
+                {isLoadingMore
+                  ? '正在加载更多…'
+                  : hasMore
+                    ? '向下滚动加载更多'
+                    : '没有更多了。'}
+              </li>
+            )}
           </ul>
-          <Pager current={current} lastPage={lastPage} onChange={goToPage} />
         </div>
 
         <div className={styles.field}>

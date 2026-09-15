@@ -1,0 +1,31 @@
+/* 状态：小方块颜色区分，颜色由行内样式给出 */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.statusSquare {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 2px;
+}
+.actionButton {
+  height: 26px;
+  padding: 0 12px;
+  border: 1px solid #b9d4f6;
+  border-radius: 6px;
+  background: #f4f9ff;
+  color: #1267d6;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.actionButton:hover {
+  border-color: #1267d6;
+}
+.actionButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

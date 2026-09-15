@@ -19,7 +19,9 @@ export async function getDatasetPage(
       ...(query.categoryId !== undefined
         ? { categoryId: query.categoryId }
         : {}),
-      dataSetName: query.dataSetName ?? '0',
+      ...(query.dataSetName !== undefined
+        ? { dataSetName: query.dataSetName }
+        : {}),
     },
     signal,
   })

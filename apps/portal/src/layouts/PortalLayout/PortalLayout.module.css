@@ -20,6 +20,10 @@
   padding: 22px 38px 22px;
   box-sizing: border-box;
 }
+/* 左侧有二级导航的页面：内边距交给页面自己控制，导航才能贴住上/左 */
+.mainFlush {
+  padding: 0;
+}
 .footer {
   height: 46px;
   display: flex;

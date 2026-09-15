@@ -7,16 +7,24 @@ import { FileMetaTable } from '../../features/dataManagement/components/FileMeta
 import { TaskRecordTable } from '../../features/dataManagement/components/TaskRecordTable/TaskRecordTable'
 import { UploadProgressDialog } from '../../features/dataManagement/components/UploadProgressDialog/UploadProgressDialog'
 import {
+  DATASET_CATEGORY_IDS,
   DATASET_CATEGORY_LABELS,
   DATASET_CATEGORY_ORDER,
   FILE_PAGE_SIZE,
 } from '../../features/dataManagement/constants/dataset'
-import { TASK_PAGE_SIZE } from '../../features/dataManagement/constants/task'
+import {
+  PROCESSING_TYPE_TERRAIN,
+  TASK_PAGE_SIZE,
+  TASK_TYPE_IMPORT,
+} from '../../features/dataManagement/constants/task'
 import { useDatasetCatalog } from '../../features/dataManagement/hooks/useDatasetCatalog'
 import { useFileMetaPage } from '../../features/dataManagement/hooks/useFileMetaPage'
 import { useTaskPage } from '../../features/dataManagement/hooks/useTaskPage'
 import { useUploadTasks } from '../../features/dataManagement/hooks/useUploadTasks'
-import { deleteFileMeta } from '../../features/dataManagement/services/fileMetaService'
+import {
+  deleteFileMeta,
+  processFileMeta,
+} from '../../features/dataManagement/services/fileMetaService'
 import type {
   FileMeta,
   FileScope,
@@ -38,6 +46,9 @@ const WORKSPACE_PATH = DATA_MANAGEMENT_SECTIONS[0].path
 /** 导入记录的路径 */
 const IMPORTS_PATH = '/data-management/imports'
 
+/** 回收站的路径 */
+const RECYCLE_BIN_PATH = '/data-management/recycle-bin'
+
 /** 数据目录的选择：某个分类，或某个分类下的数据集；为空表示「全部数据」 */
 type DatasetSelection =
   | { readonly kind: 'category'; readonly categoryId: number }
@@ -58,19 +69,22 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isImportOpen, setIsImportOpen] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [processingId, setProcessingId] = useState<string | null>(null)
   const [isProgressOpen, setIsProgressOpen] = useState(false)
-  // 筛选条件暂未接入接口参数，仅保留输入状态
-  const [dataType, setDataType] = useState('')
-  const [fileName, setFileName] = useState('')
-  const [collectedAt, setCollectedAt] = useState('')
+  // 两类列表的每页条数，改动后由 hook 回到第 1 页
+  const [filePageSize, setFilePageSize] = useState(FILE_PAGE_SIZE)
+  const [taskPageSize, setTaskPageSize] = useState(TASK_PAGE_SIZE)
 
   const isWorkspace = active.path === WORKSPACE_PATH
   const isImports = active.path === IMPORTS_PATH
+  const isRecycleBin = active.path === RECYCLE_BIN_PATH
   // 数据目录的选择只在「全部数据」页面生效：切到导入记录、回收站后视为未选择
   const activeSelection = isWorkspace ? selection : null
   const { catalog, refresh: refreshCatalog } = useDatasetCatalog()
 
   function resolveFileScope(): FileScope | null {
+    // 回收站展示的是已删除的元数据，与数据工作区的范围互不干扰
+    if (isRecycleBin) return { kind: 'recycleBin' }
     if (!isWorkspace) return null
     if (activeSelection === null) return { kind: 'all' }
     if (activeSelection.kind === 'category')
@@ -81,14 +95,18 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
   const {
     records,
     total,
+    allTotal,
     current,
     isLoading,
     error,
     goToPage,
     refresh: refreshFiles,
-  } = useFileMetaPage(resolveFileScope())
-  const lastPage = Math.max(1, Math.ceil(total / FILE_PAGE_SIZE))
-  const taskPage = useTaskPage(isImports)
+  } = useFileMetaPage(resolveFileScope(), filePageSize)
+  const taskPage = useTaskPage({
+    enabled: isImports,
+    taskType: TASK_TYPE_IMPORT,
+    size: taskPageSize,
+  })
   const { tasks, clearFinished } = useUploadTasks()
   const runningCount = tasks.filter((task) => !task.done).length
   // 有任务完成时刷新列表，让新上传的文件显示出来
@@ -141,6 +159,19 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     setDeletingId(null)
   }
 
+  /** 处理数据文件：确认后提交处理任务，进度到数据处理页查看 */
+  async function handleProcessFile(record: FileMeta) {
+    if (!window.confirm(`确定对「${record.originalName}」提交地形处理任务吗？`))
+      return
+    setProcessingId(record.id)
+    try {
+      await processFileMeta(record.id, PROCESSING_TYPE_TERRAIN)
+    } catch {
+      // 失败提示由 RequestErrorNotice 统一展示
+    }
+    setProcessingId(null)
+  }
+
   function toggleType(type: number) {
     setExpandedTypes((prev) => {
       const next = new Set(prev)
@@ -150,12 +181,18 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     })
   }
 
-  function handleFilterReset() {
-    setDataType('')
-    setFileName('')
-    setCollectedAt('')
-    refreshFiles()
+  /** 每页条数变化时由 hook 回到第 1 页 */
+  function handleFilePageChange(page: number, size: number) {
+    setFilePageSize(size)
+    goToPage(page)
   }
+
+  function handleTaskPageChange(page: number, size: number) {
+    setTaskPageSize(size)
+    taskPage.goToPage(page)
+  }
+
+  // 数据工作区与回收站的筛选栏已并入表格组件的搜索栏
 
   return (
     <section className={styles.page}>
@@ -198,6 +235,12 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                 <span className={styles.geoSideBarDirectoryText}>
                   {item.label}
                 </span>
+                {/* 全部数据的条数（数据个数），切到分类/数据集后仍显示全量值 */}
+                {item.path === WORKSPACE_PATH && allTotal !== null && (
+                  <span className={styles.geoSideBarDirectoryCount}>
+                    {allTotal}
+                  </span>
+                )}
               </a>
             )
           })}
@@ -323,7 +366,32 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
         </div>
       </div>
       <div className={styles.geoContent}>
-        {isImports ? (
+        {isRecycleBin ? (
+          <div className={styles.contentPanel}>
+            <div className={styles.contentHeader}>
+              <div
+                className={`${styles.contentTitle} ${styles.contentTitleRecycle}`}
+              >
+                <h2>回收站</h2>
+                <p>{SECTION_DESCRIPTION[RECYCLE_BIN_PATH] ?? ''}</p>
+              </div>
+            </div>
+            <FileMetaTable
+              records={records}
+              isLoading={isLoading}
+              error={error}
+              current={current}
+              total={total}
+              pageSize={filePageSize}
+              onPageChange={handleFilePageChange}
+              dataFormatOptions={dataTypes}
+              onSearch={() => refreshFiles()}
+              onReset={() => refreshFiles()}
+              // 恢复接口尚未接入，按钮先置灰占位
+              actions={[{ label: '恢复', disabled: true }]}
+            />
+          </div>
+        ) : isImports ? (
           <div className={styles.contentPanel}>
             <div className={styles.contentHeader}>
               <div className={styles.contentTitle}>
@@ -336,16 +404,10 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
               isLoading={taskPage.isLoading}
               error={taskPage.error}
               current={taskPage.current}
-              lastPage={taskPage.lastPage}
               total={taskPage.total}
-              pageSize={TASK_PAGE_SIZE}
-              onPageChange={taskPage.goToPage}
+              pageSize={taskPageSize}
+              onPageChange={handleTaskPageChange}
             />
-          </div>
-        ) : !isWorkspace ? (
-          <div className={styles.geoContentPlaceholder}>
-            <h2>{active.label}</h2>
-            <p>{SECTION_DESCRIPTION[active.path] ?? ''}</p>
           </div>
         ) : (
           <div className={styles.contentPanel}>
@@ -371,63 +433,33 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                 </button>
               </div>
             </div>
-            <div className={styles.filterBar}>
-              <label className={styles.filterField}>
-                <span>数据格式</span>
-                <select
-                  value={dataType}
-                  onChange={(event) => setDataType(event.target.value)}
-                >
-                  <option value="">全部类型</option>
-                  {dataTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className={styles.filterField}>
-                <span>文件名</span>
-                <input
-                  value={fileName}
-                  onChange={(event) => setFileName(event.target.value)}
-                  placeholder="请输入文件名"
-                />
-              </label>
-              <label className={styles.filterField}>
-                <span>采集时间</span>
-                <input
-                  type="date"
-                  value={collectedAt}
-                  onChange={(event) => setCollectedAt(event.target.value)}
-                />
-              </label>
-              <button
-                type="button"
-                className={styles.filterButton}
-                onClick={() => refreshFiles()}
-              >
-                筛选
-              </button>
-              <button
-                type="button"
-                className={styles.filterButtonGhost}
-                onClick={handleFilterReset}
-              >
-                重置
-              </button>
-            </div>
             <FileMetaTable
               records={records}
               isLoading={isLoading}
               error={error}
               current={current}
-              lastPage={lastPage}
               total={total}
-              pageSize={FILE_PAGE_SIZE}
-              onPageChange={goToPage}
-              onDelete={handleDeleteFile}
-              deletingId={deletingId}
+              pageSize={filePageSize}
+              onPageChange={handleFilePageChange}
+              dataFormatOptions={dataTypes}
+              onSearch={() => refreshFiles()}
+              onReset={() => refreshFiles()}
+              actions={[
+                {
+                  label: '处理',
+                  onClick: handleProcessFile,
+                  pendingId: processingId,
+                  // 暂只开放地形数据的处理，其余分类按钮置灰
+                  disabled: (record) =>
+                    Number(record.categoryId) !== DATASET_CATEGORY_IDS.terrain,
+                },
+                {
+                  label: '删除',
+                  onClick: handleDeleteFile,
+                  pendingId: deletingId,
+                  tone: 'danger',
+                },
+              ]}
             />
           </div>
         )}

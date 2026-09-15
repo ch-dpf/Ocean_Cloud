@@ -4,7 +4,7 @@ import { WorkspacePanels } from '../../features/dashboard/components/WorkspacePa
 import styles from './DashboardPage.module.css'
 
 export function DashboardPage() {
-  const { status, metrics } = useSystemMetrics()
+  const { metrics } = useSystemMetrics()
   return (
     <div className={styles.dashboardPage}>
       <header className={styles.pageHeader}>
@@ -19,7 +19,7 @@ export function DashboardPage() {
       </header>
 
       <ResourceSummary metrics={metrics} />
-      <WorkspacePanels status={status} metrics={metrics} />
+      <WorkspacePanels metrics={metrics} />
     </div>
   )
 }
