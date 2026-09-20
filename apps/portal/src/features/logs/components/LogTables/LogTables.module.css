@@ -1,0 +1,13 @@
+/* 状态：小方块颜色区分，颜色由行内样式给出 */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.statusSquare {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 2px;
+}
