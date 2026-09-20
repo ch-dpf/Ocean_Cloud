@@ -1,32 +1,41 @@
 import { useEffect, useRef, useState } from 'react'
+import { Dropdown } from 'antd'
+import type { MenuProps } from 'antd'
+import { ConfirmDialog } from '@ocean-cloud/ui'
 import styles from './DataManagementPage.module.css'
 import { DATA_MANAGEMENT_SECTIONS } from '../../config/navigation'
 import { DatasetCreateDialog } from '../../features/dataManagement/components/DatasetCreateDialog/DatasetCreateDialog'
+import { DatasetEditDialog } from '../../features/dataManagement/components/DatasetEditDialog/DatasetEditDialog'
+import { DatasetSearch } from '../../features/dataManagement/components/DatasetSearch/DatasetSearch'
 import { FileImportDialog } from '../../features/dataManagement/components/FileImportDialog/FileImportDialog'
 import { FileMetaTable } from '../../features/dataManagement/components/FileMetaTable/FileMetaTable'
-import { TaskRecordTable } from '../../features/dataManagement/components/TaskRecordTable/TaskRecordTable'
+import { FileOptDetailDialog } from '../../features/dataManagement/components/FileOptDetailDialog/FileOptDetailDialog'
+import { FileOptRecordTable } from '../../features/dataManagement/components/FileOptRecordTable/FileOptRecordTable'
 import { UploadProgressDialog } from '../../features/dataManagement/components/UploadProgressDialog/UploadProgressDialog'
 import {
   DATASET_CATEGORY_IDS,
   DATASET_CATEGORY_LABELS,
   DATASET_CATEGORY_ORDER,
+  FILE_OPT_PAGE_SIZE,
   FILE_PAGE_SIZE,
 } from '../../features/dataManagement/constants/dataset'
-import {
-  PROCESSING_TYPE_TERRAIN,
-  TASK_PAGE_SIZE,
-  TASK_TYPE_IMPORT,
-} from '../../features/dataManagement/constants/task'
+import { PROCESSING_TYPE_TERRAIN } from '../../features/dataManagement/constants/task'
 import { useDatasetCatalog } from '../../features/dataManagement/hooks/useDatasetCatalog'
 import { useFileMetaPage } from '../../features/dataManagement/hooks/useFileMetaPage'
-import { useTaskPage } from '../../features/dataManagement/hooks/useTaskPage'
+import { useFileOptPage } from '../../features/dataManagement/hooks/useFileOptPage'
 import { useUploadTasks } from '../../features/dataManagement/hooks/useUploadTasks'
 import {
+  createImportTask,
   deleteFileMeta,
   processFileMeta,
+  uploadImportBatch,
 } from '../../features/dataManagement/services/fileMetaService'
+import { deleteDataset } from '../../features/dataManagement/services/datasetService'
+import type { GeoDataset } from '../../features/dataManagement/types/dataset'
+import type { FileOptFilters } from '../../features/dataManagement/types/fileOpt'
 import type {
   FileMeta,
+  FileMetaFilters,
   FileScope,
 } from '../../features/dataManagement/types/fileMeta'
 
@@ -43,11 +52,23 @@ const SECTION_DESCRIPTION: Readonly<Record<string, string>> = {
 /** 数据工作区（全部数据）的路径 */
 const WORKSPACE_PATH = DATA_MANAGEMENT_SECTIONS[0].path
 
+/** 「全部数据」在副标题里的名字 */
+const WORKSPACE_LABEL = DATA_MANAGEMENT_SECTIONS[0].label
+
+/** 空筛选条件：引用稳定，避免每次渲染都触发查询条件比对 */
+const NO_FILE_FILTERS: FileMetaFilters = {}
+
 /** 导入记录的路径 */
 const IMPORTS_PATH = '/data-management/imports'
 
 /** 回收站的路径 */
 const RECYCLE_BIN_PATH = '/data-management/recycle-bin'
+
+/** 数据集右键菜单：重命名与删除 */
+const DATASET_MENU_ITEMS: MenuProps['items'] = [
+  { key: 'rename', label: '重命名' },
+  { key: 'delete', label: '删除', danger: true },
+]
 
 /** 数据目录的选择：某个分类，或某个分类下的数据集；为空表示「全部数据」 */
 type DatasetSelection =
@@ -56,6 +77,9 @@ type DatasetSelection =
       readonly kind: 'dataset'
       readonly categoryId: number
       readonly dataSetId: string
+      /** 选中时一并带上名称与描述，供副标题与导入弹窗使用 */
+      readonly dataSetName: string
+      readonly description: string
     }
 
 export function DataManagementPage({ activePath }: DataManagementPageProps) {
@@ -71,16 +95,38 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [isProgressOpen, setIsProgressOpen] = useState(false)
+  // 数据集右键菜单触发的弹窗：重命名与删除
+  const [renamingDataset, setRenamingDataset] = useState<GeoDataset | null>(
+    null,
+  )
+  const [deletingDataset, setDeletingDataset] = useState<GeoDataset | null>(
+    null,
+  )
+  // 数据文件行操作触发的确认弹窗
+  const [deletingFile, setDeletingFile] = useState<FileMeta | null>(null)
+  const [processingFile, setProcessingFile] = useState<FileMeta | null>(null)
+  // 文件列表的筛选条件（数据格式、文件名），由表格的搜索栏回传
+  const [fileFilters, setFileFilters] =
+    useState<FileMetaFilters>(NO_FILE_FILTERS)
   // 两类列表的每页条数，改动后由 hook 回到第 1 页
   const [filePageSize, setFilePageSize] = useState(FILE_PAGE_SIZE)
-  const [taskPageSize, setTaskPageSize] = useState(TASK_PAGE_SIZE)
+  const [fileOptPageSize, setFileOptPageSize] = useState(FILE_OPT_PAGE_SIZE)
+  // 导入记录的筛选条件（记录编号、数据集、分类、状态、文件名、格式、创建时间）
+  const [fileOptFilters, setFileOptFilters] = useState<FileOptFilters>({})
+  // 打开详情弹窗的记录编号
+  const [detailRecordNo, setDetailRecordNo] = useState<string | null>(null)
 
   const isWorkspace = active.path === WORKSPACE_PATH
   const isImports = active.path === IMPORTS_PATH
   const isRecycleBin = active.path === RECYCLE_BIN_PATH
   // 数据目录的选择只在「全部数据」页面生效：切到导入记录、回收站后视为未选择
   const activeSelection = isWorkspace ? selection : null
-  const { catalog, refresh: refreshCatalog } = useDatasetCatalog()
+  const {
+    datasets: allDatasets,
+    catalog,
+    isLoading: isCatalogLoading,
+    refresh: refreshCatalog,
+  } = useDatasetCatalog()
 
   function resolveFileScope(): FileScope | null {
     // 回收站展示的是已删除的元数据，与数据工作区的范围互不干扰
@@ -101,13 +147,9 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     error,
     goToPage,
     refresh: refreshFiles,
-  } = useFileMetaPage(resolveFileScope(), filePageSize)
-  const taskPage = useTaskPage({
-    enabled: isImports,
-    taskType: TASK_TYPE_IMPORT,
-    size: taskPageSize,
-  })
-  const { tasks, clearFinished } = useUploadTasks()
+  } = useFileMetaPage(resolveFileScope(), fileFilters, filePageSize)
+  const fileOptPage = useFileOptPage(fileOptFilters, fileOptPageSize)
+  const { tasks, clearFinished, addPendingTask, failTask } = useUploadTasks()
   const runningCount = tasks.filter((task) => !task.done).length
   // 有任务完成时刷新列表，让新上传的文件显示出来
   const finishedTaskNos = useRef<Set<string>>(new Set())
@@ -119,20 +161,25 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     for (const task of newlyFinished) finishedTaskNos.current.add(task.taskNo)
     refreshFiles()
   }, [tasks, refreshFiles])
-  const dataTypes = [...new Set(records.map((record) => record.extension))]
   // 导入弹窗的初始上下文：全部数据为空、分类为分类名、数据集为数据集名
   const selectedDataset =
     activeSelection !== null && activeSelection.kind === 'dataset'
-      ? (catalog[activeSelection.categoryId]?.datasets.find(
-          (item) => item.id === activeSelection.dataSetId,
-        ) ?? null)
+      ? activeSelection
       : null
   const importKeyword =
     activeSelection === null
       ? ''
       : activeSelection.kind === 'category'
         ? DATASET_CATEGORY_LABELS[activeSelection.categoryId]
-        : (selectedDataset?.dataSetName ?? '')
+        : activeSelection.dataSetName
+  // 副标题的当前域：全部数据 / 分类名 / 数据集名（数据集额外带上描述）
+  const scopeLabel =
+    activeSelection === null
+      ? WORKSPACE_LABEL
+      : activeSelection.kind === 'category'
+        ? DATASET_CATEGORY_LABELS[activeSelection.categoryId]
+        : activeSelection.dataSetName
+  const scopeDescription = selectedDataset?.description ?? ''
 
   /** 选中数据目录项：同时回到「全部数据」页面，保证内容区展示对应数据 */
   function handleSelectEntry(next: DatasetSelection) {
@@ -146,30 +193,93 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     refreshCatalog()
   }
 
-  /** 删除数据文件：确认后调用接口并刷新当前列表 */
-  async function handleDeleteFile(record: FileMeta) {
-    if (!window.confirm(`确定删除「${record.originalName}」吗？`)) return
-    setDeletingId(record.id)
-    try {
-      await deleteFileMeta(record.id)
-      refreshFiles()
-    } catch {
-      // 失败提示由 RequestErrorNotice 统一展示
-    }
-    setDeletingId(null)
+  /** 搜索结果中选中数据集：进入该数据集内部（不在全部数据时一并切回） */
+  function handleSearchSelect(dataset: GeoDataset) {
+    handleSelectEntry({
+      kind: 'dataset',
+      categoryId: Number(dataset.categoryId),
+      dataSetId: dataset.id,
+      dataSetName: dataset.dataSetName,
+      description: dataset.description,
+    })
   }
 
-  /** 处理数据文件：确认后提交处理任务，进度到数据处理页查看 */
-  async function handleProcessFile(record: FileMeta) {
-    if (!window.confirm(`确定对「${record.originalName}」提交地形处理任务吗？`))
-      return
-    setProcessingId(record.id)
+  /** 搜索栏刷新：回到「全部数据」并重新拉一次目录 */
+  function handleSearchReset() {
+    setSelection(null)
+    if (!isWorkspace) location.hash = `#${WORKSPACE_PATH}`
+    refreshCatalog()
+  }
+
+  /**
+   * 导入数据：先建任务拿到编号并插入「上传中」占位，再按该任务上传文件。
+   * 提交后立即关窗，进度到「上传进度」里看；失败时把占位标为失败。
+   */
+  async function handleImport(input: {
+    readonly dataSetId: string
+    readonly files: readonly File[]
+  }) {
+    setIsImportOpen(false)
+    let taskId: string | null = null
     try {
-      await processFileMeta(record.id, PROCESSING_TYPE_TERRAIN)
+      taskId = await createImportTask(input.dataSetId, input.files.length)
+      addPendingTask(taskId, input.files.length)
+      await uploadImportBatch(taskId, input.files)
     } catch {
-      // 失败提示由 RequestErrorNotice 统一展示
+      // 失败提示由 RequestErrorNotice 统一展示；建任务失败时进度列表里还没有占位可收口
+      if (taskId !== null) failTask(taskId)
     }
-    setProcessingId(null)
+  }
+
+  /** 删除数据文件：在确认弹窗里调用接口，成功后刷新当前列表 */
+  async function confirmDeleteFile() {
+    if (deletingFile === null) return
+    setDeletingId(deletingFile.id)
+    try {
+      await deleteFileMeta(deletingFile.id)
+      refreshFiles()
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  /** 提交处理任务：在确认弹窗里提交，进度到数据处理页查看 */
+  async function confirmProcessFile() {
+    if (processingFile === null) return
+    setProcessingId(processingFile.id)
+    try {
+      await processFileMeta(processingFile.id, PROCESSING_TYPE_TERRAIN)
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  /** 删除数据集：成功后刷新目录；若正选中该数据集则回到「全部数据」 */
+  async function confirmDeleteDataset() {
+    if (deletingDataset === null) return
+    await deleteDataset(deletingDataset.id)
+    refreshCatalog()
+    if (
+      selection !== null &&
+      selection.kind === 'dataset' &&
+      selection.dataSetId === deletingDataset.id
+    ) {
+      setSelection(null)
+    }
+  }
+
+  /** 重命名数据集成功：刷新目录，并同步选中项里的名称与描述 */
+  function handleDatasetUpdated(updated: GeoDataset) {
+    refreshCatalog()
+    setSelection((prev) =>
+      prev !== null && prev.kind === 'dataset' && prev.dataSetId === updated.id
+        ? {
+            ...prev,
+            dataSetName: updated.dataSetName,
+            description: updated.description,
+          }
+        : prev,
+    )
   }
 
   function toggleType(type: number) {
@@ -187,23 +297,46 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     goToPage(page)
   }
 
-  function handleTaskPageChange(page: number, size: number) {
-    setTaskPageSize(size)
-    taskPage.goToPage(page)
+  /** 导入记录：每页条数变化时由 hook 回到第 1 页 */
+  function handleFileOptPageChange(page: number, size: number) {
+    setFileOptPageSize(size)
+    fileOptPage.goToPage(page)
   }
 
-  // 数据工作区与回收站的筛选栏已并入表格组件的搜索栏
+  /** 导入记录：按记录编号、数据集、分类、状态、文件名、格式与创建时间重新查询 */
+  function handleFileOptSearch(filters: FileOptFilters) {
+    setFileOptFilters(filters)
+  }
+
+  /** 导入记录：重置筛选条件，回到无筛选的第 1 页 */
+  function handleFileOptReset() {
+    setFileOptFilters({})
+  }
+
+  /** 搜索：按「数据格式」「文件名」重新查询；条件变化后由 hook 回到第 1 页 */
+  function handleFileSearch(filters: FileMetaFilters) {
+    setFileFilters(filters)
+  }
+
+  /** 重置：清空筛选条件，回到无筛选的第 1 页 */
+  function handleFileReset() {
+    setFileFilters(NO_FILE_FILTERS)
+  }
+
+  // 导入记录的数据集下拉：显示数据集名称，取不到名称时退回 id
+  const datasetFilterOptions = allDatasets.map((dataset) => ({
+    value: dataset.id,
+    label: dataset.dataSetName === '' ? dataset.id : dataset.dataSetName,
+  }))
 
   return (
     <section className={styles.page}>
       <div className={styles.geoSideBar}>
         <div className={styles.geoSideBarTitle}>
-          <div className={styles.searchBar}>
-            <div className={styles.searchBarInput}>
-              <input type="text" placeholder="⌕  搜索数据集名称" />
-            </div>
-            <button>↺</button>
-          </div>
+          <DatasetSearch
+            onSelect={handleSearchSelect}
+            onReset={handleSearchReset}
+          />
         </div>
         <nav className={styles.geoSideBarDirectory}>
           {DATA_MANAGEMENT_SECTIONS.map((item) => {
@@ -215,7 +348,11 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                 key={item.path}
                 href={`#${item.path}`}
                 aria-current={isActive ? 'page' : undefined}
-                onClick={() => setSelection(null)}
+                onClick={() => {
+                  setSelection(null)
+                  // 栏目切换后搜索栏会重新挂载，这里一并清空筛选条件
+                  setFileFilters(NO_FILE_FILTERS)
+                }}
                 className={`${styles.geoSideBarDirectoryItem}${
                   isActive ? ` ${styles.geoSideBarDirectoryItemActive}` : ''
                 }`}
@@ -319,11 +456,11 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                   </div>
                   {isOpen && (
                     <ul className={styles.dataDirectoryDataSetList}>
-                      {entry === undefined ? (
+                      {isCatalogLoading ? (
                         <li className={styles.dataDirectoryDataSetHint}>
                           正在加载数据集…
                         </li>
-                      ) : entry.datasets.length === 0 ? (
+                      ) : entry === undefined ? (
                         <li className={styles.dataDirectoryDataSetHint}>
                           该分类下暂无数据集
                         </li>
@@ -335,24 +472,38 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                             activeSelection.dataSetId === dataset.id
                           return (
                             <li key={dataset.id}>
-                              <button
-                                type="button"
-                                className={`${styles.dataDirectoryDataSetItem}${
-                                  isDataSetSelected
-                                    ? ` ${styles.dataDirectoryDataSetItemActive}`
-                                    : ''
-                                }`}
-                                onClick={() =>
-                                  handleSelectEntry({
-                                    kind: 'dataset',
-                                    categoryId,
-                                    dataSetId: dataset.id,
-                                  })
-                                }
-                                aria-pressed={isDataSetSelected}
+                              <Dropdown
+                                trigger={['contextMenu']}
+                                menu={{
+                                  items: DATASET_MENU_ITEMS,
+                                  onClick: ({ key }) => {
+                                    if (key === 'rename')
+                                      setRenamingDataset(dataset)
+                                    else setDeletingDataset(dataset)
+                                  },
+                                }}
                               >
-                                {dataset.dataSetName}
-                              </button>
+                                <button
+                                  type="button"
+                                  className={`${styles.dataDirectoryDataSetItem}${
+                                    isDataSetSelected
+                                      ? ` ${styles.dataDirectoryDataSetItemActive}`
+                                      : ''
+                                  }`}
+                                  onClick={() =>
+                                    handleSelectEntry({
+                                      kind: 'dataset',
+                                      categoryId,
+                                      dataSetId: dataset.id,
+                                      dataSetName: dataset.dataSetName,
+                                      description: dataset.description,
+                                    })
+                                  }
+                                  aria-pressed={isDataSetSelected}
+                                >
+                                  {dataset.dataSetName}
+                                </button>
+                              </Dropdown>
                             </li>
                           )
                         })
@@ -384,9 +535,8 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
               total={total}
               pageSize={filePageSize}
               onPageChange={handleFilePageChange}
-              dataFormatOptions={dataTypes}
-              onSearch={() => refreshFiles()}
-              onReset={() => refreshFiles()}
+              onSearch={handleFileSearch}
+              onReset={handleFileReset}
               // 恢复接口尚未接入，按钮先置灰占位
               actions={[{ label: '恢复', disabled: true }]}
             />
@@ -399,14 +549,18 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                 <p>{SECTION_DESCRIPTION[IMPORTS_PATH] ?? ''}</p>
               </div>
             </div>
-            <TaskRecordTable
-              records={taskPage.records}
-              isLoading={taskPage.isLoading}
-              error={taskPage.error}
-              current={taskPage.current}
-              total={taskPage.total}
-              pageSize={taskPageSize}
-              onPageChange={handleTaskPageChange}
+            <FileOptRecordTable
+              records={fileOptPage.records}
+              isLoading={fileOptPage.isLoading}
+              error={fileOptPage.error}
+              current={fileOptPage.current}
+              total={fileOptPage.total}
+              pageSize={fileOptPageSize}
+              onPageChange={handleFileOptPageChange}
+              datasetOptions={datasetFilterOptions}
+              onSearch={handleFileOptSearch}
+              onReset={handleFileOptReset}
+              onDetail={(record) => setDetailRecordNo(record.recordNo)}
             />
           </div>
         ) : (
@@ -414,7 +568,13 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
             <div className={styles.contentHeader}>
               <div className={styles.contentTitle}>
                 <h2>GIS 数据管理</h2>
-                <p>当前域：GIS · {total} 个数据集</p>
+                <p
+                  className={styles.contentMetaLine}
+                  title={scopeDescription === '' ? undefined : scopeDescription}
+                >
+                  当前域：{scopeLabel} · {total} 条数据
+                  {scopeDescription === '' ? '' : ` · ${scopeDescription}`}
+                </p>
               </div>
               <div className={styles.headerActions}>
                 <button
@@ -441,13 +601,12 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
               total={total}
               pageSize={filePageSize}
               onPageChange={handleFilePageChange}
-              dataFormatOptions={dataTypes}
-              onSearch={() => refreshFiles()}
-              onReset={() => refreshFiles()}
+              onSearch={handleFileSearch}
+              onReset={handleFileReset}
               actions={[
                 {
                   label: '处理',
-                  onClick: handleProcessFile,
+                  onClick: (record) => setProcessingFile(record),
                   pendingId: processingId,
                   // 暂只开放地形数据的处理，其余分类按钮置灰
                   disabled: (record) =>
@@ -455,7 +614,7 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                 },
                 {
                   label: '删除',
-                  onClick: handleDeleteFile,
+                  onClick: (record) => setDeletingFile(record),
                   pendingId: deletingId,
                   tone: 'danger',
                 },
@@ -475,12 +634,16 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
           initialKeyword={importKeyword}
           initialDataset={
             selectedDataset
-              ? { id: selectedDataset.id, name: selectedDataset.dataSetName }
+              ? {
+                  id: selectedDataset.dataSetId,
+                  name: selectedDataset.dataSetName,
+                }
               : null
           }
+          datasets={allDatasets}
+          datasetsLoading={isCatalogLoading}
           onClose={() => setIsImportOpen(false)}
-          // 提交成功即关闭，上传进度到「上传进度」里看
-          onSubmitted={() => setIsImportOpen(false)}
+          onSubmit={handleImport}
         />
       )}
       {isProgressOpen && (
@@ -488,6 +651,48 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
           tasks={tasks}
           onClearFinished={clearFinished}
           onClose={() => setIsProgressOpen(false)}
+        />
+      )}
+      {renamingDataset !== null && (
+        <DatasetEditDialog
+          dataset={renamingDataset}
+          onClose={() => setRenamingDataset(null)}
+          onUpdated={handleDatasetUpdated}
+        />
+      )}
+      {deletingDataset !== null && (
+        <ConfirmDialog
+          title="删除数据集"
+          message={`确定删除数据集「${deletingDataset.dataSetName}」吗？该操作不可撤销。`}
+          confirmLabel="删除"
+          danger
+          onConfirm={confirmDeleteDataset}
+          onClose={() => setDeletingDataset(null)}
+        />
+      )}
+      {deletingFile !== null && (
+        <ConfirmDialog
+          title="删除数据"
+          message={`确定删除「${deletingFile.originalName}」吗？该操作不可撤销。`}
+          confirmLabel="删除"
+          danger
+          onConfirm={confirmDeleteFile}
+          onClose={() => setDeletingFile(null)}
+        />
+      )}
+      {processingFile !== null && (
+        <ConfirmDialog
+          title="提交处理任务"
+          message={`确定对「${processingFile.originalName}」提交地形处理任务吗？`}
+          confirmLabel="提交"
+          onConfirm={confirmProcessFile}
+          onClose={() => setProcessingFile(null)}
+        />
+      )}
+      {detailRecordNo !== null && (
+        <FileOptDetailDialog
+          recordNo={detailRecordNo}
+          onClose={() => setDetailRecordNo(null)}
         />
       )}
     </section>

@@ -4,9 +4,10 @@ import styles from './FileMetaTable.module.css'
 import { SearchTable } from '@ocean-cloud/ui'
 import {
   DATASET_CATEGORY_LABELS,
+  FILE_FORMAT_OPTIONS,
   toProcessLabel,
 } from '../../constants/dataset'
-import type { FileMeta } from '../../types/fileMeta'
+import type { FileMeta, FileMetaFilters } from '../../types/fileMeta'
 
 /** 操作列按钮配置 */
 export interface FileRowAction {
@@ -32,10 +33,8 @@ interface FileMetaTableProps {
   readonly onPageChange: (page: number, pageSize: number) => void
   /** 操作列按钮；不传时不渲染操作按钮 */
   readonly actions?: readonly FileRowAction[]
-  /** 「数据格式」筛选项，由当前数据推导 */
-  readonly dataFormatOptions: readonly string[]
-  /** 点击搜索 */
-  readonly onSearch: () => void
+  /** 点击搜索，回传本次筛选条件（已去除空值） */
+  readonly onSearch: (filters: FileMetaFilters) => void
   /** 点击重置（表单已重置后触发） */
   readonly onReset: () => void
 }
@@ -119,6 +118,8 @@ function buildColumns(
       title: '操作',
       key: 'action',
       width: 190,
+      // 横向滚动时固定在表格右侧，按钮始终可见
+      fixed: 'right',
       render: (_, record) => (
         <span className={styles.actionCell}>
           {actions?.map((item) => {
@@ -151,6 +152,17 @@ function buildColumns(
   ]
 }
 
+/** 表单值转查询条件：空值不提交，文件名去除首尾空格 */
+function toFilters(values: Record<string, unknown>): FileMetaFilters {
+  const originalName =
+    typeof values.originalName === 'string' ? values.originalName.trim() : ''
+  const extension = typeof values.extension === 'string' ? values.extension : ''
+  return {
+    ...(originalName === '' ? {} : { originalName }),
+    ...(extension === '' ? {} : { extension }),
+  }
+}
+
 export function FileMetaTable({
   records,
   isLoading,
@@ -160,7 +172,6 @@ export function FileMetaTable({
   total,
   onPageChange,
   actions,
-  dataFormatOptions,
   onSearch,
   onReset,
 }: FileMetaTableProps) {
@@ -174,29 +185,26 @@ export function FileMetaTable({
       current={current}
       pageSize={pageSize}
       onPageChange={onPageChange}
-      onSearch={onSearch}
+      onSearch={(values) => onSearch(toFilters(values))}
       onReset={onReset}
       // 列宽合计，保证窄屏时横向滚动、长文本按列宽截断
       scrollX={1400}
       emptyText={error ?? undefined}
       searchFormItems={
         <>
-          <Form.Item label="数据格式" name="dataFormat">
+          <Form.Item label="数据格式" name="extension">
             <Select
               placeholder="全部类型"
               allowClear
               style={{ width: 140 }}
-              options={dataFormatOptions.map((value) => ({
+              options={FILE_FORMAT_OPTIONS.map((value) => ({
                 value,
                 label: value,
               }))}
             />
           </Form.Item>
-          <Form.Item label="文件名" name="fileName">
+          <Form.Item label="文件名" name="originalName">
             <Input placeholder="请输入文件名" allowClear />
-          </Form.Item>
-          <Form.Item label="采集时间" name="collectedAt">
-            <input type="date" className={styles.dateInput} />
           </Form.Item>
         </>
       }

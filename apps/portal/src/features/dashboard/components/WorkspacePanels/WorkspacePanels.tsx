@@ -1,11 +1,23 @@
 import styles from './WorkspacePanels.module.css'
 import type { SystemMetrics } from '../../hooks/useSystemMetrics'
+import { useTaskOverview } from '../../hooks/useTaskOverview'
 
 interface WorkspacePanelsProps {
   readonly metrics: SystemMetrics | null
 }
 
 const STORAGE_CATEGORIES = ['影像数据', '矢量数据', '模型数据', '海洋数据']
+
+/** 任务状态对应的进度颜色：运行中蓝、已完成绿、失败红、排队灰 */
+const TASK_STATUS_COLORS: Readonly<Record<string, string>> = {
+  RUNNING: '#095ED4',
+  COMPLETED: '#089466',
+  PARTIAL_FAILED: '#E03833',
+  FAILED: '#E03833',
+  QUEUED: '#576E85',
+}
+
+const TASK_STATUS_FALLBACK_COLOR = '#576E85'
 
 function formatPercent(value: number | undefined): string {
   return value != null ? `${value.toFixed(1)}%` : '--'
@@ -15,6 +27,7 @@ export function WorkspacePanels({ metrics }: WorkspacePanelsProps) {
   const cpu = formatPercent(metrics?.cpuUsage)
   const memory = formatPercent(metrics?.memoryUsage)
   const disk = '--' // ws 暂无磁盘字段
+  const { runningTotal, attentionTotal, tasks } = useTaskOverview()
 
   return (
     <div className={styles.workspacePanels}>
@@ -162,7 +175,7 @@ export function WorkspacePanels({ metrics }: WorkspacePanelsProps) {
                     color: '#095ED4',
                   }}
                 >
-                  --
+                  {runningTotal ?? '--'}
                 </span>
               </div>
             </div>
@@ -190,15 +203,38 @@ export function WorkspacePanels({ metrics }: WorkspacePanelsProps) {
                     color: '#E03833',
                   }}
                 >
-                  --
+                  {attentionTotal ?? '--'}
                 </span>
               </div>
             </div>
           </div>
+          {/* 最近三条任务：进度来自 /ws/task 长连接 */}
           <div className={styles.statusDetail}>
-            <div className={styles.statusDetailItem}></div>
-            <div className={styles.statusDetailItem}></div>
-            <div className={styles.statusDetailItem}></div>
+            {tasks.length === 0 ? (
+              <div className={styles.statusDetailEmpty}>暂无任务</div>
+            ) : (
+              tasks.map((task) => {
+                const color =
+                  TASK_STATUS_COLORS[task.taskStatus] ??
+                  TASK_STATUS_FALLBACK_COLOR
+                return (
+                  <div className={styles.statusDetailItem} key={task.taskNo}>
+                    <span className={styles.taskName} title={task.taskName}>
+                      {task.taskName}
+                    </span>
+                    <span className={styles.taskTrack} aria-hidden="true">
+                      <span
+                        className={styles.taskProgress}
+                        style={{ width: `${task.percent}%`, background: color }}
+                      />
+                    </span>
+                    <span className={styles.taskPercent} style={{ color }}>
+                      {task.percent}%
+                    </span>
+                  </div>
+                )
+              })
+            )}
           </div>
         </section>
       </div>

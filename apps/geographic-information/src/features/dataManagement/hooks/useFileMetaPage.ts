@@ -4,7 +4,7 @@ import {
   getDeletedFileMetaPage,
   getFileMetaPage,
 } from '../services/fileMetaService'
-import type { FileMeta, FileScope } from '../types/fileMeta'
+import type { FileMeta, FileMetaFilters, FileScope } from '../types/fileMeta'
 
 interface FileMetaPageData {
   /** 结果对应的查询范围，用于判断是否仍是当前查询的结果 */
@@ -23,11 +23,12 @@ function scopeKeyOf(scope: FileScope | null): string | null {
 }
 
 /**
- * 分页查询数据文件。范围为空时不发起请求；切换范围回到第一页；
+ * 分页查询数据文件。范围为空时不发起请求；切换范围、筛选条件或每页条数回到第一页；
  * 条件变化时取消上一次请求，并只在结果对应当前查询时才展示。
  */
 export function useFileMetaPage(
   scope: FileScope | null,
+  filters: FileMetaFilters = {},
   size = FILE_PAGE_SIZE,
 ) {
   const scopeKey = scopeKeyOf(scope)
@@ -35,19 +36,32 @@ export function useFileMetaPage(
     scope !== null && scope.kind === 'dataset' ? scope.dataSetId : undefined
   const categoryId =
     scope !== null && scope.kind === 'category' ? scope.categoryId : undefined
-  // 回收站走独立的已删除接口，只传 current / size
+  // 回收站走独立的已删除接口，只传 current / size，筛选条件不参与查询
   const isRecycleBin = scope !== null && scope.kind === 'recycleBin'
-  const [paging, setPaging] = useState({ scopeKey, size, current: 1 })
+  const { originalName = '', extension = '' } = filters
+  const filterKey = isRecycleBin ? '' : `${originalName}\u0000${extension}`
+  const [paging, setPaging] = useState({
+    scopeKey,
+    filterKey,
+    size,
+    current: 1,
+  })
   const [revision, setRevision] = useState(0)
   const [data, setData] = useState<FileMetaPageData | null>(null)
   // 全部数据的总条数：范围为全部时随列表请求带回，切换范围后仍可供侧边栏计数使用
   const [allTotal, setAllTotal] = useState<number | null>(null)
   const [allRevision, setAllRevision] = useState(0)
-  // 切换范围或每页条数时直接按第一页查询，不必先按旧页码多打一次请求
+  // 切换范围、筛选条件或每页条数时直接按第一页查询，不必先按旧页码多打一次请求
   const current =
-    paging.scopeKey === scopeKey && paging.size === size ? paging.current : 1
+    paging.scopeKey === scopeKey &&
+    paging.filterKey === filterKey &&
+    paging.size === size
+      ? paging.current
+      : 1
   const queryKey =
-    scopeKey === null ? null : `${scopeKey}:${current}:${size}:${revision}`
+    scopeKey === null
+      ? null
+      : `${scopeKey}:${filterKey}:${current}:${size}:${revision}`
 
   useEffect(() => {
     if (queryKey === null) return
@@ -55,13 +69,14 @@ export function useFileMetaPage(
     const request = isRecycleBin
       ? getDeletedFileMetaPage({ current, size }, controller.signal)
       : getFileMetaPage(
-          { current, size, dataSetId, categoryId },
+          { current, size, dataSetId, categoryId, originalName, extension },
           controller.signal,
         )
     request
       .then((page) => {
         const total = Number(page.total)
-        if (scopeKey === 'all') setAllTotal(total)
+        // 侧边栏「全部数据」要的是不带筛选的全量条数，筛选后的 total 不能写入
+        if (scopeKey === 'all' && filterKey === '') setAllTotal(total)
         setData({
           key: queryKey,
           records: page.records,
@@ -80,7 +95,18 @@ export function useFileMetaPage(
         })
       })
     return () => controller.abort()
-  }, [categoryId, current, dataSetId, isRecycleBin, queryKey, scopeKey, size])
+  }, [
+    categoryId,
+    current,
+    dataSetId,
+    extension,
+    filterKey,
+    isRecycleBin,
+    originalName,
+    queryKey,
+    scopeKey,
+    size,
+  ])
 
   /**
    * 非「全部数据」范围下的全量条数重取：列表请求带不回全量条数，
@@ -101,14 +127,16 @@ export function useFileMetaPage(
   }, [allRevision])
 
   function goToPage(next: number) {
-    setPaging({ scopeKey, size, current: next })
+    setPaging({ scopeKey, filterKey, size, current: next })
   }
 
   /** 重新查询当前条件，用于导入、删除等写操作后刷新 */
   function refresh() {
     setRevision((previous) => previous + 1)
-    // 「全部数据」范围下列表请求已带回全量条数，无需再取一次
-    if (scopeKey !== 'all') setAllRevision((previous) => previous + 1)
+    // 「全部数据」且无筛选时，列表请求已带回全量条数，无需再取一次
+    if (scopeKey !== 'all' || filterKey !== '') {
+      setAllRevision((previous) => previous + 1)
+    }
   }
 
   const ready = data !== null && data.key === queryKey

@@ -1,0 +1,68 @@
+.dialog {
+  width: min(400px, 90vw);
+  padding: 24px 28px;
+  border: 1px solid #dce6ec;
+  border-radius: 14px;
+  color: #13293d;
+  font-family: 'Noto Sans SC', sans-serif;
+  box-shadow: 0 25px 80px #183f6322;
+}
+.dialog::backdrop {
+  background: #17384d55;
+}
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.message {
+  margin: 0;
+  color: #576e85;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+.cancel,
+.confirm,
+.danger {
+  height: 34px;
+  padding: 0 18px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.cancel {
+  border: 1px solid #dee5ed;
+  background: #ffffff;
+  color: #13293d;
+}
+.confirm {
+  border: 0;
+  background: #1f75f2;
+  color: #ffffff;
+  font-weight: 700;
+}
+.danger {
+  border: 0;
+  background: #d64545;
+  color: #ffffff;
+  font-weight: 700;
+}
+.cancel:disabled,
+.confirm:disabled,
+.danger:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

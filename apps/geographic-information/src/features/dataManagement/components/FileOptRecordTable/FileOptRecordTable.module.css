@@ -1,0 +1,41 @@
+/* 状态：小方块颜色区分，颜色由行内样式给出 */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.statusSquare {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 2px;
+}
+/* 详情按钮 */
+.actionButton {
+  height: 26px;
+  padding: 0 12px;
+  border: 1px solid #b9d4f6;
+  border-radius: 6px;
+  background: #f4f9ff;
+  color: #1267d6;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.actionButton:hover {
+  border-color: #1267d6;
+}
+
+/* 日期筛选用原生 date，样式对齐 antd 输入框；只选年月日，缩小宽度让操作按钮能同行 */
+.dateInput {
+  width: 140px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #13293d;
+  font-family: inherit;
+  font-size: 14px;
+}

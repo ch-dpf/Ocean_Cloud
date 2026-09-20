@@ -92,6 +92,8 @@ function buildColumns(
       title: '操作',
       key: 'action',
       width: 130,
+      // 横向滚动时固定在表格右侧，按钮始终可见
+      fixed: 'right',
       render: () => (
         // 服务详情尚未接入，按钮先置灰占位
         <button type="button" className={styles.actionButton} disabled>

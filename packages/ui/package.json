@@ -11,6 +11,7 @@
     "@ant-design/icons": "^5.6.1",
     "@ocean-cloud/bridge": "*",
     "@ocean-cloud/http": "*",
-    "antd": "^5.29.3"
+    "antd": "^5.29.3",
+    "react-resizable": "^4.0.2"
   }
 }

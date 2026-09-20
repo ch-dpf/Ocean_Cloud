@@ -72,10 +72,15 @@ export function UploadProgressDialog({
               <p className={styles.taskName}>{task.taskName || '上传任务'}</p>
               <p className={styles.taskNo}>{task.taskNo}</p>
               <div className={styles.track}>
-                <div
-                  className={styles.bar}
-                  style={{ width: `${task.percent ?? 0}%` }}
-                />
+                {task.pending === true ? (
+                  // 还没收到任何进度帧：用循环流动的条表示正在上传，而不是停在 0%
+                  <div className={styles.barPending} aria-hidden="true" />
+                ) : (
+                  <div
+                    className={styles.bar}
+                    style={{ width: `${task.percent ?? 0}%` }}
+                  />
+                )}
               </div>
               <p className={styles.meta}>{formatTaskMeta(task)}</p>
             </li>

@@ -4,14 +4,19 @@
   height: 100%;
 }
 
-/* 二级导航右侧的内容区，表格需要确定高度做内部滚动 */
+/* 二级导航右侧的内容区：标题与表格同处一张白色卡片，表格需要在卡片内滚动 */
 .content {
   display: flex;
   flex: 1;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  margin: 16px;
   padding: 24px;
+  border: 1px solid #dee5ed;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
 .contentHeader {

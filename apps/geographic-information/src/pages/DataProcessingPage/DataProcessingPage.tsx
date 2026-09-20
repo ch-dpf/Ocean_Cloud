@@ -3,12 +3,19 @@ import { Form } from 'antd'
 import { SubNav } from '@ocean-cloud/ui'
 import styles from './DataProcessingPage.module.css'
 import { DATA_PROCESSING_SECTIONS } from '../../config/navigation'
+import { ProcessingCreateDialog } from '../../features/dataManagement/components/ProcessingCreateDialog/ProcessingCreateDialog'
 import { TaskListTable } from '../../features/dataManagement/components/TaskListTable/TaskListTable'
 import {
   TASK_PAGE_SIZE,
   TASK_TYPE_PROCESS,
 } from '../../features/dataManagement/constants/task'
 import { useTaskPage } from '../../features/dataManagement/hooks/useTaskPage'
+import { createProcessingTask } from '../../features/dataManagement/services/taskService'
+import { publishTerrainFromTask } from '../../features/dataPublishing/services/publicationService'
+import type {
+  ProcessingParameters,
+  TaskRecord,
+} from '../../features/dataManagement/types/task'
 
 /** 页签与任务状态的对应关系；「全部任务」不传 taskStatus */
 const STATUS_TABS = [
@@ -30,6 +37,8 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
   const [searchForm] = Form.useForm()
   const [taskStatus, setTaskStatus] = useState('')
   const [pageSize, setPageSize] = useState(TASK_PAGE_SIZE)
+  const [publishingId, setPublishingId] = useState<string | null>(null)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
 
   const { records, total, current, isLoading, error, goToPage, refresh } =
     useTaskPage({
@@ -62,6 +71,38 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
     refresh()
   }
 
+  /** 发布已完成的任务：确认后调用发布接口，成功后刷新列表 */
+  async function handlePublish(record: TaskRecord) {
+    if (!window.confirm(`确定发布任务「${record.taskName}」吗？`)) return
+    setPublishingId(record.id)
+    try {
+      await publishTerrainFromTask(record.id)
+      refresh()
+    } catch {
+      // 失败提示由 RequestErrorNotice 统一展示
+    }
+    setPublishingId(null)
+  }
+
+  /**
+   * 新建处理任务：提交后立即关窗，建任务与文件上传在后台进行。
+   * 成功后刷新任务列表；失败提示由 RequestErrorNotice 统一展示。
+   */
+  async function handleCreateProcessing(input: {
+    readonly processingType: string
+    readonly taskName: string
+    readonly parameters: ProcessingParameters
+    readonly files: readonly File[]
+  }) {
+    setIsCreateOpen(false)
+    try {
+      await createProcessingTask(input)
+    } catch {
+      return
+    }
+    refresh()
+  }
+
   return (
     <section className={styles.page}>
       <SubNav
@@ -80,7 +121,11 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
                 : '对影像、矢量、地形、倾斜模型和电子海图进行转换、切片与服务化处理'}
             </p>
           </div>
-          <button type="button" className={styles.createButton}>
+          <button
+            type="button"
+            className={styles.createButton}
+            onClick={() => setIsCreateOpen(true)}
+          >
             新建处理任务
           </button>
         </div>
@@ -115,8 +160,16 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
           onValuesChange={handleValuesChange}
           onSearch={() => refresh()}
           onReset={handleReset}
+          onPublish={handlePublish}
+          publishingId={publishingId}
         />
       </div>
+      {isCreateOpen && (
+        <ProcessingCreateDialog
+          onClose={() => setIsCreateOpen(false)}
+          onSubmit={handleCreateProcessing}
+        />
+      )}
     </section>
   )
 }

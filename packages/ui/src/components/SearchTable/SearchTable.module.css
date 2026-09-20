@@ -35,6 +35,25 @@
   flex-shrink: 0;
 }
 
+/* 列宽拖拽：手柄贴在表头单元格右边缘，被包裹的 th 由 react-resizable 加上这个类 */
+.root :global(.ant-table-thead th.react-resizable) {
+  position: relative;
+}
+.resizeHandle {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  z-index: 2;
+  width: 9px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+}
+.resizeHandle:hover {
+  background: rgba(31, 117, 242, 0.16);
+}
+
 .tableArea {
   display: flex;
   flex: 1;

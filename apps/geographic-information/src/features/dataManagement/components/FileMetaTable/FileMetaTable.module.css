@@ -30,15 +30,3 @@
 .actionButtonDefault:hover:not(:disabled) {
   border-color: #1267d6;
 }
-/* 采集时间沿用原生日期输入，样式对齐 antd 输入框 */
-.dateInput {
-  width: 160px;
-  height: 32px;
-  padding: 0 10px;
-  border: 1px solid #d9d9d9;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #13293d;
-  font-family: inherit;
-  font-size: 14px;
-}

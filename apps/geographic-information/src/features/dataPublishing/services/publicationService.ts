@@ -23,3 +23,10 @@ export async function getTerrainPublicationPage(
   )
   return result.data
 }
+
+/** 发布已完成的地形处理任务：sourceTaskId 即任务 id，接口只需路径参数 */
+export async function publishTerrainFromTask(taskId: string): Promise<void> {
+  await httpClient.post<ApiResult<unknown>>(
+    '/terrain-publications/' + encodeURIComponent(taskId) + '/publish',
+  )
+}

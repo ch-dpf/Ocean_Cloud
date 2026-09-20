@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import type { CSSProperties, ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { CSSProperties, ReactNode, SyntheticEvent } from 'react'
 import { Button, ConfigProvider, Form, Space, Table } from 'antd'
 import type {
   FormInstance,
@@ -8,6 +8,8 @@ import type {
 } from 'antd'
 import { ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import zhCN from 'antd/locale/zh_CN'
+import { MIN_COLUMN_WIDTH, ResizableTitle } from './ResizableTitle'
+import type { ResizeCallbackData } from 'react-resizable'
 import styles from './SearchTable.module.css'
 
 /**
@@ -31,6 +33,19 @@ const MIN_SCROLL_Y = 220
 /** 表体之外（分页条、内边距）预留的高度 */
 const TABLE_EXTRA_HEIGHT = 92
 
+/** 列宽覆盖用的键：优先 key，其次 dataIndex，最后退回列序号 */
+function columnKeyOf<T>(
+  column: TableColumnsType<T>[number],
+  index: number,
+): string {
+  if (typeof column.key === 'string' || typeof column.key === 'number')
+    return String(column.key)
+  // dataIndex 只在普通列上有，分组列没有
+  if ('dataIndex' in column && typeof column.dataIndex === 'string')
+    return column.dataIndex
+  return `column-${index}`
+}
+
 export interface SearchTableProps<T> {
   readonly columns: TableColumnsType<T>
   readonly dataSource: readonly T[]
@@ -49,8 +64,8 @@ export interface SearchTableProps<T> {
   readonly searchInitialValues?: Record<string, unknown>
   /** 表单值变化（用于筛选条件实时联动） */
   readonly onValuesChange?: (values: Record<string, unknown>) => void
-  /** 点击搜索 */
-  readonly onSearch?: () => void
+  /** 点击搜索，回传当前表单值 */
+  readonly onSearch?: (values: Record<string, unknown>) => void
   /** 点击重置（表单已重置后触发） */
   readonly onReset?: () => void
   /** 搜索栏右侧的额外操作 */
@@ -110,6 +125,49 @@ export function SearchTable<T extends object>({
     }
   }, [])
 
+  // 拖拽后的列宽覆盖：未拖过的列沿用调用方声明的宽度
+  const [columnWidths, setColumnWidths] = useState<
+    Readonly<Record<string, number>>
+  >({})
+
+  const resizableColumns = useMemo(
+    () =>
+      columns.map((column, index) => {
+        const columnKey = columnKeyOf(column, index)
+        const width = columnWidths[columnKey] ?? column.width
+        // 没有数值宽度的列无从计算基准，不提供拖拽手柄
+        if (typeof width !== 'number') return column
+        return {
+          ...column,
+          width,
+          onHeaderCell: () => ({
+            width,
+            onResize: (_event: SyntheticEvent, data: ResizeCallbackData) => {
+              setColumnWidths((previous) => ({
+                ...previous,
+                [columnKey]: Math.max(
+                  MIN_COLUMN_WIDTH,
+                  Math.round(data.size.width),
+                ),
+              }))
+            },
+          }),
+        }
+      }),
+    [columnWidths, columns],
+  )
+
+  // 所有列都有数值宽度时，横向滚动宽度取列宽合计，拖宽后自动延长
+  const mergedScrollX = resizableColumns.every(
+    (column) => typeof column.width === 'number',
+  )
+    ? resizableColumns.reduce(
+        (sum, column) =>
+          sum + (typeof column.width === 'number' ? column.width : 0),
+        0,
+      )
+    : scrollX
+
   function handleTableChange(pagination: TablePaginationConfig) {
     onPageChange(pagination.current ?? 1, pagination.pageSize ?? pageSize)
   }
@@ -135,7 +193,7 @@ export function SearchTable<T extends object>({
               layout="inline"
               className={styles.searchForm}
               initialValues={searchInitialValues}
-              onFinish={() => onSearch?.()}
+              onFinish={(values: Record<string, unknown>) => onSearch?.(values)}
               onValuesChange={(_, values: Record<string, unknown>) =>
                 onValuesChange?.(values)
               }
@@ -164,11 +222,12 @@ export function SearchTable<T extends object>({
         <div ref={tableAreaRef} className={styles.tableArea}>
           <Table<T>
             rowKey={rowKey}
-            columns={columns}
+            columns={resizableColumns}
+            components={{ header: { cell: ResizableTitle } }}
             dataSource={dataSource}
             loading={loading}
             onChange={handleTableChange}
-            scroll={{ x: scrollX, y: scrollY }}
+            scroll={{ x: mergedScrollX, y: scrollY }}
             size="middle"
             locale={{ emptyText }}
             pagination={{

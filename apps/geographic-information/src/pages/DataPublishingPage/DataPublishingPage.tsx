@@ -55,7 +55,7 @@ export function DataPublishingPage({ activePath }: DataPublishingPageProps) {
             <p>
               {section.pending === true
                 ? `${section.label}接口待接入，暂展示全部服务`
-                : '已发布的地形服务，可直接在 Cesium 中作为地形服务加载'}
+                : '统一管理已发布服务、访问地址、协议和运行状态'}
             </p>
           </div>
         </div>

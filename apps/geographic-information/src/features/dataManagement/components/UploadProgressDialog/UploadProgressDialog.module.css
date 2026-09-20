@@ -93,6 +93,27 @@
   background: #1f75f2;
   transition: width 0.2s;
 }
+/* 还没收到进度帧时的流动条：一道光带循环扫过，表示正在上传而不是卡住 */
+.barPending {
+  width: 40%;
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(31, 117, 242, 0.25),
+    #1f75f2,
+    rgba(31, 117, 242, 0.25)
+  );
+  animation: pendingSweep 1.4s ease-in-out infinite;
+}
+@keyframes pendingSweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
 .meta {
   margin: 8px 0 0;
   color: #576e85;

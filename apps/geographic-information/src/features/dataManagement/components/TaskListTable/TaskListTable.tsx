@@ -26,6 +26,10 @@ interface TaskListTableProps {
   readonly onSearch: () => void
   /** 点击重置（表单已重置后触发） */
   readonly onReset: () => void
+  /** 点击「发布」；不传时按钮仅作为占位展示 */
+  readonly onPublish?: (record: TaskRecord) => void
+  /** 正在发布的任务 id：该行按钮显示「发布中…」 */
+  readonly publishingId?: string | null
 }
 
 /** 状态小方块的颜色；未命中的取值用兜底色 */
@@ -74,73 +78,103 @@ function formatDuration(start: string | null, finish: string | null): string {
   return `${Math.floor(minutes / 60)} 小时 ${minutes % 60} 分`
 }
 
-const COLUMNS: TableColumnsType<TaskRecord> = [
-  {
-    title: '任务名称',
-    key: 'taskName',
-    ellipsis: true,
-    render: (_, record) => {
-      const { name } = splitTaskName(record.taskName)
-      return <span title={record.taskName}>{name}</span>
+/** 列定义；操作列按钮依赖外部传入的回调，因此每次渲染重建 */
+function buildColumns(
+  onPublish: ((record: TaskRecord) => void) | undefined,
+  publishingId: string | null | undefined,
+): TableColumnsType<TaskRecord> {
+  return [
+    {
+      title: '任务名称',
+      key: 'taskName',
+      ellipsis: true,
+      render: (_, record) => {
+        const { name } = splitTaskName(record.taskName)
+        return <span title={record.taskName}>{name}</span>
+      },
     },
-  },
-  {
-    title: '输入数据',
-    key: 'input',
-    ellipsis: true,
-    render: (_, record) => {
-      const { input } = splitTaskName(record.taskName)
-      return <span title={input}>{input}</span>
+    {
+      title: '输入数据',
+      key: 'input',
+      ellipsis: true,
+      render: (_, record) => {
+        const { input } = splitTaskName(record.taskName)
+        return <span title={input}>{input}</span>
+      },
     },
-  },
-  {
-    title: '处理类型',
-    key: 'processingType',
-    render: (_, record) => toProcessingTypeLabel(record.processingType ?? ''),
-  },
-  {
-    title: '进度',
-    key: 'progress',
-    render: (_, record) => `${record.completedCount} / ${record.totalCount}`,
-  },
-  {
-    title: '耗时',
-    key: 'duration',
-    render: (_, record) => formatDuration(record.startTime, record.finishTime),
-  },
-  {
-    title: '创建时间',
-    key: 'createTime',
-    render: (_, record) => formatTime(record.createTime),
-  },
-  {
-    title: '状态',
-    key: 'taskStatus',
-    render: (_, record) => (
-      <span className={styles.status}>
-        <span
-          className={styles.statusSquare}
-          style={{
-            background:
-              STATUS_COLORS[record.taskStatus] ?? STATUS_FALLBACK_COLOR,
-          }}
-          aria-hidden="true"
-        />
-        {toTaskStatusLabel(record.taskStatus)}
-      </span>
-    ),
-  },
-  {
-    title: '操作',
-    key: 'action',
-    render: () => (
-      // 处理任务详情尚未接入，按钮先置灰占位
-      <button type="button" className={styles.actionButton} disabled>
-        查看
-      </button>
-    ),
-  },
-]
+    {
+      title: '处理类型',
+      key: 'processingType',
+      render: (_, record) => toProcessingTypeLabel(record.processingType ?? ''),
+    },
+    {
+      title: '进度',
+      key: 'progress',
+      width: 110,
+      render: (_, record) => `${record.completedCount} / ${record.totalCount}`,
+    },
+    {
+      title: '耗时',
+      key: 'duration',
+      width: 130,
+      render: (_, record) =>
+        formatDuration(record.startTime, record.finishTime),
+    },
+    {
+      title: '创建时间',
+      key: 'createTime',
+      width: 170,
+      render: (_, record) => formatTime(record.createTime),
+    },
+    {
+      title: '状态',
+      key: 'taskStatus',
+      width: 130,
+      render: (_, record) => (
+        <span className={styles.status}>
+          <span
+            className={styles.statusSquare}
+            style={{
+              background:
+                STATUS_COLORS[record.taskStatus] ?? STATUS_FALLBACK_COLOR,
+            }}
+            aria-hidden="true"
+          />
+          {toTaskStatusLabel(record.taskStatus)}
+        </span>
+      ),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 190,
+      // 横向滚动时固定在表格右侧，按钮始终可见
+      fixed: 'right',
+      render: (_, record) => {
+        const isPublishing = publishingId === record.id
+        return (
+          <span className={styles.actionCell}>
+            {/* 处理任务详情尚未接入，按钮先置灰占位 */}
+            <button type="button" className={styles.actionButton} disabled>
+              查看
+            </button>
+            <button
+              type="button"
+              className={styles.actionButton}
+              onClick={
+                onPublish === undefined ? undefined : () => onPublish(record)
+              }
+              // 只开放已完成的任务发布，其余状态置灰
+              disabled={record.taskStatus !== 'COMPLETED' || isPublishing}
+            >
+              {isPublishing ? '发布中…' : '发布'}
+            </button>
+          </span>
+        )
+      },
+    },
+  ]
+}
 
 export function TaskListTable({
   records,
@@ -154,10 +188,12 @@ export function TaskListTable({
   onValuesChange,
   onSearch,
   onReset,
+  onPublish,
+  publishingId,
 }: TaskListTableProps) {
   return (
     <SearchTable<TaskRecord>
-      columns={COLUMNS}
+      columns={buildColumns(onPublish, publishingId)}
       dataSource={records}
       rowKey="id"
       loading={isLoading}

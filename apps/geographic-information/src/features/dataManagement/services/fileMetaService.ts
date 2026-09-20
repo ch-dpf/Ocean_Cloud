@@ -1,9 +1,8 @@
 import { httpClient } from '../../../services/httpClient'
 import type { ApiResult } from '../../../services/apiResult'
 import type { FileMetaPage, FileMetaPageQuery } from '../types/fileMeta'
-import type { UploadTask } from '../types/task'
 
-/** 分页查询数据文件；不传 dataSetId / categoryId 时查询全部数据 */
+/** 分页查询数据文件；不传 dataSetId / categoryId 时查询全部数据，筛选条件为空时不提交该参数 */
 export async function getFileMetaPage(
   query: FileMetaPageQuery,
   signal?: AbortSignal,
@@ -18,6 +17,8 @@ export async function getFileMetaPage(
         ...(query.categoryId !== undefined
           ? { categoryId: query.categoryId }
           : {}),
+        ...(query.originalName ? { originalName: query.originalName } : {}),
+        ...(query.extension ? { extension: query.extension } : {}),
       },
       signal,
     },
@@ -37,21 +38,41 @@ export async function getDeletedFileMetaPage(
   return result.data
 }
 
-/** 上传数据文件：多文件通过同一个 files 字段提交，返回后端创建的处理任务 */
-export async function uploadFileMeta(input: {
-  readonly dataSetId: string
-  readonly files: readonly File[]
-}): Promise<UploadTask> {
+/** 导入任务创建结果（/filemeta/import/task 的 data）；taskId 是后端生成的字符串编号 */
+interface ImportTaskCreated {
+  readonly taskId: string
+}
+
+/**
+ * 第一步：创建导入任务，dataSetId 与总文件数走 query，返回后端生成的 taskId。
+ * 调用方拿到编号后先在「上传进度」里插入占位，再调 uploadImportBatch 传文件。
+ * 进度不在响应里，由 /ws/task 长连接推送。
+ */
+export async function createImportTask(
+  dataSetId: string,
+  totalCount: number,
+): Promise<string> {
+  const result = await httpClient.post<ApiResult<ImportTaskCreated>>(
+    '/filemeta/import/task',
+    undefined,
+    { params: { dataSetId, totalCount } },
+  )
+  return result.data.taskId
+}
+
+/** 第二步：按任务上传文件内容，多文件通过同一个 files 字段提交 */
+export async function uploadImportBatch(
+  taskId: string,
+  files: readonly File[],
+): Promise<void> {
   const form = new FormData()
-  form.append('dataSetId', input.dataSetId)
-  for (const file of input.files) form.append('files', file)
-  const result = await httpClient.post<ApiResult<UploadTask>>(
-    '/task/upload',
+  for (const file of files) form.append('files', file)
+  await httpClient.post<ApiResult<unknown>>(
+    '/filemeta/import/batch/' + encodeURIComponent(taskId),
     form,
     // 上传耗时远大于普通请求，放开实例上 15 秒的默认超时
     { timeout: 0 },
   )
-  return result.data
 }
 
 /** 删除数据文件元数据 */

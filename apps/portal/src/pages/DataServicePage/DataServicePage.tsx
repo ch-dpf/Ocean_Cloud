@@ -1,6 +1,12 @@
 import styles from './DataServicePage.module.css'
+import { useServiceCounts } from '../../features/dataService/hooks/useServiceCounts'
 
 const CAPABILITIES = ['数据管理', '数据处理', '数据发布']
+
+/** 计数单位统一为「个」；未取到计数（加载中或失败）时保持占位 */
+function formatCount(total: number | null | undefined): string {
+  return total === null || total === undefined ? '--' : `${total} 个`
+}
 
 // 入口使用同源相对路径：浏览器自动补上当前页面的源，开发、部署地址一致，不写死主机和端口。
 // 待应用注册表服务就绪后，可改回按注册表的 route / launchUrl 在运行时解析。
@@ -26,6 +32,9 @@ const MODULES = [
 ] as const
 
 export function DataServicePage() {
+  const { datasetTotal, taskTotal, publicationTotal } = useServiceCounts()
+  // 顺序与 CAPABILITIES 一致：数据集、任务、已发布服务；海洋接口未就绪，保持占位
+  const gisCounts = [datasetTotal, taskTotal, publicationTotal]
   return (
     <div className={styles.dataServicePage}>
       <header className={styles.pageHeader}>
@@ -50,10 +59,14 @@ export function DataServicePage() {
 
             <div className={styles.cardBody}>
               <dl className={styles.capabilities}>
-                {CAPABILITIES.map((capability) => (
+                {CAPABILITIES.map((capability, index) => (
                   <div key={capability}>
                     <dt>{capability}</dt>
-                    <dd>--</dd>
+                    <dd>
+                      {formatCount(
+                        module.key === 'gis' ? gisCounts[index] : undefined,
+                      )}
+                    </dd>
                   </div>
                 ))}
               </dl>

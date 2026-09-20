@@ -34,6 +34,20 @@ export function createHttpClient(options: HttpClientOptions = {}) {
     requestOptions: RequestOptions = {},
   ): Promise<T> {
     const { silentError = false, ...config } = requestOptions
+    const startedAt = Date.now()
+    // 调试回调不允许影响请求本身
+    function report(status: number) {
+      try {
+        options.onResponse?.({
+          method,
+          url,
+          status,
+          durationMs: Date.now() - startedAt,
+        })
+      } catch {
+        /* 调试回调抛错不影响请求结果 */
+      }
+    }
     try {
       const response = await instance.request<T, AxiosResponse<T>>({
         ...config,
@@ -42,9 +56,11 @@ export function createHttpClient(options: HttpClientOptions = {}) {
         data,
         validateStatus: (status) => status >= 200 && status < 300,
       })
+      report(response.status)
       return response.data
     } catch (cause) {
       const error = normalizeRequestError(cause)
+      report(error.status ?? 0)
       if (!silentError && error.kind !== 'canceled') {
         for (const listener of listeners) {
           try {

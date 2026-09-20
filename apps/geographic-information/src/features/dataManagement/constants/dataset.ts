@@ -39,3 +39,30 @@ export function toProcessLabel(categoryId: number): string {
 
 /** 数据文件分页查询每页条数 */
 export const FILE_PAGE_SIZE = 10
+
+/** 文件操作记录（导入记录）分页查询每页条数 */
+export const FILE_OPT_PAGE_SIZE = 10
+
+/**
+ * 「数据格式」筛选项：值即后端 extension 字段（小写、不带点），与列表里的数据格式列一致。
+ * 常见格式先在此枚举，后续按实际入库的格式增补。
+ */
+export const FILE_FORMAT_OPTIONS = [
+  'tif',
+  'tiff',
+  'img',
+  'dem',
+  'asc',
+  'shp',
+  'geojson',
+  'kml',
+  'kmz',
+  'gdb',
+  'dwg',
+  'dxf',
+  'las',
+  'laz',
+  'osgb',
+  'obj',
+  'zip',
+] as const

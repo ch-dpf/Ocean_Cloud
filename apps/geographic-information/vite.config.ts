@@ -9,6 +9,8 @@ const apiTarget = process.env.OCEAN_BUSINESS_TARGET || BACKEND_ORIGIN
 // 后端若没有 /api/gis 上下文路径，改为 rewrite: (path) => path.replace(/^\/api\/gis/, '')
 const proxy = {
   '/api/gis': { target: apiTarget, changeOrigin: true },
+  // token 校验等鉴权接口不在 /api/gis 下，独立调试时同样需要转发
+  '/api/auth': { target: apiTarget, changeOrigin: true },
   // 任务进度等 WebSocket 经同源地址转发
   '/ws': { target: BACKEND_ORIGIN, changeOrigin: true, ws: true },
 }

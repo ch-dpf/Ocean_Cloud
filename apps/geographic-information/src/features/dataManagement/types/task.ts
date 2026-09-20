@@ -1,10 +1,11 @@
-/** 上传文件后由后端创建的处理任务 */
-export interface UploadTask {
-  readonly taskId: number
-  readonly taskNo: string
-  readonly dataSetId: number
-  readonly totalCount: number
-  readonly status: string
+/** 处理任务的预处理参数（/api/gis/task/process 的 request.parameters） */
+export interface ProcessingParameters {
+  /** 目标坐标系，目前只支持 EPSG:4326 */
+  readonly targetCrs: string
+  /** 瓦片切分剖面，目前只支持 GEODETIC（地理剖分） */
+  readonly tileProfile: string
+  /** 输出格式，目前只支持 QUANTIZED_MESH（.terrain） */
+  readonly outputFormat: string
 }
 
 /** 任务分页查询参数（/api/gis/task/page） */
