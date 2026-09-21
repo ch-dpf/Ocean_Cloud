@@ -76,7 +76,7 @@ function buildColumns(
     {
       title: '文件名',
       dataIndex: 'originalName',
-      width: 240,
+      width: 120,
       ellipsis: true,
     },
     {

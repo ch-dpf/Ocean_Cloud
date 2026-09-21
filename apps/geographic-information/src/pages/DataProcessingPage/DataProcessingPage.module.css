@@ -47,6 +47,31 @@
   font-size: 13px;
 }
 
+.headerActions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 与数据管理页的「上传进度」按钮同款：白底描边，次要操作 */
+.progressButton {
+  height: 36px;
+  padding: 0 18px;
+  border: 1px solid #dee5ed;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #13293d;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.progressButton:hover {
+  border-color: #1267d6;
+  color: #1267d6;
+}
+
 .createButton {
   height: 36px;
   flex-shrink: 0;

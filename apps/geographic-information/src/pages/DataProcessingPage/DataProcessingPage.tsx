@@ -5,11 +5,14 @@ import styles from './DataProcessingPage.module.css'
 import { DATA_PROCESSING_SECTIONS } from '../../config/navigation'
 import { ProcessingCreateDialog } from '../../features/dataManagement/components/ProcessingCreateDialog/ProcessingCreateDialog'
 import { TaskListTable } from '../../features/dataManagement/components/TaskListTable/TaskListTable'
+import { UploadProgressDialog } from '../../features/dataManagement/components/UploadProgressDialog/UploadProgressDialog'
 import {
+  PROCESSING_TASK_KINDS,
   TASK_PAGE_SIZE,
   TASK_TYPE_PROCESS,
 } from '../../features/dataManagement/constants/task'
 import { useTaskPage } from '../../features/dataManagement/hooks/useTaskPage'
+import { useUploadTasks } from '../../features/dataManagement/hooks/useUploadTasks'
 import { createProcessingTask } from '../../features/dataManagement/services/taskService'
 import { publishTerrainFromTask } from '../../features/dataPublishing/services/publicationService'
 import type {
@@ -39,6 +42,11 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
   const [pageSize, setPageSize] = useState(TASK_PAGE_SIZE)
   const [publishingId, setPublishingId] = useState<string | null>(null)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [isProgressOpen, setIsProgressOpen] = useState(false)
+
+  // 只展示三类处理任务的帧（导入任务的帧归数据管理页的「上传进度」）
+  const { tasks, clearFinished } = useUploadTasks(PROCESSING_TASK_KINDS)
+  const runningCount = tasks.filter((task) => !task.done).length
 
   const { records, total, current, isLoading, error, goToPage, refresh } =
     useTaskPage({
@@ -121,13 +129,22 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
                 : '对影像、矢量、地形、倾斜模型和电子海图进行转换、切片与服务化处理'}
             </p>
           </div>
-          <button
-            type="button"
-            className={styles.createButton}
-            onClick={() => setIsCreateOpen(true)}
-          >
-            新建处理任务
-          </button>
+          <div className={styles.headerActions}>
+            <button
+              type="button"
+              className={styles.progressButton}
+              onClick={() => setIsProgressOpen(true)}
+            >
+              处理进度{runningCount > 0 ? ` (${runningCount})` : ''}
+            </button>
+            <button
+              type="button"
+              className={styles.createButton}
+              onClick={() => setIsCreateOpen(true)}
+            >
+              新建处理任务
+            </button>
+          </div>
         </div>
 
         <div className={styles.tabs} role="tablist" aria-label="任务状态">
@@ -168,6 +185,16 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
         <ProcessingCreateDialog
           onClose={() => setIsCreateOpen(false)}
           onSubmit={handleCreateProcessing}
+        />
+      )}
+      {isProgressOpen && (
+        <UploadProgressDialog
+          tasks={tasks}
+          title="处理进度"
+          emptyText="暂无处理任务。"
+          taskLabel="处理任务"
+          onClearFinished={clearFinished}
+          onClose={() => setIsProgressOpen(false)}
         />
       )}
     </section>

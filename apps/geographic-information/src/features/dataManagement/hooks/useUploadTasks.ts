@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 
-/** 一个上传任务的最新进度 */
+/** 一个任务的最新进度 */
 export interface UploadTaskItem {
   readonly taskNo: string
+  /** 任务类型标识：帧里的 taskType，缺失时取任务编号里最后一个下划线之前的部分 */
+  readonly kind: string
   readonly taskName: string
   /** 后端标记任务已结束 */
   readonly done: boolean
@@ -61,6 +63,18 @@ function readText(
 }
 
 /**
+ * 帧的任务类型：优先取 taskType 字段，缺失时用任务编号前缀兜底
+ * （GIS_IMPORT_2101511704837271553 → GIS_IMPORT）。
+ */
+function readTaskKind(task: Record<string, unknown>): string {
+  const explicit = readText(task, ['taskType'])
+  if (explicit !== '') return explicit
+  const taskNo = readText(task, ['taskNo', 'taskId'])
+  const index = taskNo.lastIndexOf('_')
+  return index === -1 ? taskNo : taskNo.slice(0, index)
+}
+
+/**
  * 进度百分比：优先用后端给的 progress（0-100）。
  * 存储文件阶段后端给的是字节级进度，只按完成数 / 总数算会一直停在 0%，
  * 因此仅在 progress 缺失时才退回「已处理数 / 总数」。
@@ -87,6 +101,7 @@ function readTask(task: Record<string, unknown>): UploadTaskItem | null {
   const totalCount = readNumber(task, 'totalCount')
   return {
     taskNo,
+    kind: readTaskKind(task),
     taskName: readText(task, ['taskName', 'taskType']),
     done: task.done === true,
     percent: readPercent(task, completedCount + failedCount, totalCount),
@@ -101,6 +116,8 @@ function readTask(task: Record<string, unknown>): UploadTaskItem | null {
 function createPendingTask(taskId: string, totalCount: number): UploadTaskItem {
   return {
     taskNo: taskId,
+    // 占位条目只用于导入任务
+    kind: 'GIS_IMPORT',
     taskName: '上传任务',
     done: false,
     // 进度未知，因此不显示具体百分比，进度条改走流动动效
@@ -114,10 +131,12 @@ function createPendingTask(taskId: string, totalCount: number): UploadTaskItem {
 }
 
 /**
- * 上传任务进度：页面打开期间保持连接，按任务编号累积（最新任务排在最前）。
+ * 任务进度长连接：页面打开期间保持连接，按任务编号累积（最新任务排在最前）。
  * 刷新页面后列表清空 —— 历史任务需要后端提供任务列表接口。
+ * kinds 按任务类型过滤展示（传空数组表示不过滤）：数据管理页只看导入，
+ * 数据处理页只看三类处理任务；内部仍累积全部帧，避免来回切页面时丢进度。
  */
-export function useUploadTasks() {
+export function useUploadTasks(kinds: readonly string[] = []) {
   const [tasks, setTasks] = useState<readonly UploadTaskItem[]>([])
 
   useEffect(() => {
@@ -167,5 +186,11 @@ export function useUploadTasks() {
     setTasks((prev) => prev.filter((task) => !task.done))
   }
 
-  return { tasks, clearFinished, addPendingTask, failTask }
+  // 过滤只影响对外展示的列表，内部仍保留全部帧
+  const visibleTasks =
+    kinds.length === 0
+      ? tasks
+      : tasks.filter((task) => kinds.includes(task.kind))
+
+  return { tasks: visibleTasks, clearFinished, addPendingTask, failTask }
 }

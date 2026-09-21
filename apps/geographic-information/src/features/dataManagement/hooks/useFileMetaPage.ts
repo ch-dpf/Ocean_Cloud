@@ -39,6 +39,9 @@ export function useFileMetaPage(
   // 回收站走独立的已删除接口，只传 current / size，筛选条件不参与查询
   const isRecycleBin = scope !== null && scope.kind === 'recycleBin'
   const { originalName = '', extension = '' } = filters
+  // 无筛选时 filterKey 并不是空串（两个空值拼出来的分隔符），
+  // 所以「有没有筛选」必须看筛选值本身，不能拿 filterKey 判空
+  const hasFilters = !isRecycleBin && (originalName !== '' || extension !== '')
   const filterKey = isRecycleBin ? '' : `${originalName}\u0000${extension}`
   const [paging, setPaging] = useState({
     scopeKey,
@@ -76,7 +79,7 @@ export function useFileMetaPage(
       .then((page) => {
         const total = Number(page.total)
         // 侧边栏「全部数据」要的是不带筛选的全量条数，筛选后的 total 不能写入
-        if (scopeKey === 'all' && filterKey === '') setAllTotal(total)
+        if (scopeKey === 'all' && !hasFilters) setAllTotal(total)
         setData({
           key: queryKey,
           records: page.records,
@@ -101,6 +104,7 @@ export function useFileMetaPage(
     dataSetId,
     extension,
     filterKey,
+    hasFilters,
     isRecycleBin,
     originalName,
     queryKey,
@@ -134,7 +138,7 @@ export function useFileMetaPage(
   function refresh() {
     setRevision((previous) => previous + 1)
     // 「全部数据」且无筛选时，列表请求已带回全量条数，无需再取一次
-    if (scopeKey !== 'all' || filterKey !== '') {
+    if (scopeKey !== 'all' || hasFilters) {
       setAllRevision((previous) => previous + 1)
     }
   }

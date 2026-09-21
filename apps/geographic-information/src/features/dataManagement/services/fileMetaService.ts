@@ -38,6 +38,20 @@ export async function getDeletedFileMetaPage(
   return result.data
 }
 
+/** 恢复回收站里的数据文件 */
+export async function restoreDeletedFileMeta(id: string): Promise<void> {
+  await httpClient.put<ApiResult<unknown>>(
+    '/filemeta/deleted/' + encodeURIComponent(id) + '/restore',
+  )
+}
+
+/** 彻底删除回收站里的数据文件（不可恢复） */
+export async function purgeDeletedFileMeta(id: string): Promise<void> {
+  await httpClient.delete<ApiResult<unknown>>(
+    '/filemeta/deleted/' + encodeURIComponent(id),
+  )
+}
+
 /** 导入任务创建结果（/filemeta/import/task 的 data）；taskId 是后端生成的字符串编号 */
 interface ImportTaskCreated {
   readonly taskId: string
@@ -79,6 +93,17 @@ export async function uploadImportBatch(
 export async function deleteFileMeta(id: string): Promise<void> {
   await httpClient.delete<ApiResult<unknown>>(
     '/filemeta/' + encodeURIComponent(id),
+  )
+}
+
+/**
+ * 下载数据文件内容：接口返回二进制流，由调用方保存为本地文件。
+ * 下载耗时不可控，因此放开实例上 15 秒的默认超时。
+ */
+export async function downloadFileMeta(id: string): Promise<Blob> {
+  return httpClient.get<Blob>(
+    '/filemeta/' + encodeURIComponent(id) + '/download',
+    { responseType: 'blob', timeout: 0 },
   )
 }
 

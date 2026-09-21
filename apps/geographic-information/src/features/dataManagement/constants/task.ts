@@ -16,6 +16,18 @@ export const TASK_STATUS_LABELS: Readonly<Record<string, string>> = {
   FAILED: '失败',
 }
 
+/**
+ * /ws/task 的帧按任务类型前缀分流：
+ * 导入任务的帧进「上传进度」，三类处理任务的帧进「处理进度」。
+ */
+export const UPLOAD_TASK_KINDS = ['GIS_IMPORT'] as const
+
+export const PROCESSING_TASK_KINDS = [
+  'GIS_TERRAIN',
+  'GIS_IMAGERY',
+  'GIS_VECTOR',
+] as const
+
 export function toTaskStatusLabel(status: string): string {
   return TASK_STATUS_LABELS[status] ?? status
 }

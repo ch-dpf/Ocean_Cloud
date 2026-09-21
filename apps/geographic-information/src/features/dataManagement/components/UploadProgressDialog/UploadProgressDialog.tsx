@@ -6,6 +6,12 @@ interface UploadProgressDialogProps {
   readonly tasks: readonly UploadTaskItem[]
   readonly onClearFinished: () => void
   readonly onClose: () => void
+  /** 弹窗标题，默认「上传进度」 */
+  readonly title?: string
+  /** 没有任务时的提示文案，默认「暂无上传任务。」 */
+  readonly emptyText?: string
+  /** 帧里没有任务名时的兜底名称，默认「上传任务」 */
+  readonly taskLabel?: string
 }
 
 /** 任务进度文案：状态 · 已处理/总数 · 失败数 · 百分比 */
@@ -20,11 +26,14 @@ function formatTaskMeta(task: UploadTaskItem): string {
     .join(' · ')
 }
 
-/** 上传进度中心：按任务编号展示每个上传任务的进度 */
+/** 任务进度中心：按任务编号展示每个任务的进度；上传进度与处理进度共用 */
 export function UploadProgressDialog({
   tasks,
   onClearFinished,
   onClose,
+  title = '上传进度',
+  emptyText = '暂无上传任务。',
+  taskLabel = '上传任务',
 }: UploadProgressDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const titleId = useId()
@@ -43,7 +52,7 @@ export function UploadProgressDialog({
     >
       <div className={styles.heading}>
         <h2 className={styles.title} id={titleId}>
-          上传进度
+          {title}
         </h2>
         {hasFinished && (
           <button
@@ -58,18 +67,18 @@ export function UploadProgressDialog({
           type="button"
           className={styles.close}
           onClick={onClose}
-          aria-label="关闭上传进度"
+          aria-label={`关闭${title}`}
         >
           ×
         </button>
       </div>
       {tasks.length === 0 ? (
-        <p className={styles.empty}>暂无上传任务。</p>
+        <p className={styles.empty}>{emptyText}</p>
       ) : (
         <ul className={styles.list}>
           {tasks.map((task) => (
             <li className={styles.task} key={task.taskNo}>
-              <p className={styles.taskName}>{task.taskName || '上传任务'}</p>
+              <p className={styles.taskName}>{task.taskName || taskLabel}</p>
               <p className={styles.taskNo}>{task.taskNo}</p>
               <div className={styles.track}>
                 {task.pending === true ? (
