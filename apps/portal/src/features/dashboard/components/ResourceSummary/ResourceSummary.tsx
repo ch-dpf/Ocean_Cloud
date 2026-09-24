@@ -34,9 +34,9 @@ export function ResourceSummary({ metrics }: ResourceSummaryProps) {
     },
     {
       label: '磁盘使用率',
-      value: '--',
-      percent: 0,
-      detail: '暂无数据',
+      value: formatPercent(metrics?.diskUsage),
+      percent: metrics?.diskUsage ?? 0,
+      detail: '实时',
     },
   ]
 

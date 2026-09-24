@@ -26,7 +26,7 @@ function formatPercent(value: number | undefined): string {
 export function WorkspacePanels({ metrics }: WorkspacePanelsProps) {
   const cpu = formatPercent(metrics?.cpuUsage)
   const memory = formatPercent(metrics?.memoryUsage)
-  const disk = '--' // ws 暂无磁盘字段
+  const disk = formatPercent(metrics?.diskUsage)
   const { runningTotal, attentionTotal, tasks } = useTaskOverview()
 
   return (

@@ -11,6 +11,8 @@ export interface SystemMetrics {
   readonly totalMemoryGb?: number
   readonly usedMemoryGb?: number
   readonly freeMemoryGb?: number
+  /** 磁盘使用率，后端只推送百分比，没有容量字段 */
+  readonly diskUsage?: number
   readonly timestamp?: number
 }
 
