@@ -11,6 +11,8 @@ import { FileImportDialog } from '../../features/dataManagement/components/FileI
 import { FileMetaTable } from '../../features/dataManagement/components/FileMetaTable/FileMetaTable'
 import { FileOptDetailDialog } from '../../features/dataManagement/components/FileOptDetailDialog/FileOptDetailDialog'
 import { FileOptRecordTable } from '../../features/dataManagement/components/FileOptRecordTable/FileOptRecordTable'
+import { ProcessingCreateDialog } from '../../features/dataManagement/components/ProcessingCreateDialog/ProcessingCreateDialog'
+import type { ManagedSubmitInput } from '../../features/dataManagement/components/ProcessingCreateDialog/ProcessingCreateDialog'
 import { UploadProgressDialog } from '../../features/dataManagement/components/UploadProgressDialog/UploadProgressDialog'
 import {
   DATASET_CATEGORY_IDS,
@@ -19,10 +21,7 @@ import {
   FILE_OPT_PAGE_SIZE,
   FILE_PAGE_SIZE,
 } from '../../features/dataManagement/constants/dataset'
-import {
-  PROCESSING_TYPE_TERRAIN,
-  UPLOAD_TASK_KINDS,
-} from '../../features/dataManagement/constants/task'
+import { UPLOAD_TASK_KINDS } from '../../features/dataManagement/constants/task'
 import { useDatasetCatalog } from '../../features/dataManagement/hooks/useDatasetCatalog'
 import { useFileMetaPage } from '../../features/dataManagement/hooks/useFileMetaPage'
 import { useFileOptPage } from '../../features/dataManagement/hooks/useFileOptPage'
@@ -306,12 +305,19 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     }
   }
 
-  /** 提交处理任务：在确认弹窗里提交，进度到数据处理页查看 */
-  async function confirmProcessFile() {
-    if (processingFile === null) return
-    setProcessingId(processingFile.id)
+  /** 提交处理任务：在弹窗里提交，进度到数据处理页查看 */
+  async function handleManagedProcess(input: ManagedSubmitInput) {
+    setProcessingFile(null)
+    setProcessingId(input.fileMetaId)
     try {
-      await processFileMeta(processingFile.id, PROCESSING_TYPE_TERRAIN)
+      await processFileMeta(input.fileMetaId, {
+        processingType: input.processingType,
+        targetCrs: input.parameters.targetCrs,
+        tileProfile: input.parameters.tileProfile,
+        outputFormat: input.parameters.outputFormat,
+      })
+    } catch {
+      // 失败提示由 RequestErrorNotice 统一展示
     } finally {
       setProcessingId(null)
     }
@@ -788,12 +794,10 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
         />
       )}
       {processingFile !== null && (
-        <ConfirmDialog
-          title="提交处理任务"
-          message={`确定对「${processingFile.originalName}」提交地形处理任务吗？`}
-          confirmLabel="提交"
-          onConfirm={confirmProcessFile}
+        <ProcessingCreateDialog
+          presetFile={processingFile}
           onClose={() => setProcessingFile(null)}
+          onSubmitManaged={handleManagedProcess}
         />
       )}
       {detailRecordNo !== null && (

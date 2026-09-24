@@ -1,0 +1,95 @@
+.dialog {
+  width: min(1180px, 94vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 22px 26px;
+  border: 1px solid #dce6ec;
+  border-radius: 14px;
+  color: #13293d;
+  font-family: 'Noto Sans SC', sans-serif;
+  box-shadow: 0 25px 80px #183f6322;
+}
+.dialog::backdrop {
+  background: #17384d55;
+}
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.title {
+  flex: 1;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.close {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #8394a0;
+  font-family: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.close:hover {
+  background: #f2f7fa;
+  color: #13293d;
+}
+
+.state {
+  margin: 20px 0 4px;
+  color: #81919e;
+  font-size: 13px;
+}
+
+/* 概览字段：两列排布，值过长时省略并由 title 展示全量 */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 24px;
+  margin: 16px 0 0;
+}
+.summaryItem {
+  display: flex;
+  min-width: 0;
+  gap: 8px;
+  font-size: 13px;
+}
+.summaryItem dt {
+  flex-shrink: 0;
+  width: 96px;
+  color: #8394a0;
+}
+.summaryItem dd {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.errorText {
+  margin: 12px 0 0;
+  overflow-wrap: anywhere;
+  color: #d64545;
+  font-size: 12px;
+}
+
+.sectionTitle {
+  margin: 20px 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.sectionTitle:first-of-type {
+  margin-top: 16px;
+}
+
+@media (max-width: 760px) {
+  .summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -128,6 +128,30 @@
   color: #8394a0;
   font-size: 12px;
 }
+
+/* 数据管理数据：入口页锁定的那一条，只读展示 */
+.readonlyFile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid #dee5ed;
+  border-radius: 6px;
+  background: #f7fafd;
+  font-size: 13px;
+}
+.readonlyName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.readonlyMeta {
+  flex-shrink: 0;
+  color: #8394a0;
+  font-size: 12px;
+}
 .error {
   margin: 0;
   color: #d64545;

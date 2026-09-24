@@ -4,21 +4,24 @@ import { SubNav } from '@ocean-cloud/ui'
 import styles from './DataProcessingPage.module.css'
 import { DATA_PROCESSING_SECTIONS } from '../../config/navigation'
 import { ProcessingCreateDialog } from '../../features/dataManagement/components/ProcessingCreateDialog/ProcessingCreateDialog'
+import type { LocalSubmitInput } from '../../features/dataManagement/components/ProcessingCreateDialog/ProcessingCreateDialog'
+import { TaskDetailDialog } from '../../features/dataManagement/components/TaskDetailDialog/TaskDetailDialog'
 import { TaskListTable } from '../../features/dataManagement/components/TaskListTable/TaskListTable'
 import { UploadProgressDialog } from '../../features/dataManagement/components/UploadProgressDialog/UploadProgressDialog'
 import {
   PROCESSING_TASK_KINDS,
+  PROCESSING_TYPE_IMAGERY,
   TASK_PAGE_SIZE,
   TASK_TYPE_PROCESS,
 } from '../../features/dataManagement/constants/task'
 import { useTaskPage } from '../../features/dataManagement/hooks/useTaskPage'
 import { useUploadTasks } from '../../features/dataManagement/hooks/useUploadTasks'
 import { createProcessingTask } from '../../features/dataManagement/services/taskService'
-import { publishTerrainFromTask } from '../../features/dataPublishing/services/publicationService'
-import type {
-  ProcessingParameters,
-  TaskRecord,
-} from '../../features/dataManagement/types/task'
+import {
+  publishImageryFromTask,
+  publishTerrainFromTask,
+} from '../../features/dataPublishing/services/publicationService'
+import type { TaskRecord } from '../../features/dataManagement/types/task'
 
 /** 页签与任务状态的对应关系；「全部任务」不传 taskStatus */
 const STATUS_TABS = [
@@ -43,6 +46,8 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
   const [publishingId, setPublishingId] = useState<string | null>(null)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isProgressOpen, setIsProgressOpen] = useState(false)
+  // 打开详情弹窗的任务 id；null 表示弹窗关闭
+  const [detailTaskId, setDetailTaskId] = useState<string | null>(null)
 
   // 只展示三类处理任务的帧（导入任务的帧归数据管理页的「上传进度」）
   const { tasks, clearFinished } = useUploadTasks(PROCESSING_TASK_KINDS)
@@ -79,12 +84,16 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
     refresh()
   }
 
-  /** 发布已完成的任务：确认后调用发布接口，成功后刷新列表 */
+  /** 发布已完成的任务：按处理类型分流到地形或影像发布接口 */
   async function handlePublish(record: TaskRecord) {
     if (!window.confirm(`确定发布任务「${record.taskName}」吗？`)) return
     setPublishingId(record.id)
     try {
-      await publishTerrainFromTask(record.id)
+      if (record.processingType === PROCESSING_TYPE_IMAGERY) {
+        await publishImageryFromTask(record.id)
+      } else {
+        await publishTerrainFromTask(record.id)
+      }
       refresh()
     } catch {
       // 失败提示由 RequestErrorNotice 统一展示
@@ -93,15 +102,10 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
   }
 
   /**
-   * 新建处理任务：提交后立即关窗，建任务与文件上传在后台进行。
+   * 新建处理任务（本地上传）：提交后立即关窗，建任务与文件上传在后台进行。
    * 成功后刷新任务列表；失败提示由 RequestErrorNotice 统一展示。
    */
-  async function handleCreateProcessing(input: {
-    readonly processingType: string
-    readonly taskName: string
-    readonly parameters: ProcessingParameters
-    readonly files: readonly File[]
-  }) {
+  async function handleCreateProcessing(input: LocalSubmitInput) {
     setIsCreateOpen(false)
     try {
       await createProcessingTask(input)
@@ -177,6 +181,7 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
           onValuesChange={handleValuesChange}
           onSearch={() => refresh()}
           onReset={handleReset}
+          onView={(record) => setDetailTaskId(record.id)}
           onPublish={handlePublish}
           publishingId={publishingId}
         />
@@ -184,7 +189,7 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
       {isCreateOpen && (
         <ProcessingCreateDialog
           onClose={() => setIsCreateOpen(false)}
-          onSubmit={handleCreateProcessing}
+          onSubmitLocal={handleCreateProcessing}
         />
       )}
       {isProgressOpen && (
@@ -195,6 +200,12 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
           taskLabel="处理任务"
           onClearFinished={clearFinished}
           onClose={() => setIsProgressOpen(false)}
+        />
+      )}
+      {detailTaskId !== null && (
+        <TaskDetailDialog
+          taskId={detailTaskId}
+          onClose={() => setDetailTaskId(null)}
         />
       )}
     </section>

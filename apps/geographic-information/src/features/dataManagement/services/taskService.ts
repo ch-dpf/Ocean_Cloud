@@ -2,6 +2,7 @@ import { httpClient } from '../../../services/httpClient'
 import type { ApiResult } from '../../../services/apiResult'
 import type {
   ProcessingParameters,
+  TaskDetail,
   TaskPage,
   TaskPageQuery,
 } from '../types/task'
@@ -15,6 +16,18 @@ export async function getTaskPage(
     params: query,
     signal,
   })
+  return result.data
+}
+
+/** 查询单个处理任务详情：taskId 即任务 id（int64，按字符串保留精度） */
+export async function getTaskDetail(
+  taskId: string,
+  signal?: AbortSignal,
+): Promise<TaskDetail> {
+  const result = await httpClient.get<ApiResult<TaskDetail>>(
+    '/task/' + encodeURIComponent(taskId),
+    { signal },
+  )
   return result.data
 }
 

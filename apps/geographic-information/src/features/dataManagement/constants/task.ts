@@ -32,6 +32,50 @@ export function toTaskStatusLabel(status: string): string {
   return TASK_STATUS_LABELS[status] ?? status
 }
 
+/** 任务输入项类型（inputs[].inputKind）；未命中的取值按原样展示 */
+export const INPUT_KIND_LABELS: Readonly<Record<string, string>> = {
+  FILE: '文件',
+}
+
+export function toInputKindLabel(kind: string): string {
+  return INPUT_KIND_LABELS[kind] ?? kind
+}
+
+/** 任务输入项状态（inputs[].inputStatus）；未命中的取值按原样展示 */
+export const INPUT_STATUS_LABELS: Readonly<Record<string, string>> = {
+  PENDING: '待处理',
+  CONSUMED: '已消费',
+  FAILED: '失败',
+  SKIPPED: '已跳过',
+}
+
+export function toInputStatusLabel(status: string): string {
+  return INPUT_STATUS_LABELS[status] ?? status
+}
+
+/** 瓦片集状态（tileSet.tileSetStatus）；未命中的取值按原样展示 */
+export const TILE_SET_STATUS_LABELS: Readonly<Record<string, string>> = {
+  PENDING: '待生成',
+  GENERATING: '生成中',
+  READY: '就绪',
+  FAILED: '失败',
+}
+
+export function toTileSetStatusLabel(status: string): string {
+  return TILE_SET_STATUS_LABELS[status] ?? status
+}
+
+/** 数据传入方式（task.sourceType）；未命中的取值按原样展示 */
+export const SOURCE_TYPE_LABELS: Readonly<Record<string, string>> = {
+  MANAGED_FILE: '本地文件',
+  FILE: '文件',
+  URL: '链接',
+}
+
+export function toSourceTypeLabel(type: string): string {
+  return SOURCE_TYPE_LABELS[type] ?? type
+}
+
 /** 文件操作类型名称（fileOpt 的 operationType）；未命中的取值按原样展示 */
 export const OPERATION_TYPE_LABELS: Readonly<Record<string, string>> = {
   IMPORT: '导入',
@@ -66,7 +110,7 @@ export function toProcessingTypeLabel(type: string): string {
 
 /**
  * 新建处理任务可选的切片类型：label 是界面文案，dataLabel 是选文件区的数据类型标题。
- * 四个取值与后端 processingType 一一对应；目前只开放地形切片，其余三项置灰。
+ * 四个取值与后端 processingType 一一对应；目前开放地形切片与影像切片，矢量与海图置灰。
  */
 export const PROCESSING_TYPE_OPTIONS = [
   {
@@ -78,8 +122,8 @@ export const PROCESSING_TYPE_OPTIONS = [
   {
     value: PROCESSING_TYPE_IMAGERY,
     label: '影像切片',
-    dataLabel: '影像',
-    disabled: true,
+    dataLabel: '影像文件上传',
+    disabled: false,
   },
   {
     value: PROCESSING_TYPE_VECTOR,
@@ -107,3 +151,20 @@ export const TILE_PROFILE_OPTIONS = [
 export const OUTPUT_FORMAT_OPTIONS = [
   { value: 'QUANTIZED_MESH', label: '.terrain（CesiumJS）' },
 ] as const
+
+/** 影像切片的预处理可选项：目前各只有一个取值，后端放开后再补 */
+export const IMAGERY_TARGET_CRS_OPTIONS = [{ value: 'EPSG:3857' }] as const
+
+export const IMAGERY_TILE_PROFILE_OPTIONS = [{ value: 'XYZ' }] as const
+
+export const IMAGERY_OUTPUT_FORMAT_OPTIONS = [{ value: 'PNG' }] as const
+
+/**
+ * 影像切片的固定默认参数：不在界面暴露，提交时与下拉框选中的值合并发出。
+ * minZoom / resampling / transparent 对应 /api/gis/task/process 的 parameters 字段。
+ */
+export const IMAGERY_FIXED_PARAMETERS = {
+  minZoom: 0,
+  resampling: 'BILINEAR',
+  transparent: true,
+} as const

@@ -3,7 +3,9 @@ import type { FormInstance, TableColumnsType } from 'antd'
 import styles from './TaskListTable.module.css'
 import { SearchTable } from '@ocean-cloud/ui'
 import {
+  PROCESSING_TYPE_IMAGERY,
   PROCESSING_TYPE_LABELS,
+  PROCESSING_TYPE_TERRAIN,
   TASK_STATUS_LABELS,
   toProcessingTypeLabel,
   toTaskStatusLabel,
@@ -28,6 +30,8 @@ interface TaskListTableProps {
   readonly onReset: () => void
   /** 点击「发布」；不传时按钮仅作为占位展示 */
   readonly onPublish?: (record: TaskRecord) => void
+  /** 点击「查看」打开任务详情；不传时按钮仅作为占位展示 */
+  readonly onView?: (record: TaskRecord) => void
   /** 正在发布的任务 id：该行按钮显示「发布中…」 */
   readonly publishingId?: string | null
 }
@@ -55,13 +59,11 @@ function formatTime(value: string | null): string {
  */
 function splitTaskName(taskName: string): {
   readonly name: string
-  readonly input: string
 } {
   const index = taskName.search(/[:：]/)
-  if (index < 0) return { name: taskName, input: '—' }
+  if (index < 0) return { name: taskName }
   return {
     name: taskName.slice(0, index),
-    input: taskName.slice(index + 1) || '—',
   }
 }
 
@@ -80,6 +82,7 @@ function formatDuration(start: string | null, finish: string | null): string {
 
 /** 列定义；操作列按钮依赖外部传入的回调，因此每次渲染重建 */
 function buildColumns(
+  onView: ((record: TaskRecord) => void) | undefined,
   onPublish: ((record: TaskRecord) => void) | undefined,
   publishingId: string | null | undefined,
 ): TableColumnsType<TaskRecord> {
@@ -94,12 +97,12 @@ function buildColumns(
       },
     },
     {
-      title: '输入数据',
+      title: '数据传入方式',
       key: 'input',
       ellipsis: true,
       render: (_, record) => {
-        const { input } = splitTaskName(record.taskName)
-        return <span title={input}>{input}</span>
+        const inputType = record.sourceType || ''
+        return <span title={inputType}>{inputType}</span>
       },
     },
     {
@@ -154,8 +157,12 @@ function buildColumns(
         const isPublishing = publishingId === record.id
         return (
           <span className={styles.actionCell}>
-            {/* 处理任务详情尚未接入，按钮先置灰占位 */}
-            <button type="button" className={styles.actionButton} disabled>
+            <button
+              type="button"
+              className={styles.actionButton}
+              onClick={onView === undefined ? undefined : () => onView(record)}
+              disabled={onView === undefined}
+            >
               查看
             </button>
             <button
@@ -164,8 +171,13 @@ function buildColumns(
               onClick={
                 onPublish === undefined ? undefined : () => onPublish(record)
               }
-              // 只开放已完成的任务发布，其余状态置灰
-              disabled={record.taskStatus !== 'COMPLETED' || isPublishing}
+              // 只开放已完成的地形/影像任务发布，其余状态与类型置灰
+              disabled={
+                record.taskStatus !== 'COMPLETED' ||
+                isPublishing ||
+                (record.processingType !== PROCESSING_TYPE_TERRAIN &&
+                  record.processingType !== PROCESSING_TYPE_IMAGERY)
+              }
             >
               {isPublishing ? '发布中…' : '发布'}
             </button>
@@ -188,12 +200,13 @@ export function TaskListTable({
   onValuesChange,
   onSearch,
   onReset,
+  onView,
   onPublish,
   publishingId,
 }: TaskListTableProps) {
   return (
     <SearchTable<TaskRecord>
-      columns={buildColumns(onPublish, publishingId)}
+      columns={buildColumns(onView, onPublish, publishingId)}
       dataSource={records}
       rowKey="id"
       loading={isLoading}

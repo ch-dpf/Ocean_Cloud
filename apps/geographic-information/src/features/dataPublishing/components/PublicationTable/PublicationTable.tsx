@@ -5,12 +5,15 @@ import { SearchTable } from '@ocean-cloud/ui'
 import {
   PUBLICATION_STATUS,
   PUBLICATION_STATUS_LABELS,
+  toPublicationKindLabel,
   toPublicationStatusLabel,
 } from '../../constants/publication'
-import type { TerrainPublication } from '../../types/publication'
+import type { PublicationRow, PublicationScope } from '../../types/publication'
 
 interface PublicationTableProps {
-  readonly records: readonly TerrainPublication[]
+  /** 当前查看范围，决定「服务类型」列与影像专属列是否展示 */
+  readonly scope: PublicationScope
+  readonly records: readonly PublicationRow[]
   readonly isLoading: boolean
   readonly error: string | null
   readonly current: number
@@ -18,10 +21,10 @@ interface PublicationTableProps {
   readonly total: number
   /** 页码或每页条数变化 */
   readonly onPageChange: (page: number, pageSize: number) => void
-  /** 筛选条件变化（服务状态用于请求参数） */
+  /** 筛选条件变化（服务状态用于即时联动） */
   readonly onValuesChange?: (values: Record<string, unknown>) => void
-  /** 点击搜索 */
-  readonly onSearch: () => void
+  /** 点击搜索，回传当前表单值（服务编号在此刻生效） */
+  readonly onSearch: (values: Record<string, unknown>) => void
   /** 点击重置（表单已重置后触发） */
   readonly onReset: () => void
 }
@@ -34,8 +37,12 @@ const STATUS_COLORS: Readonly<Record<string, string>> = {
 
 const STATUS_FALLBACK_COLOR = '#8394a0'
 
-/** 列宽合计 1390，与下方 scrollX 保持一致 */
-const SCROLL_X = 1390
+/** 地形视图与原列表一致；影像 / 全部视图列更多，横向宽度相应放宽 */
+const SCROLL_X_BY_SCOPE: Readonly<Record<PublicationScope, number>> = {
+  terrain: 1390,
+  imagery: 1710,
+  all: 1820,
+}
 
 /** 后端返回形如 2026-09-14T17:04:57.043286，展示为 2026-09-14 17:04:57 */
 function formatTime(value: string | null): string {
@@ -43,11 +50,54 @@ function formatTime(value: string | null): string {
   return value.replace('T', ' ').slice(0, 19)
 }
 
+/** 空字符串 / null 统一展示为 — */
+function cellText(value: string | null): string {
+  return value ? value : '—'
+}
+
+/** 影像层级区间：minZoom ~ maxZoom，任一缺失都展示 — */
+function formatZoomRange(record: PublicationRow): string {
+  if (record.minZoom === null || record.maxZoom === null) return '—'
+  return `${record.minZoom} ~ ${record.maxZoom}`
+}
+
 /** 列定义；序号需要按当前页换算，因此每次渲染重建 */
 function buildColumns(
+  scope: PublicationScope,
   current: number,
   pageSize: number,
-): TableColumnsType<TerrainPublication> {
+): TableColumnsType<PublicationRow> {
+  // 影像专属列：仅影像视图与全部视图展示；全部视图里地形行显示 —
+  const imageryColumns: TableColumnsType<PublicationRow> =
+    scope === 'terrain'
+      ? []
+      : [
+          {
+            title: '目标坐标系',
+            key: 'targetCrs',
+            width: 110,
+            render: (_, record) => cellText(record.targetCrs),
+          },
+          {
+            title: '服务格式',
+            key: 'tileProfile',
+            width: 100,
+            render: (_, record) => cellText(record.tileProfile),
+          },
+          {
+            title: '瓦片格式',
+            key: 'outputFormat',
+            width: 100,
+            render: (_, record) => cellText(record.outputFormat),
+          },
+          {
+            title: '层级',
+            key: 'zoom',
+            width: 100,
+            render: (_, record) => formatZoomRange(record),
+          },
+        ]
+
   return [
     {
       title: '序号',
@@ -56,10 +106,22 @@ function buildColumns(
       render: (_, __, index) => (current - 1) * pageSize + index + 1,
     },
     { title: '服务编号', dataIndex: 'serviceCode', width: 180, ellipsis: true },
+    // 仅「全部服务」需要类型列区分地形 / 影像
+    ...(scope === 'all'
+      ? [
+          {
+            title: '服务类型',
+            key: 'kind',
+            width: 110,
+            render: (_: unknown, record: PublicationRow) =>
+              toPublicationKindLabel(record.kind),
+          } as TableColumnsType<PublicationRow>[number],
+        ]
+      : []),
     {
       title: '状态',
       key: 'status',
-      width: 110,
+      width: scope === 'terrain' ? 110 : 100,
       render: (_, record) => (
         <span className={styles.status}>
           <span
@@ -73,9 +135,26 @@ function buildColumns(
         </span>
       ),
     },
-    { title: '服务地址', dataIndex: 'serviceUrl', width: 300, ellipsis: true },
-    { title: '关联数据集', dataIndex: 'dataSetId', width: 130 },
-    { title: '源任务', dataIndex: 'sourceTaskId', width: 130 },
+    ...imageryColumns,
+    {
+      title: '服务地址',
+      dataIndex: 'serviceUrl',
+      width: scope === 'terrain' ? 300 : 260,
+      ellipsis: true,
+      render: (value: string) => cellText(value),
+    },
+    {
+      title: '关联数据集',
+      key: 'dataSetId',
+      width: scope === 'terrain' ? 130 : 120,
+      render: (_, record) => cellText(record.dataSetId),
+    },
+    {
+      title: '源任务',
+      key: 'sourceTaskId',
+      width: 130,
+      render: (_, record) => cellText(record.sourceTaskId),
+    },
     {
       title: '发布时间',
       key: 'publishTime',
@@ -91,7 +170,7 @@ function buildColumns(
     {
       title: '操作',
       key: 'action',
-      width: 130,
+      width: scope === 'terrain' ? 130 : 100,
       // 横向滚动时固定在表格右侧，按钮始终可见
       fixed: 'right',
       render: () => (
@@ -105,6 +184,7 @@ function buildColumns(
 }
 
 export function PublicationTable({
+  scope,
   records,
   isLoading,
   error,
@@ -117,10 +197,10 @@ export function PublicationTable({
   onReset,
 }: PublicationTableProps) {
   return (
-    <SearchTable<TerrainPublication>
-      columns={buildColumns(current, pageSize)}
+    <SearchTable<PublicationRow>
+      columns={buildColumns(scope, current, pageSize)}
       dataSource={records}
-      rowKey="id"
+      rowKey="rowKey"
       loading={isLoading}
       total={total}
       current={current}
@@ -129,13 +209,12 @@ export function PublicationTable({
       onValuesChange={onValuesChange}
       onSearch={onSearch}
       onReset={onReset}
-      scrollX={SCROLL_X}
+      scrollX={SCROLL_X_BY_SCOPE[scope]}
       emptyText={error ?? undefined}
       // 默认只看已发布的服务（接口约定的默认筛选）
       searchInitialValues={{ status: PUBLICATION_STATUS.published }}
       searchFormItems={
         <>
-          {/* 服务编号暂未接入接口参数，仅保留输入状态 */}
           <Form.Item label="服务编号" name="serviceCode">
             <Input placeholder="请输入服务编号" allowClear />
           </Form.Item>

@@ -16,3 +16,13 @@ export const PUBLICATION_STATUS_LABELS: Readonly<Record<string, string>> = {
 export function toPublicationStatusLabel(status: string): string {
   return PUBLICATION_STATUS_LABELS[status] ?? status
 }
+
+/** 服务类型名称（「全部服务」合并视图的类型列使用） */
+export const PUBLICATION_KIND_LABELS: Readonly<Record<string, string>> = {
+  terrain: '地形服务',
+  imagery: '影像服务',
+}
+
+export function toPublicationKindLabel(kind: string): string {
+  return PUBLICATION_KIND_LABELS[kind] ?? kind
+}

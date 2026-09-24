@@ -126,7 +126,6 @@ export const DATA_PUBLISHING_SECTIONS: readonly SubNavSection[] = [
     icon: dataPublishingIcon,
     activeIcon: dataPublishingBlueIcon,
     expandable: true,
-    pending: true,
   },
   {
     path: '/data-publishing/vector',

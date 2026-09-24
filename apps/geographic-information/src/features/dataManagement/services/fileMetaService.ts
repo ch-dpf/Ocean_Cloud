@@ -107,13 +107,18 @@ export async function downloadFileMeta(id: string): Promise<Blob> {
   )
 }
 
-/** 对数据文件发起处理任务（切片等） */
+/** 对数据文件发起处理任务（切片等）：预处理三个参数都是必填 */
 export async function processFileMeta(
   id: string,
-  processingType: string,
+  input: {
+    readonly processingType: string
+    readonly targetCrs: string
+    readonly tileProfile: string
+    readonly outputFormat: string
+  },
 ): Promise<void> {
   await httpClient.post<ApiResult<unknown>>(
     '/filemeta/' + encodeURIComponent(id) + '/process',
-    { processingType },
+    input,
   )
 }
