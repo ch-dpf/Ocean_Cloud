@@ -4,7 +4,6 @@ import styles from './TaskListTable.module.css'
 import { SearchTable } from '@ocean-cloud/ui'
 import {
   PROCESSING_TYPE_IMAGERY,
-  PROCESSING_TYPE_LABELS,
   PROCESSING_TYPE_TERRAIN,
   TASK_STATUS_LABELS,
   toProcessingTypeLabel,
@@ -80,13 +79,21 @@ function formatDuration(start: string | null, finish: string | null): string {
   return `${Math.floor(minutes / 60)} 小时 ${minutes % 60} 分`
 }
 
-/** 列定义；操作列按钮依赖外部传入的回调，因此每次渲染重建 */
+/** 列定义；序号与操作列按钮依赖外部传入的值，因此每次渲染重建 */
 function buildColumns(
+  current: number,
+  pageSize: number,
   onView: ((record: TaskRecord) => void) | undefined,
   onPublish: ((record: TaskRecord) => void) | undefined,
   publishingId: string | null | undefined,
 ): TableColumnsType<TaskRecord> {
   return [
+    {
+      title: '序号',
+      key: 'index',
+      width: 70,
+      render: (_, __, index) => (current - 1) * pageSize + index + 1,
+    },
     {
       title: '任务名称',
       key: 'taskName',
@@ -97,7 +104,7 @@ function buildColumns(
       },
     },
     {
-      title: '数据传入方式',
+      title: '数据接入方式',
       key: 'input',
       ellipsis: true,
       render: (_, record) => {
@@ -206,7 +213,7 @@ export function TaskListTable({
 }: TaskListTableProps) {
   return (
     <SearchTable<TaskRecord>
-      columns={buildColumns(onView, onPublish, publishingId)}
+      columns={buildColumns(current, pageSize, onView, onPublish, publishingId)}
       dataSource={records}
       rowKey="id"
       loading={isLoading}
@@ -223,16 +230,6 @@ export function TaskListTable({
         <>
           <Form.Item label="任务名称" name="taskName">
             <Input placeholder="请输入任务名称" allowClear />
-          </Form.Item>
-          <Form.Item label="处理类型" name="processingType">
-            <Select
-              placeholder="全部类型"
-              allowClear
-              style={{ width: 140 }}
-              options={Object.entries(PROCESSING_TYPE_LABELS).map(
-                ([value, label]) => ({ value, label }),
-              )}
-            />
           </Form.Item>
           <Form.Item label="任务状态" name="taskStatus">
             <Select

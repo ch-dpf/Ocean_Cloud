@@ -1,6 +1,11 @@
 import { httpClient } from '../../../services/httpClient'
 import type { ApiResult } from '../../../services/apiResult'
-import type { FileMetaPage, FileMetaPageQuery } from '../types/fileMeta'
+import type {
+  FileMeta,
+  FileMetaPage,
+  FileMetaPageQuery,
+  FileScope,
+} from '../types/fileMeta'
 
 /** 分页查询数据文件；不传 dataSetId / categoryId 时查询全部数据，筛选条件为空时不提交该参数 */
 export async function getFileMetaPage(
@@ -24,6 +29,33 @@ export async function getFileMetaPage(
     },
   )
   return result.data
+}
+
+/** 整选分类或数据集时逐页拉全量的每页条数：取大一些以减少请求次数 */
+const BULK_PAGE_SIZE = 200
+
+/**
+ * 拉取某个范围下的全部数据文件，供「整选整个分类 / 某个数据集」使用。
+ * 逐页查询直到累计条数达到 total 或遇到空页为止。
+ */
+export async function getAllFileMeta(
+  scope: FileScope,
+  signal?: AbortSignal,
+): Promise<readonly FileMeta[]> {
+  const dataSetId = scope.kind === 'dataset' ? scope.dataSetId : undefined
+  const categoryId = scope.kind === 'category' ? scope.categoryId : undefined
+  const files: FileMeta[] = []
+  let current = 1
+  for (;;) {
+    const page = await getFileMetaPage(
+      { current, size: BULK_PAGE_SIZE, dataSetId, categoryId },
+      signal,
+    )
+    files.push(...page.records)
+    if (page.records.length === 0 || files.length >= Number(page.total)) break
+    current += 1
+  }
+  return files
 }
 
 /** 分页查询回收站（已删除）的数据文件 */
@@ -104,21 +136,5 @@ export async function downloadFileMeta(id: string): Promise<Blob> {
   return httpClient.get<Blob>(
     '/filemeta/' + encodeURIComponent(id) + '/download',
     { responseType: 'blob', timeout: 0 },
-  )
-}
-
-/** 对数据文件发起处理任务（切片等）：预处理三个参数都是必填 */
-export async function processFileMeta(
-  id: string,
-  input: {
-    readonly processingType: string
-    readonly targetCrs: string
-    readonly tileProfile: string
-    readonly outputFormat: string
-  },
-): Promise<void> {
-  await httpClient.post<ApiResult<unknown>>(
-    '/filemeta/' + encodeURIComponent(id) + '/process',
-    input,
   )
 }

@@ -104,15 +104,74 @@
   transform: translateY(-1px);
 }
 
+/* 账号区：外层包住头像与菜单，负责鼠标悬浮区域 */
 .headerUser {
+  position: relative;
+  display: flex;
+  align-items: center;
   margin-left: 20px;
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   border: 0;
+  border-radius: 50%;
+  background: #eef3f8;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarFallback {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* 悬浮菜单外层：留出透明间隙，鼠标从头像移到菜单时不会触发 mouseleave */
+.userMenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 20;
+  padding-top: 6px;
+}
+
+.userMenuList {
+  min-width: 120px;
+  padding: 4px;
+  border: 1px solid #e5ecef;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px #183f6322;
+}
+
+.userMenuItem {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 6px;
   background: transparent;
   color: #3f5665;
-  cursor: pointer;
   font-family: inherit;
   font-size: 12px;
-  padding: 0;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.userMenuItem:hover {
+  background: #e8f1fd;
+  color: #1267d6;
 }
 
 @media (max-width: 760px) {

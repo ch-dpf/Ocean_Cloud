@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import styles from './GeographicInformationLayout.module.css'
-import { Sidebar, TopBar } from '@ocean-cloud/ui'
+import { Sidebar, TopBar, useCurrentUser } from '@ocean-cloud/ui'
 import { NAVIGATION_ITEMS } from '../../config/navigation'
 import { SidebarHeaderSlot, SidebarFooterSlot } from './components/SidebarSlots'
+import { getUserInfo } from '../../features/auth/userInfo'
 import { logout } from '../../features/auth/logout'
 interface GeographicInformationLayoutProps {
   readonly pathname: string
@@ -18,6 +19,8 @@ export function GeographicInformationLayout({
   children,
 }: GeographicInformationLayoutProps) {
   const [collapsed, setCollapsed] = useState(false)
+  // 顶栏头像与用户详情用的当前登录用户
+  const user = useCurrentUser(getUserInfo)
   // 二级路由归一化到一级路径，保持侧边栏父级高亮
   const navPathname = pathname.startsWith('/data-management')
     ? '/data-management'
@@ -40,7 +43,7 @@ export function GeographicInformationLayout({
       <div
         className={`${styles.mainLayout}${collapsed ? ` ${styles.mainLayoutCollapsed}` : ''}`}
       >
-        <TopBar pageTitle={title} onLogout={() => void logout()} />
+        <TopBar pageTitle={title} onLogout={() => void logout()} user={user} />
         <main className={styles.main}>{children}</main>
         <footer className={styles.footer}>
           © {new Date().getFullYear()} Ocean Cloud · 地理信息

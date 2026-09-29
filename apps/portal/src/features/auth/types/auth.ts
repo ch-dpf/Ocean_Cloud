@@ -7,6 +7,8 @@ export interface LoginRequest {
   readonly browser: string
   readonly os: string
   readonly userAgent: string
+  // 强制登录：true 时后端挤掉该账号在其他设备的会话。确认启用后取消注释
+  readonly forceLogin: boolean
 }
 
 /** 登录响应 data 字段 */
@@ -29,6 +31,8 @@ export interface LoginResponse {
 export interface LoginCredentials {
   readonly username: string
   readonly password: string
+  // 强制登录：确认启用后取消注释
+  readonly forceLogin: boolean
 }
 
 /** 本地存储的会话（只有 token，存 sessionStorage） */

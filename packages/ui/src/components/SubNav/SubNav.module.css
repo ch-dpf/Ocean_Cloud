@@ -147,3 +147,34 @@
 .itemActive .iconActive {
   opacity: 1;
 }
+
+/*
+ * 未接入的项：整体置灰不可点。
+ * 放在文件末尾，靠同级特异性下的「后定义者胜出」覆盖上方 .item 的 hover / active 规则。
+ */
+.itemDisabled {
+  color: #b4c0cb;
+  cursor: not-allowed;
+}
+.itemDisabled:hover,
+.itemDisabled.itemActive {
+  background: transparent;
+}
+.itemDisabled .text,
+.itemDisabled .textLink,
+.itemDisabled:hover .text,
+.itemDisabled:hover .textLink {
+  color: inherit;
+}
+/* hover 时图标不参与切换，保持默认态 */
+.itemDisabled:hover .iconDefault {
+  opacity: 1;
+}
+.chevronDisabled {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  color: #b4c0cb;
+}

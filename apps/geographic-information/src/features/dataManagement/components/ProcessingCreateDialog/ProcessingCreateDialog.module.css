@@ -100,7 +100,7 @@
 
 /* 高级选项：预处理参数两列排布 */
 .section {
-  padding: 14px 16px;
+  padding: 5px 16px 14px;
   border: 1px solid #eef3f8;
   border-radius: 8px;
   background: #fbfdff;
@@ -152,6 +152,78 @@
   color: #8394a0;
   font-size: 12px;
 }
+
+/* 数据管理数据：打开选择浮层的入口 + 已选文件列表 */
+.pickRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pickButton {
+  height: 34px;
+  padding: 0 16px;
+  border: 1px solid #b9d4f6;
+  border-radius: 6px;
+  background: #f4f9ff;
+  color: #1267d6;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.pickButton:hover {
+  border-color: #1267d6;
+}
+.pickCount {
+  color: #8394a0;
+  font-size: 12px;
+}
+
+.pickedList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 132px;
+  margin: 0;
+  padding: 8px 10px;
+  overflow-y: auto;
+  border: 1px solid #dee5ed;
+  border-radius: 6px;
+  background: #f7fafd;
+  list-style: none;
+}
+.pickedItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+}
+.pickedName {
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pickedRemove {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #8394a0;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.pickedRemove:hover {
+  background: #e8f1fd;
+  color: #d64545;
+}
+
 .error {
   margin: 0;
   color: #d64545;

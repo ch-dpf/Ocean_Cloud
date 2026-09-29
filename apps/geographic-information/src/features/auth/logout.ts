@@ -5,7 +5,8 @@ import { PORTAL_ORIGIN } from '../../config/application'
 export async function logout(): Promise<void> {
   try {
     const token = sessionStorage.getItem('token')
-    await httpClient.post('/auth/logout', { token })
+    // 鉴权接口不在业务前缀 /api/gis 下，这里覆盖实例的 baseURL
+    await httpClient.post('/api/auth/logout', { token }, { baseURL: '' })
   } catch {
     // 后端登出失败也继续本地清理
   } finally {

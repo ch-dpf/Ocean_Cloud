@@ -11,9 +11,16 @@ const marineDevServer =
   process.env.OCEAN_MARINE_TARGET || 'http://127.0.0.1:5176'
 // WebSocket（任务进度、系统指标）同样经同源地址转发
 const wsTarget = { target: BACKEND_ORIGIN, changeOrigin: true, ws: true }
+// 鉴权接口需要 X-Forwarded-* 头（后端据此取真实客户端 IP，如登录日志的 lastLoginIp）：
+// 代理开启 xfwd 补上，字符串简写带不了选项所以要写成对象
+
 // 更具体的业务前缀必须放在通用 /api、/apps 规则之前
 const previewProxy = {
   '/api/gis': businessTarget,
+  '/api/auth': {
+    target: controlTarget,
+    xfwd: true
+  },
   '/api': controlTarget,
   '/apps': controlTarget,
 }
@@ -25,6 +32,11 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/api/gis': businessTarget,
+      // 必须排在下面的 '/api' 之前，否则会被通用规则先匹配走
+      '/api/auth': {
+        target: controlTarget,
+        xfwd: true
+      },
       '/apps/geographic-information': {
         target: gisDevServer,
         changeOrigin: true,

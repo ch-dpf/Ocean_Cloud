@@ -1,4 +1,6 @@
 import { httpClient } from '../../../services/httpClient'
+import type { ApiResult } from '../../../services/apiResult'
+import type { CurrentUser } from '@ocean-cloud/ui'
 import type {
   LoginCredentials,
   LoginRequest,
@@ -28,6 +30,8 @@ export async function login(credentials: LoginCredentials): Promise<void> {
     platform: 'OCEAN_CLOUD',
     deviceId,
     ...clientMeta,
+    // 强制登录：确认启用后取消注释
+    forceLogin: credentials.forceLogin,
   }
 
   const response = await httpClient.post<LoginResponse>(
@@ -54,6 +58,17 @@ export async function logout(): Promise<void> {
     clearAuthSession()
     location.hash = `#${LOGIN_PATH}`
   }
+}
+
+/**
+ * 查询当前登录用户信息：Authorization 头由 httpClient 拦截器统一注入。
+ * 返回值只取界面需要的字段，后端多返回的密码、失败次数等不会被使用。
+ */
+export async function getUserInfo(signal: AbortSignal): Promise<CurrentUser> {
+  const result = await httpClient.get<ApiResult<CurrentUser>>('/auth/info', {
+    signal,
+  })
+  return result.data
 }
 
 export function navigateAfterLogin(): void {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { SubNav } from '@ocean-cloud/ui'
+import { ConfirmDialog, SubNav } from '@ocean-cloud/ui'
 import styles from './DataPublishingPage.module.css'
 import { DATA_PUBLISHING_SECTIONS } from '../../config/navigation'
 import { PublicationTable } from '../../features/dataPublishing/components/PublicationTable/PublicationTable'
@@ -8,7 +8,14 @@ import {
   PUBLICATION_STATUS,
 } from '../../features/dataPublishing/constants/publication'
 import { usePublicationPage } from '../../features/dataPublishing/hooks/usePublicationPage'
-import type { PublicationScope } from '../../features/dataPublishing/types/publication'
+import {
+  disableImageryPublication,
+  disableTerrainPublication,
+} from '../../features/dataPublishing/services/publicationService'
+import type {
+  PublicationRow,
+  PublicationScope,
+} from '../../features/dataPublishing/types/publication'
 
 interface DataPublishingPageProps {
   readonly activePath: string
@@ -36,6 +43,8 @@ export function DataPublishingPage({ activePath }: DataPublishingPageProps) {
   // 服务编号在点击「搜索」时才生效，避免输入过程中逐字请求
   const [serviceCode, setServiceCode] = useState('')
   const [pageSize, setPageSize] = useState(PUBLICATION_PAGE_SIZE)
+  // 待停用的记录；非空时弹出二次确认
+  const [disablingRow, setDisablingRow] = useState<PublicationRow | null>(null)
 
   const { records, total, current, isLoading, error, goToPage, refresh } =
     usePublicationPage({ scope, status, serviceCode, size: pageSize })
@@ -64,6 +73,21 @@ export function DataPublishingPage({ activePath }: DataPublishingPageProps) {
   function handleReset() {
     setStatus(PUBLICATION_STATUS.published)
     setServiceCode('')
+    refresh()
+  }
+
+  /**
+   * 停用服务：按记录类型分流到地形 / 影像接口（路径参数是 serviceCode）。
+   * 失败时抛错，由 ConfirmDialog 保留弹窗并交给 RequestErrorNotice 提示。
+   */
+  async function handleDisableConfirm() {
+    if (disablingRow === null) return
+    const { kind, serviceCode: code } = disablingRow
+    if (kind === 'imagery') {
+      await disableImageryPublication(code)
+    } else {
+      await disableTerrainPublication(code)
+    }
     refresh()
   }
 
@@ -99,8 +123,18 @@ export function DataPublishingPage({ activePath }: DataPublishingPageProps) {
           onValuesChange={handleValuesChange}
           onSearch={handleSearch}
           onReset={handleReset}
+          onDisable={setDisablingRow}
         />
       </div>
+      {disablingRow !== null && (
+        <ConfirmDialog
+          title="停用服务"
+          message={`确定停用服务「${disablingRow.serviceCode}」吗？停用后该服务将不再对外提供。`}
+          confirmLabel="停用"
+          onConfirm={handleDisableConfirm}
+          onClose={() => setDisablingRow(null)}
+        />
+      )}
     </section>
   )
 }

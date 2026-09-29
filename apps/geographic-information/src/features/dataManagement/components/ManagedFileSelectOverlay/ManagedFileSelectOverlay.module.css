@@ -1,0 +1,173 @@
+/* 全屏选择浮层：任务弹窗在打开期间会整体让位给这一层 */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  background: #f4f7fb;
+  color: #13293d;
+  font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+}
+
+/* 左侧数据目录：只列当前处理类型对应的分类及其数据集 */
+.sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding: 16px 12px;
+  border-right: 1px solid #e5e5e5;
+  background: #ffffff;
+}
+.sidebarTitle {
+  margin: 0 0 12px;
+  padding-left: 4px;
+  color: #13293d;
+  font-size: 15px;
+  font-weight: 700;
+}
+.sidebarHint {
+  margin: 0;
+  padding-left: 4px;
+  color: #8394a0;
+  font-size: 12px;
+}
+
+.tree {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* 数据集列表在分类行下缩进 */
+.tree .tree {
+  margin-top: 4px;
+  padding-left: 22px;
+}
+
+.nodeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+/* 整选勾选框：不参与压缩，宽度由内容决定 */
+.nodeCheck {
+  flex-shrink: 0;
+}
+.nodeLabel {
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #13293d;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.nodeLabel:hover {
+  background: #e8f1fd;
+}
+.nodeLabelActive {
+  background: #e8f1fd;
+  color: #1267d6;
+  font-weight: 700;
+}
+
+/* 右侧：文件列表 + 右下角操作栏 */
+.main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: 16px;
+}
+.panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 24px;
+  border: 1px solid #dee5ed;
+  border-radius: 8px;
+  background: #ffffff;
+}
+.panelHeader {
+  margin-bottom: 14px;
+  padding-left: 12px;
+  border-left: 3px solid #1267d6;
+}
+.panelTitle {
+  margin: 0;
+  color: #193248;
+  font-size: 20px;
+  font-weight: 700;
+}
+.panelMeta {
+  margin: 6px 0 0;
+  overflow: hidden;
+  color: #576e85;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 说明性提示条：正常约束用中性色，能力受限用警示色 */
+.noticeInfo,
+.notice {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.noticeInfo {
+  border: 1px solid #d6e4f5;
+  background: #f4f9ff;
+  color: #3f5665;
+}
+.notice {
+  border: 1px solid #ffe0b2;
+  background: #fff8e6;
+  color: #a86b00;
+}
+
+.toolbar {
+  display: flex;
+  margin-bottom: 12px;
+}
+.search {
+  max-width: 280px;
+}
+
+.footer {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 12px;
+}
+.cancel,
+.confirm {
+  height: 34px;
+  padding: 0 18px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.cancel {
+  border: 1px solid #dee5ed;
+  background: #ffffff;
+  color: #13293d;
+}
+.confirm {
+  border: 0;
+  background: #1f75f2;
+  color: #ffffff;
+  font-weight: 700;
+}

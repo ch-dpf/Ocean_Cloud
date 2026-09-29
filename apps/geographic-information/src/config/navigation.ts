@@ -58,9 +58,14 @@ export interface SubNavSection {
   readonly expandable?: boolean
   /** 接口尚未接入：先展示「全部」的内容 */
   readonly pending?: boolean
+  /** 接口尚未接入：置灰不可点 */
+  readonly disabled?: boolean
 }
 
-/** 数据处理二级导航；目前只有「全部任务」接入接口，其余类型先展示全部任务 */
+/**
+ * 数据处理二级导航：全部任务 + 影像/矢量/地形三类按 processingType 过滤，
+ * 倾斜模型与电子海图暂无对应枚举，置灰不可点。
+ */
 export const DATA_PROCESSING_SECTIONS: readonly SubNavSection[] = [
   {
     path: '/data-processing',
@@ -75,7 +80,6 @@ export const DATA_PROCESSING_SECTIONS: readonly SubNavSection[] = [
     icon: dataProcessingIcon,
     activeIcon: dataProcessingBlueIcon,
     expandable: true,
-    pending: true,
   },
   {
     path: '/data-processing/vector',
@@ -83,7 +87,6 @@ export const DATA_PROCESSING_SECTIONS: readonly SubNavSection[] = [
     icon: dataProcessingIcon,
     activeIcon: dataProcessingBlueIcon,
     expandable: true,
-    pending: true,
   },
   {
     path: '/data-processing/terrain',
@@ -91,7 +94,6 @@ export const DATA_PROCESSING_SECTIONS: readonly SubNavSection[] = [
     icon: dataProcessingIcon,
     activeIcon: dataProcessingBlueIcon,
     expandable: true,
-    pending: true,
   },
   {
     path: '/data-processing/oblique',
@@ -100,6 +102,7 @@ export const DATA_PROCESSING_SECTIONS: readonly SubNavSection[] = [
     activeIcon: dataProcessingBlueIcon,
     expandable: true,
     pending: true,
+    disabled: true,
   },
   {
     path: '/data-processing/chart',
@@ -108,10 +111,14 @@ export const DATA_PROCESSING_SECTIONS: readonly SubNavSection[] = [
     activeIcon: dataProcessingBlueIcon,
     expandable: true,
     pending: true,
+    disabled: true,
   },
 ]
 
-/** 数据发布二级导航；目前只有地形服务接口，其余类型先展示全部服务 */
+/**
+ * 数据发布二级导航：全部服务（地形 + 影像聚合）、地形服务、影像服务已接入；
+ * 矢量、倾斜模型、电子海图暂无对应接口，置灰不可点。
+ */
 export const DATA_PUBLISHING_SECTIONS: readonly SubNavSection[] = [
   {
     path: '/data-publishing',
@@ -134,6 +141,7 @@ export const DATA_PUBLISHING_SECTIONS: readonly SubNavSection[] = [
     activeIcon: dataPublishingBlueIcon,
     expandable: true,
     pending: true,
+    disabled: true,
   },
   {
     path: '/data-publishing/terrain',
@@ -149,6 +157,7 @@ export const DATA_PUBLISHING_SECTIONS: readonly SubNavSection[] = [
     activeIcon: dataPublishingBlueIcon,
     expandable: true,
     pending: true,
+    disabled: true,
   },
   {
     path: '/data-publishing/chart',
@@ -157,5 +166,6 @@ export const DATA_PUBLISHING_SECTIONS: readonly SubNavSection[] = [
     activeIcon: dataPublishingBlueIcon,
     expandable: true,
     pending: true,
+    disabled: true,
   },
 ]

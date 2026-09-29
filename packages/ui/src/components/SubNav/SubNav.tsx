@@ -11,6 +11,8 @@ export interface SubNavItem {
   readonly activeIcon?: string
   /** 带展开抽屉：点箭头展开占位区域（数据接入前先占位） */
   readonly expandable?: boolean
+  /** 接口尚未接入：置灰不可点，悬浮提示「暂未开放」 */
+  readonly disabled?: boolean
 }
 
 interface SubNavProps {
@@ -55,6 +57,30 @@ export function SubNav({ items, activePath, title, subtitle }: SubNavProps) {
             item.icon === undefined ? '' : ` ${styles.itemWithIcon}`
           }${isActive ? ` ${styles.itemActive}` : ''}`
           const label = <span className={styles.text}>{item.label}</span>
+
+          // 未接入的项：整体置灰不可点，保留原有形态（箭头 / 图标）以免行高错位
+          if (item.disabled === true) {
+            return (
+              <li key={item.path}>
+                <span
+                  className={`${rowClass} ${styles.itemDisabled}`}
+                  aria-disabled="true"
+                  title="暂未开放"
+                >
+                  {item.expandable === true && (
+                    <span className={styles.chevronDisabled} aria-hidden="true">
+                      <span className={styles.chevronIcon}>&gt;</span>
+                    </span>
+                  )}
+                  {item.expandable === true ? (
+                    <span className={styles.textLink}>{label}</span>
+                  ) : (
+                    label
+                  )}
+                </span>
+              </li>
+            )
+          }
 
           // 可展开项：箭头负责展开，文字负责切换（箭头不能嵌在链接里）
           if (item.expandable === true) {

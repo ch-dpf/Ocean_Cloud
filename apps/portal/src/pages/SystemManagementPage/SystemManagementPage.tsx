@@ -1,41 +1,42 @@
+import { SubNav } from '@ocean-cloud/ui'
 import styles from './SystemManagementPage.module.css'
+import { SYSTEM_MANAGEMENT_SECTIONS } from '../../features/users/constants/user'
+import { UserTable } from '../../features/users/components/UserTable/UserTable'
 
-const MANAGEMENT_MODULES = [
-  { title: '用户与组织', description: '管理用户、组织架构和成员状态' },
-  { title: '角色与权限', description: '配置角色权限和资源访问范围' },
-  { title: '系统配置', description: '维护基础参数、通知和安全策略' },
-]
+interface SystemManagementPageProps {
+  readonly activePath: string
+}
 
-export function SystemManagementPage() {
+/** 二级导航项：三栏共用同一图标，与主平台其它二级导航一致 */
+const NAV_ITEMS = SYSTEM_MANAGEMENT_SECTIONS.map((item) => ({
+  path: item.path,
+  label: item.label,
+  icon: '/icons/SystemManagement.svg',
+  activeIcon: '/icons/SystemManagement_blue.svg',
+  disabled: item.disabled === true,
+}))
+
+export function SystemManagementPage({
+  activePath,
+}: SystemManagementPageProps) {
+  const section =
+    SYSTEM_MANAGEMENT_SECTIONS.find((item) => item.path === activePath) ??
+    SYSTEM_MANAGEMENT_SECTIONS[0]
   return (
-    <div className={styles.systemManagementPage}>
-      <header className={styles.pageHeader}>
-        <h1>系统管理</h1>
-        <p>维护平台成员、权限及系统基础配置</p>
-      </header>
-
-      <section className={styles.panel} aria-labelledby="system-module-title">
-        <header className={styles.sectionHeader}>
-          <h2 id="system-module-title">管理模块</h2>
-          <span>待配置</span>
-        </header>
-        <div className={styles.grid}>
-          {MANAGEMENT_MODULES.map((module) => (
-            <button type="button" className={styles.module} key={module.title}>
-              <span className={styles.moduleIcon} aria-hidden="true">
-                ⚙
-              </span>
-              <span className={styles.moduleCopy}>
-                <strong>{module.title}</strong>
-                <small>{module.description}</small>
-              </span>
-              <span className={styles.moduleArrow} aria-hidden="true">
-                ›
-              </span>
-            </button>
-          ))}
+    <section className={styles.page}>
+      <SubNav items={NAV_ITEMS} activePath={section.path} />
+      <div className={styles.content}>
+        <div className={styles.contentHeader}>
+          <h2>{section.label}</h2>
+          <p>{section.description}</p>
         </div>
-      </section>
-    </div>
+        {section.kind === 'users' ? (
+          <UserTable />
+        ) : (
+          // 角色与权限、系统配置的接口尚未接入，导航已置灰，这里兜直接访问地址的情况
+          <p className={styles.pending}>{section.label}接口待接入。</p>
+        )}
+      </div>
+    </section>
   )
 }

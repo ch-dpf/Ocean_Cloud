@@ -11,6 +11,51 @@
   flex-shrink: 0;
   border-radius: 2px;
 }
+/* 服务地址：整格可点击复制，做成链接观感 */
+.serviceUrl {
+  color: #1267d6;
+  cursor: pointer;
+}
+/* 地址文本自己负责省略号截断：外层 flex 容器会让 td 上的 ellipsis 失效 */
+.serviceUrlCell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.serviceUrlText {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 悬停时只给地址文本加下划线，复制小签不跟着划线 */
+.serviceUrl:hover .serviceUrlText {
+  text-decoration: underline;
+}
+/* 复制结果小签：紧跟地址之后，成功绿色、失败红色 */
+.copyTag,
+.copyFailTag {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+.copyTag {
+  background: #e8f5ec;
+  color: #2fa84f;
+}
+.copyFailTag {
+  background: #fdecec;
+  color: #d64545;
+}
+.actionCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .actionButton {
   height: 26px;
   padding: 0 12px;

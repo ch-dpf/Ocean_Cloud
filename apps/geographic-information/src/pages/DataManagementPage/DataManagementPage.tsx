@@ -5,6 +5,7 @@ import { ConfirmDialog } from '@ocean-cloud/ui'
 import styles from './DataManagementPage.module.css'
 import { DATA_MANAGEMENT_SECTIONS } from '../../config/navigation'
 import { DatasetCreateDialog } from '../../features/dataManagement/components/DatasetCreateDialog/DatasetCreateDialog'
+import { DatasetDetailDialog } from '../../features/dataManagement/components/DatasetDetailDialog/DatasetDetailDialog'
 import { DatasetEditDialog } from '../../features/dataManagement/components/DatasetEditDialog/DatasetEditDialog'
 import { DatasetSearch } from '../../features/dataManagement/components/DatasetSearch/DatasetSearch'
 import { FileImportDialog } from '../../features/dataManagement/components/FileImportDialog/FileImportDialog'
@@ -15,13 +16,15 @@ import { ProcessingCreateDialog } from '../../features/dataManagement/components
 import type { ManagedSubmitInput } from '../../features/dataManagement/components/ProcessingCreateDialog/ProcessingCreateDialog'
 import { UploadProgressDialog } from '../../features/dataManagement/components/UploadProgressDialog/UploadProgressDialog'
 import {
-  DATASET_CATEGORY_IDS,
   DATASET_CATEGORY_LABELS,
   DATASET_CATEGORY_ORDER,
   FILE_OPT_PAGE_SIZE,
   FILE_PAGE_SIZE,
 } from '../../features/dataManagement/constants/dataset'
-import { UPLOAD_TASK_KINDS } from '../../features/dataManagement/constants/task'
+import {
+  CATEGORY_PROCESSING_TYPES,
+  UPLOAD_TASK_KINDS,
+} from '../../features/dataManagement/constants/task'
 import { useDatasetCatalog } from '../../features/dataManagement/hooks/useDatasetCatalog'
 import { useFileMetaPage } from '../../features/dataManagement/hooks/useFileMetaPage'
 import { useFileOptPage } from '../../features/dataManagement/hooks/useFileOptPage'
@@ -31,12 +34,12 @@ import {
   createImportTask,
   deleteFileMeta,
   downloadFileMeta,
-  processFileMeta,
   purgeDeletedFileMeta,
   restoreDeletedFileMeta,
   uploadImportBatch,
 } from '../../features/dataManagement/services/fileMetaService'
 import { deleteDataset } from '../../features/dataManagement/services/datasetService'
+import { createManagedProcessingTask } from '../../features/dataManagement/services/taskService'
 import type { GeoDataset } from '../../features/dataManagement/types/dataset'
 import type { FileOptFilters } from '../../features/dataManagement/types/fileOpt'
 import type {
@@ -70,8 +73,9 @@ const IMPORTS_PATH = '/data-management/imports'
 /** 回收站的路径 */
 const RECYCLE_BIN_PATH = '/data-management/recycle-bin'
 
-/** 数据集右键菜单：重命名与删除 */
+/** 数据集右键菜单：查看详情、重命名与删除 */
 const DATASET_MENU_ITEMS: MenuProps['items'] = [
+  { key: 'detail', label: '详情' },
   { key: 'rename', label: '重命名' },
   { key: 'delete', label: '删除', danger: true },
 ]
@@ -83,9 +87,8 @@ type DatasetSelection =
       readonly kind: 'dataset'
       readonly categoryId: number
       readonly dataSetId: string
-      /** 选中时一并带上名称与描述，供副标题与导入弹窗使用 */
+      /** 选中时一并带上名称，供副标题与导入弹窗使用 */
       readonly dataSetName: string
-      readonly description: string
     }
 
 /** 把二进制内容存成本地文件：临时 a 标签 + object URL，稍后再回收 */
@@ -115,7 +118,8 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
   const [isProgressOpen, setIsProgressOpen] = useState(false)
-  // 数据集右键菜单触发的弹窗：重命名与删除
+  // 数据集右键菜单触发的弹窗：详情、重命名与删除
+  const [detailDataset, setDetailDataset] = useState<GeoDataset | null>(null)
   const [renamingDataset, setRenamingDataset] = useState<GeoDataset | null>(
     null,
   )
@@ -172,6 +176,7 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
   } = useFileMetaPage(resolveFileScope(), fileFilters, filePageSize)
   // 第三个参数是「当前是否停在导入记录栏目」：切到该栏目时变化，从而重新查询一次
   const fileOptPage = useFileOptPage(fileOptFilters, fileOptPageSize, isImports)
+  const { refresh: refreshFileOpt } = fileOptPage
   const {
     recycleBinTotal,
     importRecordTotal,
@@ -190,9 +195,10 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     if (newlyFinished.length === 0) return
     for (const task of newlyFinished) finishedTaskNos.current.add(task.taskNo)
     refreshFiles()
-    // 导入完成后「导入记录」的条数也变了
+    // 导入完成后「导入记录」列表与侧边栏计数都变了
     refreshSidebarCounts()
-  }, [tasks, refreshFiles, refreshSidebarCounts])
+    refreshFileOpt()
+  }, [tasks, refreshFiles, refreshSidebarCounts, refreshFileOpt])
   // 导入弹窗的初始上下文：全部数据为空、分类为分类名、数据集为数据集名
   const selectedDataset =
     activeSelection !== null && activeSelection.kind === 'dataset'
@@ -204,14 +210,13 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
       : activeSelection.kind === 'category'
         ? DATASET_CATEGORY_LABELS[activeSelection.categoryId]
         : activeSelection.dataSetName
-  // 副标题的当前域：全部数据 / 分类名 / 数据集名（数据集额外带上描述）
+  // 副标题的当前域：全部数据 / 分类名 / 数据集名
   const scopeLabel =
     activeSelection === null
       ? WORKSPACE_LABEL
       : activeSelection.kind === 'category'
         ? DATASET_CATEGORY_LABELS[activeSelection.categoryId]
         : activeSelection.dataSetName
-  const scopeDescription = selectedDataset?.description ?? ''
 
   /** 选中数据目录项：同时回到「全部数据」页面，保证内容区展示对应数据 */
   function handleSelectEntry(next: DatasetSelection) {
@@ -232,7 +237,6 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
       categoryId: Number(dataset.categoryId),
       dataSetId: dataset.id,
       dataSetName: dataset.dataSetName,
-      description: dataset.description,
     })
   }
 
@@ -305,17 +309,17 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     }
   }
 
-  /** 提交处理任务：在弹窗里提交，进度到数据处理页查看 */
+  /**
+   * 提交处理任务：地形与影像都走已管理文件的切片接口（带文件标识）。
+   * 进度到数据处理页查看，失败提示由 RequestErrorNotice 统一展示。
+   */
   async function handleManagedProcess(input: ManagedSubmitInput) {
     setProcessingFile(null)
-    setProcessingId(input.fileMetaId)
+    const [fileMetaId] = input.fileMetaIds
+    if (fileMetaId === undefined) return
+    setProcessingId(fileMetaId)
     try {
-      await processFileMeta(input.fileMetaId, {
-        processingType: input.processingType,
-        targetCrs: input.parameters.targetCrs,
-        tileProfile: input.parameters.tileProfile,
-        outputFormat: input.parameters.outputFormat,
-      })
+      await createManagedProcessingTask(input)
     } catch {
       // 失败提示由 RequestErrorNotice 统一展示
     } finally {
@@ -350,16 +354,12 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     }
   }
 
-  /** 重命名数据集成功：刷新目录，并同步选中项里的名称与描述 */
+  /** 重命名数据集成功：刷新目录，并同步选中项里的名称 */
   function handleDatasetUpdated(updated: GeoDataset) {
     refreshCatalog()
     setSelection((prev) =>
       prev !== null && prev.kind === 'dataset' && prev.dataSetId === updated.id
-        ? {
-            ...prev,
-            dataSetName: updated.dataSetName,
-            description: updated.description,
-          }
+        ? { ...prev, dataSetName: updated.dataSetName }
         : prev,
     )
   }
@@ -574,7 +574,9 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                                 menu={{
                                   items: DATASET_MENU_ITEMS,
                                   onClick: ({ key }) => {
-                                    if (key === 'rename')
+                                    if (key === 'detail')
+                                      setDetailDataset(dataset)
+                                    else if (key === 'rename')
                                       setRenamingDataset(dataset)
                                     else setDeletingDataset(dataset)
                                   },
@@ -593,7 +595,6 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                                       categoryId,
                                       dataSetId: dataset.id,
                                       dataSetName: dataset.dataSetName,
-                                      description: dataset.description,
                                     })
                                   }
                                   aria-pressed={isDataSetSelected}
@@ -676,12 +677,8 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
             <div className={styles.contentHeader}>
               <div className={styles.contentTitle}>
                 <h2>GIS 数据管理</h2>
-                <p
-                  className={styles.contentMetaLine}
-                  title={scopeDescription === '' ? undefined : scopeDescription}
-                >
+                <p className={styles.contentMetaLine}>
                   当前域：{scopeLabel} · {total} 条数据
-                  {scopeDescription === '' ? '' : ` · ${scopeDescription}`}
                 </p>
               </div>
               <div className={styles.headerActions}>
@@ -716,9 +713,10 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                   label: '处理',
                   onClick: (record) => setProcessingFile(record),
                   pendingId: processingId,
-                  // 暂只开放地形数据的处理，其余分类按钮置灰
+                  // 目前开放在地形与影像数据上发起处理，其余分类按钮置灰
                   disabled: (record) =>
-                    Number(record.categoryId) !== DATASET_CATEGORY_IDS.terrain,
+                    CATEGORY_PROCESSING_TYPES[Number(record.categoryId)] ===
+                    undefined,
                 },
                 {
                   label: '删除',
@@ -766,6 +764,12 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
           onClose={() => setIsProgressOpen(false)}
         />
       )}
+      {detailDataset !== null && (
+        <DatasetDetailDialog
+          dataset={detailDataset}
+          onClose={() => setDetailDataset(null)}
+        />
+      )}
       {renamingDataset !== null && (
         <DatasetEditDialog
           dataset={renamingDataset}
@@ -796,6 +800,9 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
       {processingFile !== null && (
         <ProcessingCreateDialog
           presetFile={processingFile}
+          lockedProcessingType={
+            CATEGORY_PROCESSING_TYPES[Number(processingFile.categoryId)]
+          }
           onClose={() => setProcessingFile(null)}
           onSubmitManaged={handleManagedProcess}
         />

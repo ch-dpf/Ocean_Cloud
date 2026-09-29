@@ -79,3 +79,21 @@ export async function publishImageryFromTask(taskId: string): Promise<void> {
     '/imagery-publications/' + encodeURIComponent(taskId) + '/publish',
   )
 }
+
+/** 停用已发布的地形服务：路径参数是 serviceCode，不是记录 id */
+export async function disableTerrainPublication(
+  serviceCode: string,
+): Promise<void> {
+  await httpClient.put<ApiResult<unknown>>(
+    '/terrain-publications/' + encodeURIComponent(serviceCode) + '/disable',
+  )
+}
+
+/** 停用已发布的影像服务：路径参数是 serviceCode，不是记录 id */
+export async function disableImageryPublication(
+  serviceCode: string,
+): Promise<void> {
+  await httpClient.put<ApiResult<unknown>>(
+    '/imagery-publications/' + encodeURIComponent(serviceCode) + '/disable',
+  )
+}

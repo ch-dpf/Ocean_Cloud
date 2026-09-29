@@ -14,6 +14,8 @@ export function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  // 强制登录：勾选后挤掉该账号在其他设备的会话。确认启用后取消注释
+   const [forceLogin, setForceLogin] = useState(false)
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState<ToastData | null>(null)
 
@@ -21,7 +23,8 @@ export function LoginPage() {
     event.preventDefault()
     setLoading(true)
     try {
-      await login({ username, password })
+      // 强制登录启用后改用下面这行
+       await login({ username, password, forceLogin })
       setToast({ id: Date.now(), type: 'success', text: '登录成功' })
       navigateAfterLogin()
     } catch (error) {
@@ -211,30 +214,65 @@ export function LoginPage() {
               </div>
             </div>
 
-            <label
+            <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                fontFamily: 'Noto Sans',
-                fontWeight: 400,
-                fontSize: '13px',
-                color: '#576e85',
-                cursor: 'pointer',
+                justifyContent: 'space-between',
               }}
             >
-              <input
-                type="checkbox"
+              <label
                 style={{
-                  borderRadius: '4px',
-                  border: '1px solid #C6D4D9',
-                  width: '16px',
-                  height: '16px',
-                  accentColor: '#1267d6',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontFamily: 'Noto Sans',
+                  fontWeight: 400,
+                  fontSize: '13px',
+                  color: '#576e85',
+                  cursor: 'pointer',
                 }}
-              />
-              记住账号
-            </label>
+              >
+                <input
+                  type="checkbox"
+                  style={{
+                    borderRadius: '4px',
+                    border: '1px solid #C6D4D9',
+                    width: '16px',
+                    height: '16px',
+                    accentColor: '#1267d6',
+                  }}
+                />
+                记住账号
+              </label>
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontFamily: 'Noto Sans',
+                  fontWeight: 400,
+                  fontSize: '13px',
+                  color: '#576e85',
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={forceLogin}
+                  onChange={(e) => setForceLogin(e.target.checked)}
+                  style={{
+                    borderRadius: '4px',
+                    border: '1px solid #C6D4D9',
+                    width: '16px',
+                    height: '16px',
+                    accentColor: '#1267d6',
+                  }}
+                />
+                强制登录
+              </label>
+             
+            </div>
 
             <button
               type="submit"

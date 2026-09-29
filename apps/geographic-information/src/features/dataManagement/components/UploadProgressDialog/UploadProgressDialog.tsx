@@ -18,7 +18,7 @@ interface UploadProgressDialogProps {
 function formatTaskMeta(task: UploadTaskItem): string {
   return [
     task.statusText || '正在处理…',
-    task.totalCount !== null ? `${task.completedCount}/${task.totalCount}` : '',
+    // task.totalCount !== null ? `${task.completedCount}/${task.totalCount}` : '',
     task.failedCount > 0 ? `失败 ${task.failedCount}` : '',
     task.percent !== null ? `${task.percent}%` : '',
   ]

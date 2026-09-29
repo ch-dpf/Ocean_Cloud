@@ -78,10 +78,13 @@ function buildTaskFields(detail: TaskDetail): readonly SummaryField[] {
       value: task.currentStage ? toTaskStatusLabel(task.currentStage) : '—',
     },
     {
-      label: '数据传入方式',
+      label: '数据接入方式',
       value: task.sourceType ? toSourceTypeLabel(task.sourceType) : '—',
     },
-    { label: '优先级', value: task.priority === null ? '—' : String(task.priority) },
+    {
+      label: '优先级',
+      value: task.priority === null ? '—' : String(task.priority),
+    },
     {
       label: '已完成 / 总数',
       value: `${task.completedCount} / ${task.totalCount}`,
@@ -175,7 +178,13 @@ const INPUT_COLUMNS: TableColumnsType<TaskInput> = [
     width: 100,
     render: (_, record) => formatFileSize(record.sizeBytes),
   },
-  { title: 'SHA256', dataIndex: 'sha256', width: 240, ellipsis: true, render: text },
+  {
+    title: 'SHA256',
+    dataIndex: 'sha256',
+    width: 240,
+    ellipsis: true,
+    render: text,
+  },
   {
     title: '错误信息',
     dataIndex: 'errorMessage',
@@ -229,96 +238,98 @@ export function TaskDetailDialog({ taskId, onClose }: TaskDetailDialogProps) {
       aria-labelledby={titleId}
       onClose={() => onClose()}
     >
-      <div className={styles.heading}>
+      {/* 关闭按钮落在弹窗框外，内容滚动时不会跟着滚走 */}
+      <button
+        type="button"
+        className={styles.close}
+        onClick={() => onClose()}
+        aria-label="关闭详情"
+      >
+        ×
+      </button>
+
+      <div className={styles.body}>
         <h2 className={styles.title} id={titleId}>
           处理任务详情
         </h2>
-        <button
-          type="button"
-          className={styles.close}
-          onClick={() => onClose()}
-          aria-label="关闭详情"
-        >
-          ×
-        </button>
-      </div>
 
-      {isLoading ? (
-        <p className={styles.state} role="status">
-          正在加载详情…
-        </p>
-      ) : error !== null || detail === null ? (
-        <p className={styles.state}>{error ?? '详情加载失败。'}</p>
-      ) : (
-        <>
-          <p className={styles.sectionTitle}>任务概览</p>
-          <dl className={styles.summary}>
-            {buildTaskFields(detail).map((field) => (
-              <div className={styles.summaryItem} key={field.label}>
-                <dt>{field.label}</dt>
-                <dd title={field.value}>{field.value}</dd>
-              </div>
-            ))}
-          </dl>
-          {detail.task.errorMessage !== null &&
-            detail.task.errorMessage !== '' && (
-              <p className={styles.errorText}>
-                错误信息：{detail.task.errorMessage}
-              </p>
-            )}
-          {detail.requestFingerprint && (
+        {isLoading ? (
+          <p className={styles.state} role="status">
+            正在加载详情…
+          </p>
+        ) : error !== null || detail === null ? (
+          <p className={styles.state}>{error ?? '详情加载失败。'}</p>
+        ) : (
+          <>
+            <p className={styles.sectionTitle}>任务概览</p>
             <dl className={styles.summary}>
-              <div className={styles.summaryItem}>
-                <dt>请求指纹</dt>
-                <dd title={detail.requestFingerprint}>
-                  {detail.requestFingerprint}
-                </dd>
-              </div>
+              {buildTaskFields(detail).map((field) => (
+                <div className={styles.summaryItem} key={field.label}>
+                  <dt>{field.label}</dt>
+                  <dd title={field.value}>{field.value}</dd>
+                </div>
+              ))}
             </dl>
-          )}
-
-          <p className={styles.sectionTitle}>处理参数</p>
-          <dl className={styles.summary}>
-            {buildParameterFields(detail).map((field) => (
-              <div className={styles.summaryItem} key={field.label}>
-                <dt>{field.label}</dt>
-                <dd title={field.value}>{field.value}</dd>
-              </div>
-            ))}
-          </dl>
-
-          <p className={styles.sectionTitle}>输入文件（{inputs.length}）</p>
-          <Table<TaskInput>
-            rowKey="id"
-            columns={INPUT_COLUMNS}
-            dataSource={[...inputs]}
-            size="small"
-            pagination={false}
-            scroll={{ x: 1230 }}
-            locale={{ emptyText: '该任务暂无输入文件' }}
-          />
-
-          {tileSet !== null && (
-            <>
-              <p className={styles.sectionTitle}>瓦片产物</p>
+            {detail.task.errorMessage !== null &&
+              detail.task.errorMessage !== '' && (
+                <p className={styles.errorText}>
+                  错误信息：{detail.task.errorMessage}
+                </p>
+              )}
+            {detail.requestFingerprint && (
               <dl className={styles.summary}>
-                {buildTileSetFields(tileSet).map((field) => (
-                  <div className={styles.summaryItem} key={field.label}>
-                    <dt>{field.label}</dt>
-                    <dd title={field.value}>{field.value}</dd>
-                  </div>
-                ))}
+                <div className={styles.summaryItem}>
+                  <dt>请求指纹</dt>
+                  <dd title={detail.requestFingerprint}>
+                    {detail.requestFingerprint}
+                  </dd>
+                </div>
               </dl>
-              {tileSet.errorMessage !== null &&
-                tileSet.errorMessage !== '' && (
-                  <p className={styles.errorText}>
-                    错误信息：{tileSet.errorMessage}
-                  </p>
-                )}
-            </>
-          )}
-        </>
-      )}
+            )}
+
+            <p className={styles.sectionTitle}>处理参数</p>
+            <dl className={styles.summary}>
+              {buildParameterFields(detail).map((field) => (
+                <div className={styles.summaryItem} key={field.label}>
+                  <dt>{field.label}</dt>
+                  <dd title={field.value}>{field.value}</dd>
+                </div>
+              ))}
+            </dl>
+
+            <p className={styles.sectionTitle}>输入文件（{inputs.length}）</p>
+            <Table<TaskInput>
+              rowKey="id"
+              columns={INPUT_COLUMNS}
+              dataSource={[...inputs]}
+              size="small"
+              pagination={false}
+              scroll={{ x: 1230 }}
+              locale={{ emptyText: '该任务暂无输入文件' }}
+            />
+
+            {tileSet !== null && (
+              <>
+                <p className={styles.sectionTitle}>瓦片产物</p>
+                <dl className={styles.summary}>
+                  {buildTileSetFields(tileSet).map((field) => (
+                    <div className={styles.summaryItem} key={field.label}>
+                      <dt>{field.label}</dt>
+                      <dd title={field.value}>{field.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                {tileSet.errorMessage !== null &&
+                  tileSet.errorMessage !== '' && (
+                    <p className={styles.errorText}>
+                      错误信息：{tileSet.errorMessage}
+                    </p>
+                  )}
+              </>
+            )}
+          </>
+        )}
+      </div>
     </dialog>
   )
 }

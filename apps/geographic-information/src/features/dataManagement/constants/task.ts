@@ -1,3 +1,5 @@
+import { DATASET_CATEGORY_IDS } from './dataset'
+
 /** 任务列表每页条数 */
 export const TASK_PAGE_SIZE = 10
 
@@ -65,7 +67,7 @@ export function toTileSetStatusLabel(status: string): string {
   return TILE_SET_STATUS_LABELS[status] ?? status
 }
 
-/** 数据传入方式（task.sourceType）；未命中的取值按原样展示 */
+/** 数据接入方式（task.sourceType）；未命中的取值按原样展示 */
 export const SOURCE_TYPE_LABELS: Readonly<Record<string, string>> = {
   MANAGED_FILE: '本地文件',
   FILE: '文件',
@@ -116,13 +118,13 @@ export const PROCESSING_TYPE_OPTIONS = [
   {
     value: PROCESSING_TYPE_TERRAIN,
     label: '地形切片',
-    dataLabel: '地形',
+    dataLabel: '文件上传',
     disabled: false,
   },
   {
     value: PROCESSING_TYPE_IMAGERY,
     label: '影像切片',
-    dataLabel: '影像文件上传',
+    dataLabel: '文件上传',
     disabled: false,
   },
   {
@@ -139,32 +141,49 @@ export const PROCESSING_TYPE_OPTIONS = [
   },
 ] as const
 
-/** 新建处理任务的预处理参数可选项：目前各只有一个取值，后端放开后再补 */
+/**
+ * 预处理参数可选项：影像可在后端允许的取值里选，每项第一项是推荐默认值；
+ * 地形暂只放开推荐取值，后端允许的其他候选值界面不给切。
+ */
 export const TARGET_CRS_OPTIONS = [{ value: 'EPSG:4326' }] as const
 
-export const GEOTIFF_BLOCK_SIZE_OPTIONS = [{ value: '256' }] as const
-
-export const TILE_PROFILE_OPTIONS = [
-  { value: 'GEODETIC', label: '地理剖分（经纬度）' },
-] as const
+export const TILE_PROFILE_OPTIONS = [{ value: 'TMS' }] as const
 
 export const OUTPUT_FORMAT_OPTIONS = [
-  { value: 'QUANTIZED_MESH', label: '.terrain（CesiumJS）' },
+  { value: 'QUANTIZED_MESH', label: '.terrain' },
 ] as const
 
-/** 影像切片的预处理可选项：目前各只有一个取值，后端放开后再补 */
-export const IMAGERY_TARGET_CRS_OPTIONS = [{ value: 'EPSG:3857' }] as const
+export const IMAGERY_TARGET_CRS_OPTIONS = [
+  { value: 'EPSG:3857' },
+  { value: 'EPSG:4326' },
+] as const
 
-export const IMAGERY_TILE_PROFILE_OPTIONS = [{ value: 'XYZ' }] as const
+export const IMAGERY_TILE_PROFILE_OPTIONS = [
+  { value: 'XYZ' },
+  { value: 'TMS' },
+] as const
 
-export const IMAGERY_OUTPUT_FORMAT_OPTIONS = [{ value: 'PNG' }] as const
+export const IMAGERY_OUTPUT_FORMAT_OPTIONS = [
+  { value: 'PNG' },
+  { value: 'JPEG' },
+  { value: 'JPG' },
+] as const
 
 /**
- * 影像切片的固定默认参数：不在界面暴露，提交时与下拉框选中的值合并发出。
- * minZoom / resampling / transparent 对应 /api/gis/task/process 的 parameters 字段。
+ * 分类对应的处理类型：数据管理页按文件分类锁定处理类型，
+ * 未列出的分类（矢量、倾斜模型、电子海图）暂不开放处理。
  */
-export const IMAGERY_FIXED_PARAMETERS = {
-  minZoom: 0,
-  resampling: 'BILINEAR',
-  transparent: true,
-} as const
+export const CATEGORY_PROCESSING_TYPES: Readonly<Record<number, string>> = {
+  [DATASET_CATEGORY_IDS.image]: PROCESSING_TYPE_IMAGERY,
+  [DATASET_CATEGORY_IDS.terrain]: PROCESSING_TYPE_TERRAIN,
+}
+
+/** 处理类型对应的数据分类：数据管理数据页签按此过滤可选文件 */
+export function toCategoryOfProcessingType(
+  processingType: string,
+): number | undefined {
+  const found = Object.entries(CATEGORY_PROCESSING_TYPES).find(
+    ([, type]) => type === processingType,
+  )
+  return found === undefined ? undefined : Number(found[0])
+}

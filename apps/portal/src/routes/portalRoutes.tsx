@@ -12,6 +12,7 @@ import { LoginPage } from '../pages/LoginPage/LoginPage'
 import { PermissionCenterPage } from '../pages/PermissionCenterPage/PermissionCenterPage'
 import { LogPage } from '../pages/LogPage/LogPage'
 import { LOG_SECTIONS } from '../features/logs/constants/log'
+import { SYSTEM_MANAGEMENT_SECTIONS } from '../features/users/constants/user'
 interface PortalRoute {
   readonly title: string
   /** 二级标题：顶栏展示为「一级 / 二级」 */
@@ -31,10 +32,6 @@ const STATIC_ROUTES: Readonly<Record<string, PortalRoute>> = {
   '/': { title: '工作台', element: <DashboardPage /> },
   '/dataservice': { title: '数据服务', element: <DataServicePage /> },
   '/visualization': { title: '可视化应用', element: <VisualizationPage /> },
-  '/system-management': {
-    title: '系统管理',
-    element: <SystemManagementPage />,
-  },
   '/permission-center': {
     title: '权限中心',
     element: <PermissionCenterPage />,
@@ -60,6 +57,27 @@ export function resolvePortalRoute(
       title: '日志',
       subTitle: LOG_SECTIONS[0].shortLabel,
       element: <LogPage activePath={LOG_SECTIONS[0].path} />,
+      flush: true,
+    }
+  // 系统管理的二级导航：用户管理已接入接口，其余栏目待接入
+  const managementSection = SYSTEM_MANAGEMENT_SECTIONS.find(
+    (item) => item.path === pathname,
+  )
+  if (managementSection)
+    return {
+      title: '系统管理',
+      subTitle: managementSection.shortLabel,
+      element: <SystemManagementPage activePath={managementSection.path} />,
+      flush: true,
+    }
+  // 只访问 /system-management 时先按第一栏渲染，PortalContent 会把地址补全到二级路径
+  if (pathname === '/system-management')
+    return {
+      title: '系统管理',
+      subTitle: SYSTEM_MANAGEMENT_SECTIONS[0].shortLabel,
+      element: (
+        <SystemManagementPage activePath={SYSTEM_MANAGEMENT_SECTIONS[0].path} />
+      ),
       flush: true,
     }
   const application = applications.find((item) => item.route === pathname)

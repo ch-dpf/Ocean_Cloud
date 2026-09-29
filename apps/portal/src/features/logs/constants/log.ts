@@ -18,11 +18,11 @@ export interface LogSection {
 /** 日志的二级导航 */
 export const LOG_SECTIONS: readonly LogSection[] = [
   {
-    path: '/logs/exception',
-    label: '异常日志',
-    shortLabel: '异常日志',
-    kind: 'exception',
-    description: '记录系统运行中的异常堆栈、请求现场与处理状态',
+    path: '/logs/login',
+    label: '登录日志',
+    shortLabel: '登录日志',
+    kind: 'login',
+    description: '记录登录登出、来源 IP 与设备环境',
   },
   {
     path: '/logs/operation',
@@ -32,11 +32,11 @@ export const LOG_SECTIONS: readonly LogSection[] = [
     description: '记录用户的写操作、请求参数与执行耗时',
   },
   {
-    path: '/logs/login',
-    label: '登录日志',
-    shortLabel: '登录日志',
-    kind: 'login',
-    description: '记录登录登出、来源 IP 与设备环境',
+    path: '/logs/exception',
+    label: '异常日志',
+    shortLabel: '异常日志',
+    kind: 'exception',
+    description: '记录系统运行中的异常堆栈、请求现场与处理状态',
   },
 ]
 

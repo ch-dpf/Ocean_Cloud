@@ -1,22 +1,32 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Form } from 'antd'
 import { SubNav } from '@ocean-cloud/ui'
 import styles from './DataProcessingPage.module.css'
 import { DATA_PROCESSING_SECTIONS } from '../../config/navigation'
 import { ProcessingCreateDialog } from '../../features/dataManagement/components/ProcessingCreateDialog/ProcessingCreateDialog'
-import type { LocalSubmitInput } from '../../features/dataManagement/components/ProcessingCreateDialog/ProcessingCreateDialog'
+import type {
+  LocalSubmitInput,
+  ManagedSubmitInput,
+  WorkspaceSubmitInput,
+} from '../../features/dataManagement/components/ProcessingCreateDialog/ProcessingCreateDialog'
 import { TaskDetailDialog } from '../../features/dataManagement/components/TaskDetailDialog/TaskDetailDialog'
 import { TaskListTable } from '../../features/dataManagement/components/TaskListTable/TaskListTable'
 import { UploadProgressDialog } from '../../features/dataManagement/components/UploadProgressDialog/UploadProgressDialog'
 import {
   PROCESSING_TASK_KINDS,
   PROCESSING_TYPE_IMAGERY,
+  PROCESSING_TYPE_TERRAIN,
+  PROCESSING_TYPE_VECTOR,
   TASK_PAGE_SIZE,
   TASK_TYPE_PROCESS,
 } from '../../features/dataManagement/constants/task'
 import { useTaskPage } from '../../features/dataManagement/hooks/useTaskPage'
 import { useUploadTasks } from '../../features/dataManagement/hooks/useUploadTasks'
-import { createProcessingTask } from '../../features/dataManagement/services/taskService'
+import {
+  createManagedProcessingTask,
+  createProcessingTask,
+  createWorkspaceProcessingTask,
+} from '../../features/dataManagement/services/taskService'
 import {
   publishImageryFromTask,
   publishTerrainFromTask,
@@ -30,6 +40,13 @@ const STATUS_TABS = [
   { label: '待发布', status: 'QUEUED' },
   { label: '已发布', status: 'COMPLETED' },
 ] as const
+
+/** 左侧分类对应的 processingType；「全部任务」等未列出的路径表示不按类型筛选 */
+const SECTION_PROCESSING_TYPES: Readonly<Record<string, string>> = {
+  '/data-processing/terrain': PROCESSING_TYPE_TERRAIN,
+  '/data-processing/imagery': PROCESSING_TYPE_IMAGERY,
+  '/data-processing/vector': PROCESSING_TYPE_VECTOR,
+}
 
 interface DataProcessingPageProps {
   readonly activePath: string
@@ -52,14 +69,28 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
   // 只展示三类处理任务的帧（导入任务的帧归数据管理页的「上传进度」）
   const { tasks, clearFinished } = useUploadTasks(PROCESSING_TASK_KINDS)
   const runningCount = tasks.filter((task) => !task.done).length
+  // 左侧导航即分类入口：影像 / 矢量 / 地形任务分别按 processingType 过滤
+  const processingType = SECTION_PROCESSING_TYPES[section.path]
 
   const { records, total, current, isLoading, error, goToPage, refresh } =
     useTaskPage({
       enabled: true,
       taskType: TASK_TYPE_PROCESS,
+      processingType,
       taskStatus: taskStatus === '' ? undefined : taskStatus,
       size: pageSize,
     })
+
+  // 处理任务完成时自动刷新任务列表，让状态与耗时立即更新（按任务编号去重，只刷一次）
+  const finishedTaskNos = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    const newlyFinished = tasks.filter(
+      (task) => task.done && !finishedTaskNos.current.has(task.taskNo),
+    )
+    if (newlyFinished.length === 0) return
+    for (const task of newlyFinished) finishedTaskNos.current.add(task.taskNo)
+    refresh()
+  }, [tasks, refresh])
 
   function handleTabClick(status: string) {
     setTaskStatus(status)
@@ -109,6 +140,32 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
     setIsCreateOpen(false)
     try {
       await createProcessingTask(input)
+    } catch {
+      return
+    }
+    refresh()
+  }
+
+  /**
+   * 新建处理任务（数据管理数据）：提交已勾选文件的切片任务，同样关窗后在后台进行。
+   */
+  async function handleCreateManaged(input: ManagedSubmitInput) {
+    setIsCreateOpen(false)
+    try {
+      await createManagedProcessingTask(input)
+    } catch {
+      return
+    }
+    refresh()
+  }
+
+  /**
+   * 新建处理任务（服务器文件）：按工作区内的相对路径提交，同样关窗后在后台进行。
+   */
+  async function handleCreateWorkspace(input: WorkspaceSubmitInput) {
+    setIsCreateOpen(false)
+    try {
+      await createWorkspaceProcessingTask(input)
     } catch {
       return
     }
@@ -190,6 +247,8 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
         <ProcessingCreateDialog
           onClose={() => setIsCreateOpen(false)}
           onSubmitLocal={handleCreateProcessing}
+          onSubmitManaged={handleCreateManaged}
+          onSubmitWorkspace={handleCreateWorkspace}
         />
       )}
       {isProgressOpen && (

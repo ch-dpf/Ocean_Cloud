@@ -1,17 +1,15 @@
-/** 处理任务的预处理参数（/api/gis/task/process 的 request.parameters） */
+/**
+ * 处理任务的预处理参数（/task/process 与 /task/process-managed 的 parameters）。
+ * 地形与影像共用同一结构，各自的取值由界面按处理类型给出。
+ * 影像的层级、重采样、透明背景由后端自行计算，不下发。
+ */
 export interface ProcessingParameters {
-  /** 目标坐标系，地形 EPSG:4326，影像 EPSG:3857 */
+  /** 目标坐标系，地形 EPSG:4326，影像 EPSG:3857 / EPSG:4326 */
   readonly targetCrs: string
-  /** 瓦片切分剖面 / 服务格式，地形 GEODETIC，影像 XYZ */
+  /** 瓦片切分剖面 / 服务格式，地形 GEODETIC，影像 XYZ / TMS */
   readonly tileProfile: string
-  /** 输出格式 / 发布类型，地形 QUANTIZED_MESH，影像 PNG */
+  /** 输出格式 / 发布类型，地形 QUANTIZED_MESH，影像 PNG / JPEG / JPG */
   readonly outputFormat: string
-  /** 影像切片固定参数：最小层级 */
-  readonly minZoom?: number
-  /** 影像切片固定参数：重采样方式 */
-  readonly resampling?: string
-  /** 影像切片固定参数：是否透明 */
-  readonly transparent?: boolean
 }
 
 /** 任务分页查询参数（/api/gis/task/page） */
@@ -20,6 +18,8 @@ export interface TaskPageQuery {
   readonly size: number
   /** 任务类型：1-上传、2-切片、3-发布、4-导出或下载 */
   readonly taskType: string
+  /** 处理类型：TERRAIN、IMAGERY、VECTOR；不传表示不按类型筛选 */
+  readonly processingType?: string
   /** 任务状态；不传表示全部状态 */
   readonly taskStatus?: string
 }
@@ -43,7 +43,7 @@ export interface TaskRecord {
   readonly createTime: string
   readonly updateTime: string
   readonly errorMessage: string | null
-  /** 数据传入方式：FILE、URL */
+  /** 数据接入方式：FILE、URL */
   readonly sourceType: string | null
 }
 
