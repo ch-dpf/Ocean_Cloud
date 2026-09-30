@@ -15,6 +15,7 @@ import { FileOptRecordTable } from '../../features/dataManagement/components/Fil
 import { ProcessingCreateDialog } from '../../features/dataManagement/components/ProcessingCreateDialog/ProcessingCreateDialog'
 import type { ManagedSubmitInput } from '../../features/dataManagement/components/ProcessingCreateDialog/ProcessingCreateDialog'
 import { UploadProgressDialog } from '../../features/dataManagement/components/UploadProgressDialog/UploadProgressDialog'
+import DocumentFolderIcon from '../../assets/icons/DocumentFolder.svg'
 import {
   DATASET_CATEGORY_LABELS,
   DATASET_CATEGORY_ORDER,
@@ -432,6 +433,7 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
           <DatasetSearch
             onSelect={handleSearchSelect}
             onReset={handleSearchReset}
+            onCreate={() => setIsCreateOpen(true)}
           />
         </div>
         <nav className={styles.geoSideBarDirectory}>
@@ -482,6 +484,11 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
         <div className={styles.geoSideBarDivider} />
         <div className={styles.dataDirectory}>
           <div className={styles.dataDirectoryTitle}>
+            <img
+              src={DocumentFolderIcon}
+              alt=""
+              className={styles.dataDirectoryIcon}
+            />
             <span
               style={{
                 fontFamily: 'Noto Sans SC',
@@ -489,18 +496,11 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                 fontStyle: 'Bold',
                 fontSize: '13px',
                 color: '#13293D',
+                marginLeft: '4px',
               }}
             >
-              ▱ 数据目录
+              数据目录
             </span>
-            <button
-              type="button"
-              className={styles.dataSetAdd}
-              onClick={() => setIsCreateOpen(true)}
-              aria-label="新增数据集"
-            >
-              +
-            </button>
           </div>
           <ul className={styles.dataDirectoryList}>
             {DATASET_CATEGORY_ORDER.map((categoryId) => {

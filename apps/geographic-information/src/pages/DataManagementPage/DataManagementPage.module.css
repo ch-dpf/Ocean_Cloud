@@ -58,6 +58,9 @@
 .geoSideBarDirectoryIconDefault {
   transition: opacity 0.2s;
 }
+.dataDirectoryIcon {
+  vertical-align: top;
+}
 .geoSideBarDirectoryIconActive {
   position: absolute;
   inset: 0;

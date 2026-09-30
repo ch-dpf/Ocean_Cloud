@@ -10,13 +10,19 @@ interface DatasetSearchProps {
   readonly onSelect: (dataset: GeoDataset) => void
   /** 点击刷新：清空搜索并回到「全部数据」 */
   readonly onReset: () => void
+  /** 点击「+」：打开新增数据集弹窗 */
+  readonly onCreate: () => void
 }
 
 /**
  * 侧边栏数据集搜索：按名称查询（输入防抖），结果在输入框下方的浮层里展示。
- * 点结果进入对应数据集，输入框填入该名称；刷新按钮清空搜索并回到全部数据。
+ * 点结果进入对应数据集，输入框填入该名称；「+」新增数据集，刷新按钮清空搜索并回到全部数据。
  */
-export function DatasetSearch({ onSelect, onReset }: DatasetSearchProps) {
+export function DatasetSearch({
+  onSelect,
+  onReset,
+  onCreate,
+}: DatasetSearchProps) {
   const [keyword, setKeyword] = useState('')
   const listId = useId()
   const { records, hasMore, isLoading, loadMore } = useDatasetSearch(keyword)
@@ -48,6 +54,15 @@ export function DatasetSearch({ onSelect, onReset }: DatasetSearchProps) {
           aria-label="搜索数据集名称"
           aria-controls={isOpen ? listId : undefined}
         />
+        <button
+          type="button"
+          className={styles.dataSetAdd}
+          onClick={onCreate}
+          aria-label="新增数据集"
+          title="新增数据集"
+        >
+          +
+        </button>
         <button
           type="button"
           className={styles.refresh}

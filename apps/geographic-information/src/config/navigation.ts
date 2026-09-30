@@ -4,6 +4,12 @@ import dataProcessingIcon from '../assets/icons/DataProcessing.svg'
 import dataProcessingBlueIcon from '../assets/icons/DataProcessing_blue.svg'
 import dataPublishingIcon from '../assets/icons/DataPublishing.svg'
 import dataPublishingBlueIcon from '../assets/icons/DataPublishing_blue.svg'
+import dataRecycleBinIcon from '../assets/icons/RecycleBin.svg'
+import dataRecycleBinBlueIcon from '../assets/icons/RecycleBin_blue.svg'
+import ImportRecordIcon from '../assets/icons/ImportRecord.svg'
+import ImportRecordBlueIcon from '../assets/icons/ImportRecord_blue.svg'
+
+
 
 export const NAVIGATION_ITEMS = [
   {
@@ -37,14 +43,14 @@ export const DATA_MANAGEMENT_SECTIONS = [
   {
     path: '/data-management/imports',
     label: '导入记录',
-    icon: dataManagementIcon,
-    activeIcon: dataManagementBlueIcon,
+    icon: ImportRecordIcon,
+    activeIcon: ImportRecordBlueIcon,
   },
   {
     path: '/data-management/recycle-bin',
     label: '回收站',
-    icon: dataManagementIcon,
-    activeIcon: dataManagementBlueIcon,
+    icon: dataRecycleBinIcon,
+    activeIcon: dataRecycleBinBlueIcon,
   },
 ] as const
 
