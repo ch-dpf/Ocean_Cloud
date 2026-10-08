@@ -182,7 +182,7 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
       />
       <div className={styles.content}>
         <div className={styles.contentHeader}>
-          <div className={styles.contentTitle}>
+          <div>
             <h2>GIS数据处理</h2>
             <p>
               {section.pending === true

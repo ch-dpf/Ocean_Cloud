@@ -618,9 +618,7 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
         {isRecycleBin ? (
           <div className={styles.contentPanel}>
             <div className={styles.contentHeader}>
-              <div
-                className={`${styles.contentTitle} ${styles.contentTitleRecycle}`}
-              >
+              <div>
                 <h2>回收站</h2>
                 <p>{SECTION_DESCRIPTION[RECYCLE_BIN_PATH] ?? ''}</p>
               </div>
@@ -653,7 +651,7 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
         ) : isImports ? (
           <div className={styles.contentPanel}>
             <div className={styles.contentHeader}>
-              <div className={styles.contentTitle}>
+              <div>
                 <h2>导入记录</h2>
                 <p>{SECTION_DESCRIPTION[IMPORTS_PATH] ?? ''}</p>
               </div>
@@ -675,7 +673,7 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
         ) : (
           <div className={styles.contentPanel}>
             <div className={styles.contentHeader}>
-              <div className={styles.contentTitle}>
+              <div>
                 <h2>GIS 数据管理</h2>
                 <p className={styles.contentMetaLine}>
                   当前域：{scopeLabel} · {total} 条数据
@@ -719,15 +717,15 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                     undefined,
                 },
                 {
+                  label: '下载',
+                  onClick: (record) => void handleDownloadFile(record),
+                  pendingId: downloadingId,
+                },
+                {
                   label: '删除',
                   onClick: (record) => void handleDeleteFile(record),
                   pendingId: deletingId,
                   tone: 'danger',
-                },
-                {
-                  label: '下载',
-                  onClick: (record) => void handleDownloadFile(record),
-                  pendingId: downloadingId,
                 },
               ]}
             />

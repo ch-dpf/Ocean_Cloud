@@ -41,7 +41,7 @@ const STATUS_COLORS: Readonly<Record<string, string>> = {
 const STATUS_FALLBACK_COLOR = '#8394a0'
 
 /** 操作列宽度：两个按钮（查看 / 停用） */
-const ACTION_COLUMN_WIDTH = 190
+const ACTION_COLUMN_WIDTH = 100
 
 /** 各视图的横向滚动宽度，等于该视图列宽合计 */
 const SCROLL_X_BY_SCOPE: Readonly<Record<PublicationScope, number>> = {

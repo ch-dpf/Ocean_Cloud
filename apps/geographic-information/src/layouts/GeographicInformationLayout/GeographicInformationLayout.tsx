@@ -29,7 +29,7 @@ export function GeographicInformationLayout({
       : pathname.startsWith('/data-publishing')
         ? '/data-publishing'
         : pathname
-  const title = subTitle ? `GIS${pageTitle} / ${subTitle}` : `GIS${pageTitle}`
+  const title = subTitle ? `${pageTitle} / ${subTitle}` : `${pageTitle}`
   return (
     <div className={styles.shell}>
       <Sidebar

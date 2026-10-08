@@ -8,8 +8,16 @@ import dataRecycleBinIcon from '../assets/icons/RecycleBin.svg'
 import dataRecycleBinBlueIcon from '../assets/icons/RecycleBin_blue.svg'
 import ImportRecordIcon from '../assets/icons/ImportRecord.svg'
 import ImportRecordBlueIcon from '../assets/icons/ImportRecord_blue.svg'
-
-
+import TerrainIcon from '../assets/icons/Terrain.svg'
+import TerrainBlueIcon from '../assets/icons/Terrain_blue.svg'
+import ImageryIcon from '../assets/icons/Imagery.svg'
+import ImageryBlueIcon from '../assets/icons/Imagery_blue.svg'
+import VectorIcon from '../assets/icons/Vector.svg'
+import VectorBlueIcon from '../assets/icons/Vector_blue.svg'
+import AllServiceIcon from '../assets/icons/AllService.svg'
+import AllServiceBlueIcon from '../assets/icons/AllService_blue.svg'
+import AllTasksIcon from '../assets/icons/AllTasks.svg'
+import AllTasksBlueIcon from '../assets/icons/AllTasks_blue.svg'
 
 export const NAVIGATION_ITEMS = [
   {
@@ -76,46 +84,40 @@ export const DATA_PROCESSING_SECTIONS: readonly SubNavSection[] = [
   {
     path: '/data-processing',
     label: '全部任务',
-    icon: dataProcessingIcon,
-    activeIcon: dataProcessingBlueIcon,
-    expandable: true,
+    icon: AllTasksIcon,
+    activeIcon: AllTasksBlueIcon,
   },
   {
     path: '/data-processing/imagery',
     label: '影像任务',
-    icon: dataProcessingIcon,
-    activeIcon: dataProcessingBlueIcon,
-    expandable: true,
+    icon: ImageryIcon,
+    activeIcon: ImageryBlueIcon,
   },
   {
     path: '/data-processing/vector',
     label: '矢量任务',
-    icon: dataProcessingIcon,
-    activeIcon: dataProcessingBlueIcon,
-    expandable: true,
+    icon: VectorIcon,
+    activeIcon: VectorBlueIcon,
   },
   {
     path: '/data-processing/terrain',
     label: '地形任务',
-    icon: dataProcessingIcon,
-    activeIcon: dataProcessingBlueIcon,
-    expandable: true,
+    icon: TerrainIcon,
+    activeIcon: TerrainBlueIcon,
   },
   {
     path: '/data-processing/oblique',
     label: '倾斜模型任务',
-    icon: dataProcessingIcon,
-    activeIcon: dataProcessingBlueIcon,
-    expandable: true,
+    icon: VectorIcon,
+    activeIcon: VectorBlueIcon,
     pending: true,
     disabled: true,
   },
   {
     path: '/data-processing/chart',
     label: '电子海图任务',
-    icon: dataProcessingIcon,
-    activeIcon: dataProcessingBlueIcon,
-    expandable: true,
+    icon: VectorIcon,
+    activeIcon: VectorBlueIcon,
     pending: true,
     disabled: true,
   },
@@ -129,48 +131,42 @@ export const DATA_PUBLISHING_SECTIONS: readonly SubNavSection[] = [
   {
     path: '/data-publishing',
     label: '全部服务',
-    icon: dataPublishingIcon,
-    activeIcon: dataPublishingBlueIcon,
-    expandable: true,
+    icon: AllServiceIcon,
+    activeIcon: AllServiceBlueIcon,
   },
   {
     path: '/data-publishing/imagery',
     label: '影像服务',
-    icon: dataPublishingIcon,
-    activeIcon: dataPublishingBlueIcon,
-    expandable: true,
+    icon: ImageryIcon,
+    activeIcon: ImageryBlueIcon,
   },
   {
     path: '/data-publishing/vector',
     label: '矢量服务',
-    icon: dataPublishingIcon,
-    activeIcon: dataPublishingBlueIcon,
-    expandable: true,
+    icon: VectorIcon,
+    activeIcon: VectorBlueIcon,
     pending: true,
     disabled: true,
   },
   {
     path: '/data-publishing/terrain',
     label: '地形服务',
-    icon: dataPublishingIcon,
-    activeIcon: dataPublishingBlueIcon,
-    expandable: true,
+    icon: TerrainIcon,
+    activeIcon: TerrainBlueIcon,
   },
   {
     path: '/data-publishing/oblique',
     label: '倾斜模型服务',
-    icon: dataPublishingIcon,
-    activeIcon: dataPublishingBlueIcon,
-    expandable: true,
+    icon: VectorIcon,
+    activeIcon: VectorBlueIcon,
     pending: true,
     disabled: true,
   },
   {
     path: '/data-publishing/chart',
     label: '电子海图服务',
-    icon: dataPublishingIcon,
-    activeIcon: dataPublishingBlueIcon,
-    expandable: true,
+    icon: VectorIcon,
+    activeIcon: VectorBlueIcon,
     pending: true,
     disabled: true,
   },

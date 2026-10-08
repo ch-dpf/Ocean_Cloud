@@ -45,17 +45,17 @@
   border-radius: 2px;
 }
 
+/* 操作列按钮：无边框无底色，只留文字；悬停不做任何视觉变化 */
 .actionButton {
   height: 26px;
-  padding: 0 12px;
-  border: 1px solid #b9d4f6;
+  padding: 0 6px;
+  border: none;
   border-radius: 6px;
-  background: #f4f9ff;
+  /* 不声明 background 会露出按钮的默认灰底，必须显式去掉 */
+  background: none;
   color: #1267d6;
-  font-family: inherit;
-  font-size: 12px;
   cursor: pointer;
-}
-.actionButton:hover {
-  border-color: #1267d6;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-weight: 500;
+  font-size: 11px;
 }

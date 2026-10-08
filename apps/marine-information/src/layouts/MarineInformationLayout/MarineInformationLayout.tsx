@@ -33,7 +33,7 @@ export function MarineInformationLayout({
         className={`${styles.mainLayout}${collapsed ? ` ${styles.mainLayoutCollapsed}` : ''}`}
       >
         <TopBar
-          pageTitle={`海洋${pageTitle}`}
+          pageTitle={`${pageTitle}`}
           onLogout={() => void logout()}
           user={user}
         />

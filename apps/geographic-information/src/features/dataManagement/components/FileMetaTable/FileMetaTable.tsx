@@ -117,7 +117,7 @@ function buildColumns(
     {
       title: '操作',
       key: 'action',
-      width: 190,
+      width: 140,
       // 横向滚动时固定在表格右侧，按钮始终可见
       fixed: 'right',
       render: (_, record) => (

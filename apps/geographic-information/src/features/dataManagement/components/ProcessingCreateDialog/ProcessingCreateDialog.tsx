@@ -124,8 +124,9 @@ export function ProcessingCreateDialog({
   onSubmitWorkspace,
 }: ProcessingCreateDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
+  // 本地上传的原生文件输入：视觉隐藏，由「选择文件」按钮代为触发
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const titleId = useId()
-  const fileInputId = useId()
   const pathInputId = useId()
   const hasPresetFile = presetFile !== undefined
   // 从数据管理页进入时锁定在「数据管理数据」，否则只用本地上传
@@ -501,17 +502,25 @@ export function ProcessingCreateDialog({
           </div>
         ) : (
           <div className={styles.field}>
-            <label className={styles.label} htmlFor={fileInputId}>
-              {selectedType.dataLabel}
-            </label>
-            <input
-              id={fileInputId}
-              className={styles.input}
-              type="file"
-              // 影像切片一次只处理一个数据，地形可多选
-              multiple={!isImagery}
-              onChange={handleLocalFilesChange}
-            />
+            <span className={styles.label}>{selectedType.dataLabel}</span>
+            <div className={styles.pickRow}>
+              {/* 原生文件输入只做触发与取文件，外观交给下面的按钮 */}
+              <input
+                ref={fileInputRef}
+                className={styles.fileInput}
+                type="file"
+                // 影像切片一次只处理一个数据，地形可多选
+                multiple={!isImagery}
+                onChange={handleLocalFilesChange}
+              />
+              <button
+                type="button"
+                className={styles.pickButton}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                选择文件
+              </button>
+            </div>
             {isImagery && (
               <p className={styles.hint}>影像切片一次仅支持上传一个文件。</p>
             )}

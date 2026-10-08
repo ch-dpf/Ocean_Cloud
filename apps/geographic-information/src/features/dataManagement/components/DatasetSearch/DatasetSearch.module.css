@@ -52,13 +52,13 @@
 }
 
 .dataSetAdd {
-  background: #e8f1fd;
-  color: #1267d6;
+  background: #E4EFFC;
+  color: #4e5969;
 }
 
 .dataSetAdd:hover {
-  background: #1267d6;
-  color: #ffffff;
+  background: #e8f1fd;
+  color: #1267d6;
 }
 
 .refresh {

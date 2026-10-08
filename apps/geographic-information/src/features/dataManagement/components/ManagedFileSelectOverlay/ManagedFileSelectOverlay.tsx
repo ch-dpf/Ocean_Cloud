@@ -27,6 +27,7 @@ interface ManagedFileSelectOverlayProps {
 }
 
 const SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB']
+const DATASET_CATEGORY=['影像','地形','矢量']
 
 /** 后端返回字节数字符串，展示为带单位的可读大小 */
 function formatFileSize(sizeBytes: string): string {
@@ -50,6 +51,7 @@ function formatTime(value: string): string {
 const COLUMNS: TableColumnsType<FileMeta> = [
   { title: '文件名', dataIndex: 'originalName', ellipsis: true },
   { title: '数据格式', dataIndex: 'extension', width: 110 },
+  { title: '分类', dataIndex: 'categoryId', width: 120,render: (value) => DATASET_CATEGORY[value] },
   {
     title: '数据规模',
     key: 'sizeBytes',

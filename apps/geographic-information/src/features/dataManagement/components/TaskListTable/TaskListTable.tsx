@@ -97,6 +97,8 @@ function buildColumns(
     {
       title: '任务名称',
       key: 'taskName',
+      // 定宽后 ellipsis 才生效：手输的长任务名会截断，悬浮由 title 展示全量
+      width: 200,
       ellipsis: true,
       render: (_, record) => {
         const { name } = splitTaskName(record.taskName)
@@ -106,6 +108,9 @@ function buildColumns(
     {
       title: '数据接入方式',
       key: 'input',
+      // 定宽不只是为了排版：本表所有列都有数值宽度后，SearchTable 才会把
+      // scroll.x 算成数字，rc-table 才会用 table-layout: fixed，ellipsis 才生效
+      width: 130,
       ellipsis: true,
       render: (_, record) => {
         const inputType = record.sourceType || ''
@@ -115,6 +120,7 @@ function buildColumns(
     {
       title: '处理类型',
       key: 'processingType',
+      width: 120,
       render: (_, record) => toProcessingTypeLabel(record.processingType ?? ''),
     },
     {
@@ -157,7 +163,7 @@ function buildColumns(
     {
       title: '操作',
       key: 'action',
-      width: 190,
+      width: 100,
       // 横向滚动时固定在表格右侧，按钮始终可见
       fixed: 'right',
       render: (_, record) => {

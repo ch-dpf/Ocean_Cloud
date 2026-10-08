@@ -257,14 +257,7 @@
   background: #ffffff;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
-/* 标题左侧色条：普通页面用主色，回收站用暖色，便于一眼区分 */
-.contentTitle {
-  padding-left: 12px;
-  border-left: 3px solid #1267d6;
-}
-.contentTitleRecycle {
-  border-left-color: #e08c1a;
-}
+
 .contentHeader {
   display: flex;
   align-items: flex-start;

@@ -101,7 +101,7 @@ export function DataPublishingPage({ activePath }: DataPublishingPageProps) {
       />
       <div className={styles.content}>
         <div className={styles.contentHeader}>
-          <div className={styles.contentTitle}>
+          <div>
             <h2>全部服务</h2>
             <p>
               {section.pending === true

@@ -153,31 +153,42 @@
   font-size: 12px;
 }
 
-/* 数据管理数据：打开选择浮层的入口 + 已选文件列表 */
+/* 打开系统文件选择框 / 数据选择浮层的入口按钮行 */
 .pickRow {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
 }
+/* 主操作按钮：实底蓝，与弹窗底部「确定」同款 */
 .pickButton {
   height: 34px;
   padding: 0 16px;
-  border: 1px solid #b9d4f6;
+  border: 0;
   border-radius: 6px;
-  background: #f4f9ff;
-  color: #1267d6;
+  background: #1f75f2;
+  color: #ffffff;
   font-family: inherit;
   font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
 }
-.pickButton:hover {
-  border-color: #1267d6;
+/* 原生文件输入视觉隐藏：保留聚焦与 onChange，外观由 .pickButton 承担。
+   不用 display: none —— 个别浏览器下那样点不动 */
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 .pickCount {
   color: #8394a0;
   font-size: 12px;
 }
 
+/* 已选文件列表：超出高度内部滚动 */
 .pickedList {
   display: flex;
   flex-direction: column;

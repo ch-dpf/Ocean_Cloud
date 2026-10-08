@@ -4,11 +4,13 @@ import { DATASET_CATEGORY_LABELS } from '../../constants/dataset'
 import { useDatasetSearch } from '../../hooks/useDatasetSearch'
 import type { GeoDataset } from '../../types/dataset'
 import styles from './DatasetSearch.module.css'
+import addDatasetsIcon from '../../../../assets/icons/AddDatasets.svg'
+import RefreshIcon from '../../../../assets/icons/Refresh.svg'
 
 interface DatasetSearchProps {
   /** 点击某个搜索结果：进入该数据集内部 */
   readonly onSelect: (dataset: GeoDataset) => void
-  /** 点击刷新：清空搜索并回到「全部数据」 */
+  /** 点击刷新：清空搜索并刷新 */
   readonly onReset: () => void
   /** 点击「+」：打开新增数据集弹窗 */
   readonly onCreate: () => void
@@ -61,7 +63,7 @@ export function DatasetSearch({
           aria-label="新增数据集"
           title="新增数据集"
         >
-          +
+          <img src={addDatasetsIcon} alt="新增数据集" />
         </button>
         <button
           type="button"
@@ -70,10 +72,10 @@ export function DatasetSearch({
             setKeyword('')
             onReset()
           }}
-          aria-label="返回全部数据"
-          title="返回全部数据"
+          aria-label="刷新"
+          title="刷新"
         >
-          ↺
+          <img src={RefreshIcon} alt="刷新" />
         </button>
       </div>
 

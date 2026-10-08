@@ -154,8 +154,8 @@ export const OUTPUT_FORMAT_OPTIONS = [
 ] as const
 
 export const IMAGERY_TARGET_CRS_OPTIONS = [
-  { value: 'EPSG:3857' },
   { value: 'EPSG:4326' },
+  { value: 'EPSG:3857' },
 ] as const
 
 export const IMAGERY_TILE_PROFILE_OPTIONS = [
