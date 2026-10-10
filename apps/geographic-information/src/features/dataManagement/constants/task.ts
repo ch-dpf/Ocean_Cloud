@@ -187,3 +187,58 @@ export function toCategoryOfProcessingType(
   )
   return found === undefined ? undefined : Number(found[0])
 }
+
+/** 处理阶段中文名（帧里 currentStage.code）；未命中的取值按原样展示 */
+export const PROCESSING_STAGE_LABELS: Readonly<Record<string, string>> = {
+  preparing: '准备中',
+  analyzing: '分析中',
+  preprocessing: '预处理中',
+  processing: '处理中',
+  generating: '生成中',
+  finalizing: '收尾中',
+  storing: '存储中',
+}
+
+export function toProcessingStageLabel(code: string): string {
+  return PROCESSING_STAGE_LABELS[code] ?? code
+}
+
+/**
+ * 各处理任务的阶段推进顺序（帧里 currentStage.code）：影像有准备阶段、
+ * 地形有预处理阶段，用于在进度条上方展示「第几阶段 / 共几阶段」。
+ */
+export const PROCESSING_STAGE_ORDERS: Readonly<
+  Record<string, readonly string[]>
+> = {
+  [PROCESSING_TYPE_IMAGERY]: [
+    'preparing',
+    'analyzing',
+    'generating',
+    'finalizing',
+  ],
+  [PROCESSING_TYPE_TERRAIN]: [
+    'analyzing',
+    'preprocessing',
+    'generating',
+    'finalizing',
+  ],
+}
+
+/** 阶段序号文案（如 2/4）；阶段不在该处理类型的顺序里时返回空串 */
+export function toProcessingStageIndex(
+  processingType: string,
+  stageCode: string,
+): string {
+  const order = PROCESSING_STAGE_ORDERS[processingType]
+  if (order === undefined || stageCode === '') return ''
+  const index = order.indexOf(stageCode)
+  return index === -1 ? '' : `${index + 1}/${order.length}`
+}
+
+/**
+ * WS 帧里的任务类型形如 GIS_IMAGERY，去掉 GIS_ 前缀就是处理类型 IMAGERY；
+ * 导入任务是 GIS_IMPORT，没有对应的处理阶段。
+ */
+export function toProcessingTypeOfKind(kind: string): string {
+  return kind.startsWith('GIS_') ? kind.slice(4) : kind
+}

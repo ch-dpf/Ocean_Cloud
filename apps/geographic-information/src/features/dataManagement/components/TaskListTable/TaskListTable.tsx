@@ -6,13 +6,26 @@ import {
   PROCESSING_TYPE_IMAGERY,
   PROCESSING_TYPE_TERRAIN,
   TASK_STATUS_LABELS,
+  toProcessingStageIndex,
+  toProcessingStageLabel,
   toProcessingTypeLabel,
   toTaskStatusLabel,
 } from '../../constants/task'
 import type { TaskRecord } from '../../types/task'
 
+/**
+ * 表格行 = REST 任务记录 + 该任务最新的 WS 进度百分比。
+ * 实时进度由页面按任务编号合并进来，表格自己不订阅长连接。
+ */
+export interface TaskRow extends TaskRecord {
+  /** 进行中任务的实时百分比（0-100，处理任务是当前阶段的进度）；没有 WS 帧时为 null */
+  readonly livePercent: number | null
+  /** 进行中任务当前所处阶段（帧里 currentStage.code）；没有 WS 帧时为空串 */
+  readonly liveStageCode: string
+}
+
 interface TaskListTableProps {
-  readonly records: readonly TaskRecord[]
+  readonly records: readonly TaskRow[]
   readonly isLoading: boolean
   readonly error: string | null
   readonly current: number
@@ -37,14 +50,33 @@ interface TaskListTableProps {
 
 /** 状态小方块的颜色；未命中的取值用兜底色 */
 const STATUS_COLORS: Readonly<Record<string, string>> = {
-  QUEUED: '#8394a0',
-  RUNNING: '#1267d6',
-  COMPLETED: '#2fa84f',
+  QUEUED: '#94A3B2',
+  RUNNING: '#1677FF',
+  COMPLETED: '#18A66A',
   PARTIAL_FAILED: '#e08c1a',
-  FAILED: '#d64545',
+  FAILED: '#D9363E',
 }
 
-const STATUS_FALLBACK_COLOR = '#8394a0'
+const STATUS_FALLBACK_COLOR = '#94A3B2'
+
+/** 进度条三条基准色：进行中蓝、已完成绿、失败红 */
+const PROGRESS_RUNNING_COLOR = '#1677FF'
+const PROGRESS_DONE_COLOR = '#18A66A'
+const PROGRESS_FAILED_COLOR = '#D9363E'
+
+/**
+ * 没有实时帧时按 REST 状态上色（排队与处理中都算进行中）；
+ * 有实时帧时改用帧里的结束标记与失败数判断，见 progressColor。
+ */
+const PROGRESS_BAR_COLORS: Readonly<Record<string, string>> = {
+  QUEUED: PROGRESS_RUNNING_COLOR,
+  RUNNING: PROGRESS_RUNNING_COLOR,
+  COMPLETED: PROGRESS_DONE_COLOR,
+  PARTIAL_FAILED: PROGRESS_FAILED_COLOR,
+  FAILED: PROGRESS_FAILED_COLOR,
+}
+
+const PROGRESS_BAR_FALLBACK_COLOR = '#8394a0'
 
 /** 后端返回形如 2026-09-14T17:04:57.043286，展示为 2026-09-14 17:04:57 */
 function formatTime(value: string | null): string {
@@ -79,6 +111,37 @@ function formatDuration(start: string | null, finish: string | null): string {
   return `${Math.floor(minutes / 60)} 小时 ${minutes % 60} 分`
 }
 
+/**
+ * 进度列的展示值：颜色一律由 REST 的 taskStatus 决定（终态只有后端说了算），
+ * 条上方那行文字承担阶段信息 —— 进行中显示「阶段名 序号 · 百分比」，
+ * 终态整条填满表示已结束，其中已完成带 100%，失败类不再显示进度。
+ */
+function progressDisplay(row: TaskRow): {
+  readonly percent: number
+  readonly color: string
+  readonly label: string
+} {
+  const color =
+    PROGRESS_BAR_COLORS[row.taskStatus] ?? PROGRESS_BAR_FALLBACK_COLOR
+  if (row.taskStatus === 'QUEUED' || row.taskStatus === 'RUNNING') {
+    const percent = row.livePercent ?? 0
+    // 阶段名与序号依赖帧里的 currentStage.code，拿不到时只剩状态名
+    const stage = toProcessingStageLabel(row.liveStageCode)
+    const index = toProcessingStageIndex(
+      row.processingType ?? '',
+      row.liveStageCode,
+    )
+    const name = index === '' ? stage : `${stage} ${index}`
+    return { percent, color, label: `${name} · ${percent}%` }
+  }
+  const status = toTaskStatusLabel(row.taskStatus)
+  return {
+    percent: 100,
+    color,
+    label: row.taskStatus === 'COMPLETED' ? `${status} · 100%` : status,
+  }
+}
+
 /** 列定义；序号与操作列按钮依赖外部传入的值，因此每次渲染重建 */
 function buildColumns(
   current: number,
@@ -86,7 +149,7 @@ function buildColumns(
   onView: ((record: TaskRecord) => void) | undefined,
   onPublish: ((record: TaskRecord) => void) | undefined,
   publishingId: string | null | undefined,
-): TableColumnsType<TaskRecord> {
+): TableColumnsType<TaskRow> {
   return [
     {
       title: '序号',
@@ -126,8 +189,22 @@ function buildColumns(
     {
       title: '进度',
       key: 'progress',
-      width: 110,
-      render: (_, record) => `${record.completedCount} / ${record.totalCount}`,
+      // 加宽给满宽的条留空间，文字也移到了条上方
+      width: 200,
+      render: (_, record) => {
+        const { percent, color, label } = progressDisplay(record)
+        return (
+          <span className={styles.progress}>
+            <span className={styles.progressText}>{label}</span>
+            <span className={styles.progressTrack}>
+              <span
+                className={styles.progressBar}
+                style={{ width: `${percent}%`, background: color }}
+              />
+            </span>
+          </span>
+        )
+      },
     },
     {
       title: '耗时',
@@ -143,23 +220,29 @@ function buildColumns(
       render: (_, record) => formatTime(record.createTime),
     },
     {
-      title: '状态',
-      key: 'taskStatus',
-      width: 130,
-      render: (_, record) => (
-        <span className={styles.status}>
-          <span
-            className={styles.statusSquare}
-            style={{
-              background:
-                STATUS_COLORS[record.taskStatus] ?? STATUS_FALLBACK_COLOR,
-            }}
-            aria-hidden="true"
-          />
-          {toTaskStatusLabel(record.taskStatus)}
-        </span>
-      ),
+      title: '结束时间',
+      key: 'finishTime',
+      width: 170,
+      render: (_, record) => formatTime(record.finishTime),
     },
+    // {
+    //   title: '状态',
+    //   key: 'taskStatus',
+    //   width: 130,
+    //   render: (_, record) => (
+    //     <span className={styles.status}>
+    //       <span
+    //         className={styles.statusSquare}
+    //         style={{
+    //           background:
+    //             STATUS_COLORS[record.taskStatus] ?? STATUS_FALLBACK_COLOR,
+    //         }}
+    //         aria-hidden="true"
+    //       />
+    //       {toTaskStatusLabel(record.taskStatus)}
+    //     </span>
+    //   ),
+    // },
     {
       title: '操作',
       key: 'action',
@@ -218,7 +301,7 @@ export function TaskListTable({
   publishingId,
 }: TaskListTableProps) {
   return (
-    <SearchTable<TaskRecord>
+    <SearchTable<TaskRow>
       columns={buildColumns(current, pageSize, onView, onPublish, publishingId)}
       dataSource={records}
       rowKey="id"

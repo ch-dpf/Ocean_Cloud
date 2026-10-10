@@ -80,6 +80,12 @@
   color: #8394a0;
   font-size: 12px;
 }
+/* 处理任务的阶段行：条上方的「分析中 2/4」，上传任务不渲染这一行 */
+.stage {
+  margin: 10px 0 0;
+  color: #576e85;
+  font-size: 12px;
+}
 .track {
   height: 8px;
   margin-top: 10px;

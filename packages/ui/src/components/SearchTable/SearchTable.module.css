@@ -51,6 +51,13 @@
 .root :global(.ant-table-wrapper .ant-table-tbody > tr > td) {
   text-align: center;
 }
+
+/* 表格统一用思源黑体。antd 会给 .ant-table 重置字体（resetComponent 里带了
+   fontFamily），所以表格内容不会继承页面字体，这里覆盖一次；表头不加字重，
+   保持 antd 自带的加粗 */
+.root :global(.ant-table) {
+  font-family: 'Noto Sans SC', sans-serif;
+}
 .resizeHandle {
   position: absolute;
   top: 0;

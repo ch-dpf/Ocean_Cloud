@@ -1,5 +1,10 @@
 import { useEffect, useId, useRef } from 'react'
 import type { UploadTaskItem } from '../../hooks/useUploadTasks'
+import {
+  toProcessingStageIndex,
+  toProcessingStageLabel,
+  toProcessingTypeOfKind,
+} from '../../constants/task'
 import styles from './UploadProgressDialog.module.css'
 
 interface UploadProgressDialogProps {
@@ -14,7 +19,7 @@ interface UploadProgressDialogProps {
   readonly taskLabel?: string
 }
 
-/** 任务进度文案：状态 · 已处理/总数 · 失败数 · 百分比 */
+/** 任务进度文案：状态 · 失败数 · 百分比 */
 function formatTaskMeta(task: UploadTaskItem): string {
   return [
     task.statusText || '正在处理…',
@@ -24,6 +29,21 @@ function formatTaskMeta(task: UploadTaskItem): string {
   ]
     .filter(Boolean)
     .join(' · ')
+}
+
+/**
+ * 处理任务条上方的阶段行（如「分析中 2/4」）：颜色只区分成败，
+ * 阶段推进靠这行文字表达。上传任务没有处理阶段，返回空串。
+ */
+function formatTaskStage(task: UploadTaskItem): string {
+  if (task.kind === 'GIS_IMPORT') return ''
+  const stage = toProcessingStageLabel(task.stageCode)
+  if (stage === '') return ''
+  const index = toProcessingStageIndex(
+    toProcessingTypeOfKind(task.kind),
+    task.stageCode,
+  )
+  return index === '' ? stage : `${stage} ${index}`
 }
 
 /** 任务进度中心：按任务编号展示每个任务的进度；上传进度与处理进度共用 */
@@ -76,24 +96,29 @@ export function UploadProgressDialog({
         <p className={styles.empty}>{emptyText}</p>
       ) : (
         <ul className={styles.list}>
-          {tasks.map((task) => (
-            <li className={styles.task} key={task.taskNo}>
-              <p className={styles.taskName}>{task.taskName || taskLabel}</p>
-              <p className={styles.taskNo}>{task.taskNo}</p>
-              <div className={styles.track}>
-                {task.pending === true ? (
-                  // 还没收到任何进度帧：用循环流动的条表示正在上传，而不是停在 0%
-                  <div className={styles.barPending} aria-hidden="true" />
-                ) : (
-                  <div
-                    className={styles.bar}
-                    style={{ width: `${task.percent ?? 0}%` }}
-                  />
-                )}
-              </div>
-              <p className={styles.meta}>{formatTaskMeta(task)}</p>
-            </li>
-          ))}
+          {tasks.map((task) => {
+            // 处理任务在条上方标出当前阶段，上传任务没有阶段行
+            const stage = formatTaskStage(task)
+            return (
+              <li className={styles.task} key={task.taskNo}>
+                <p className={styles.taskName}>{task.taskName || taskLabel}</p>
+                <p className={styles.taskNo}>{task.taskNo}</p>
+                {stage !== '' && <p className={styles.stage}>{stage}</p>}
+                <div className={styles.track}>
+                  {task.pending === true ? (
+                    // 还没收到任何进度帧：用循环流动的条表示正在上传，而不是停在 0%
+                    <div className={styles.barPending} aria-hidden="true" />
+                  ) : (
+                    <div
+                      className={styles.bar}
+                      style={{ width: `${task.percent ?? 0}%` }}
+                    />
+                  )}
+                </div>
+                <p className={styles.meta}>{formatTaskMeta(task)}</p>
+              </li>
+            )
+          })}
         </ul>
       )}
     </dialog>

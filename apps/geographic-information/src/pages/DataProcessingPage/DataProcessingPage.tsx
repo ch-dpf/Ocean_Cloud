@@ -11,6 +11,7 @@ import type {
 } from '../../features/dataManagement/components/ProcessingCreateDialog/ProcessingCreateDialog'
 import { TaskDetailDialog } from '../../features/dataManagement/components/TaskDetailDialog/TaskDetailDialog'
 import { TaskListTable } from '../../features/dataManagement/components/TaskListTable/TaskListTable'
+import type { TaskRow } from '../../features/dataManagement/components/TaskListTable/TaskListTable'
 import { UploadProgressDialog } from '../../features/dataManagement/components/UploadProgressDialog/UploadProgressDialog'
 import {
   PROCESSING_TASK_KINDS,
@@ -91,6 +92,24 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
     for (const task of newlyFinished) finishedTaskNos.current.add(task.taskNo)
     refresh()
   }, [tasks, refresh])
+
+  // 把 WS 的实时进度按任务编号并进列表行：只有进行中的任务会用它画进度条长度与阶段，
+  // 帧一到就重渲染，因此表格里的条会跟着动；颜色与终态一律以 REST 状态为准。
+  // 帧里的 taskId 与列表行的 taskNo 是同一个值，按 taskNo 对齐即可
+  const liveByTaskNo = new Map(
+    tasks.map((task) => [
+      task.taskNo,
+      { percent: task.percent, stageCode: task.stageCode },
+    ]),
+  )
+  const rows: readonly TaskRow[] = records.map((record) => {
+    const live = liveByTaskNo.get(record.taskNo)
+    return {
+      ...record,
+      livePercent: live?.percent ?? null,
+      liveStageCode: live?.stageCode ?? '',
+    }
+  })
 
   function handleTabClick(status: string) {
     setTaskStatus(status)
@@ -227,7 +246,7 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
         </div>
 
         <TaskListTable
-          records={records}
+          records={rows}
           isLoading={isLoading}
           error={error}
           current={current}

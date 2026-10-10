@@ -11,6 +11,37 @@
   flex-shrink: 0;
   border-radius: 2px;
 }
+/* 进度列：文字在条上方，条铺满单元格宽度 */
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+.progressTrack {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #eef3f8;
+}
+.progressBar {
+  /* 必须显式块级：span 默认 inline，inline 上 width / height 都不生效，彩条会整根消失 */
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  /* 重新查询拿到新进度时让条平滑过去，而不是瞬变 */
+  transition: width 0.2s;
+}
+/* 阶段名 + 序号 + 百分比；高度固定，避免没有文字时行高变化 */
+.progressText {
+  min-height: 16px;
+  color: #576e85;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+}
+
 /* 操作列容器是 flex，text-align 对它无效，靠 space-between 让两个按钮分居左右 */
 .actionCell {
   display: flex;
