@@ -84,43 +84,6 @@ export async function purgeDeletedFileMeta(id: string): Promise<void> {
   )
 }
 
-/** 导入任务创建结果（/filemeta/import/task 的 data）；taskId 是后端生成的字符串编号 */
-interface ImportTaskCreated {
-  readonly taskId: string
-}
-
-/**
- * 第一步：创建导入任务，dataSetId 与总文件数走 query，返回后端生成的 taskId。
- * 调用方拿到编号后先在「上传进度」里插入占位，再调 uploadImportBatch 传文件。
- * 进度不在响应里，由 /ws/task 长连接推送。
- */
-export async function createImportTask(
-  dataSetId: string,
-  totalCount: number,
-): Promise<string> {
-  const result = await httpClient.post<ApiResult<ImportTaskCreated>>(
-    '/filemeta/import/task',
-    undefined,
-    { params: { dataSetId, totalCount } },
-  )
-  return result.data.taskId
-}
-
-/** 第二步：按任务上传文件内容，多文件通过同一个 files 字段提交 */
-export async function uploadImportBatch(
-  taskId: string,
-  files: readonly File[],
-): Promise<void> {
-  const form = new FormData()
-  for (const file of files) form.append('files', file)
-  await httpClient.post<ApiResult<unknown>>(
-    '/filemeta/import/batch/' + encodeURIComponent(taskId),
-    form,
-    // 上传耗时远大于普通请求，放开实例上 15 秒的默认超时
-    { timeout: 0 },
-  )
-}
-
 /** 删除数据文件元数据 */
 export async function deleteFileMeta(id: string): Promise<void> {
   await httpClient.delete<ApiResult<unknown>>(

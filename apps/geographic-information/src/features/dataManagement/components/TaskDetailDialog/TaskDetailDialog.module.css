@@ -1,41 +1,9 @@
+/* 弹窗外壳（边框/圆角/内边距）由 AppDialog 统一提供，这里只保留尺寸与布局 */
 .dialog {
   display: flex;
   flex-direction: column;
   width: min(1180px, 94vw);
   max-height: 88vh;
-  /* 关闭按钮要落在弹窗框外，因此弹窗不裁剪，滚动交给内部的内容区 */
-  overflow: visible;
-  padding: 22px 26px;
-  border: 1px solid #dce6ec;
-  border-radius: 14px;
-  color: #13293d;
-  font-family: 'Noto Sans SC', sans-serif;
-  box-shadow: 0 25px 80px #183f6322;
-}
-.dialog::backdrop {
-  background: #17384d55;
-}
-/* 关闭按钮固定在弹窗右上角外侧，内容滚动时不会跟着滚走 */
-.close {
-  position: absolute;
-  top: -14px;
-  right: -14px;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 1px solid #dce6ec;
-  border-radius: 50%;
-  background: #ffffff;
-  color: #576e85;
-  font-family: inherit;
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-  box-shadow: 0 4px 14px #183f6322;
-}
-.close:hover {
-  border-color: #1267d6;
-  color: #13293d;
 }
 /* 内容区自行滚动，弹窗框与关闭按钮保持不动 */
 .body {
@@ -44,11 +12,6 @@
   flex-direction: column;
   min-height: 0;
   overflow-y: auto;
-}
-.title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
 }
 
 .state {

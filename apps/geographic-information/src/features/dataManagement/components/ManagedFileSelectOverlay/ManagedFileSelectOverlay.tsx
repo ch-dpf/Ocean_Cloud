@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Key } from 'react'
 import { Checkbox, Input, Table } from 'antd'
 import type { TableColumnsType } from 'antd'
+import { formatFileSize, formatTime } from '@ocean-cloud/ui'
 import styles from './ManagedFileSelectOverlay.module.css'
 import {
   DATASET_CATEGORY_LABELS,
@@ -26,32 +27,17 @@ interface ManagedFileSelectOverlayProps {
   readonly onConfirm: (files: readonly FileMeta[]) => void
 }
 
-const SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB']
-const DATASET_CATEGORY=['影像','地形','矢量']
-
-/** 后端返回字节数字符串，展示为带单位的可读大小 */
-function formatFileSize(sizeBytes: string): string {
-  const bytes = Number(sizeBytes)
-  if (!Number.isFinite(bytes) || bytes < 0) return '—'
-  let value = bytes
-  let unit = 0
-  while (value >= 1024 && unit < SIZE_UNITS.length - 1) {
-    value /= 1024
-    unit += 1
-  }
-  return `${unit === 0 ? String(value) : value.toFixed(1)} ${SIZE_UNITS[unit]}`
-}
-
-/** 后端返回形如 2026-09-11T20:55:43.623167，展示为 2026-09-11 20:55:43 */
-function formatTime(value: string): string {
-  if (!value) return '—'
-  return value.replace('T', ' ').slice(0, 19)
-}
+const DATASET_CATEGORY = ['影像', '地形', '矢量']
 
 const COLUMNS: TableColumnsType<FileMeta> = [
   { title: '文件名', dataIndex: 'originalName', ellipsis: true },
   { title: '数据格式', dataIndex: 'extension', width: 110 },
-  { title: '分类', dataIndex: 'categoryId', width: 120,render: (value) => DATASET_CATEGORY[value] },
+  {
+    title: '分类',
+    dataIndex: 'categoryId',
+    width: 120,
+    render: (value) => DATASET_CATEGORY[value],
+  },
   {
     title: '数据规模',
     key: 'sizeBytes',

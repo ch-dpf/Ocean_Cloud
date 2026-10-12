@@ -1,5 +1,6 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { AppDialog } from '@ocean-cloud/ui'
 import { DATASET_CATEGORY_LABELS } from '../../constants/dataset'
 import { updateDataset } from '../../services/datasetService'
 import type { GeoDataset } from '../../types/dataset'
@@ -21,18 +22,12 @@ export function DatasetEditDialog({
   onClose,
   onUpdated,
 }: DatasetEditDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null)
-  const titleId = useId()
   const [name, setName] = useState(dataset.dataSetName)
   const [description, setDescription] = useState(dataset.description)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const categoryLabel =
     DATASET_CATEGORY_LABELS[Number(dataset.categoryId)] ?? '未分类'
-
-  useEffect(() => {
-    if (!dialogRef.current?.open) dialogRef.current?.showModal()
-  }, [])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -62,17 +57,8 @@ export function DatasetEditDialog({
   }
 
   return (
-    <dialog
-      ref={dialogRef}
-      className={styles.dialog}
-      aria-labelledby={titleId}
-      onClose={() => onClose()}
-    >
+    <AppDialog title="修改数据集" onClose={onClose} className={styles.dialog}>
       <form className={styles.form} onSubmit={handleSubmit}>
-        <h2 className={styles.title} id={titleId}>
-          修改数据集
-        </h2>
-
         <label className={styles.field}>
           <span className={styles.label}>数据集名称</span>
           <input
@@ -124,6 +110,6 @@ export function DatasetEditDialog({
           </button>
         </div>
       </form>
-    </dialog>
+    </AppDialog>
   )
 }

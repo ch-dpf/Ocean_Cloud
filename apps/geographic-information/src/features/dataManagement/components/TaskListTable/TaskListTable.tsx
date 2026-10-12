@@ -1,7 +1,13 @@
 import { Select, Form, Input } from 'antd'
 import type { FormInstance, TableColumnsType } from 'antd'
 import styles from './TaskListTable.module.css'
-import { SearchTable } from '@ocean-cloud/ui'
+import {
+  PROGRESS_COLORS,
+  STATUS_FALLBACK_COLOR,
+  SearchTable,
+  TableActions,
+  formatTime,
+} from '@ocean-cloud/ui'
 import {
   PROCESSING_TYPE_IMAGERY,
   PROCESSING_TYPE_TERRAIN,
@@ -48,40 +54,17 @@ interface TaskListTableProps {
   readonly publishingId?: string | null
 }
 
-/** 状态小方块的颜色；未命中的取值用兜底色 */
-const STATUS_COLORS: Readonly<Record<string, string>> = {
-  QUEUED: '#94A3B2',
-  RUNNING: '#1677FF',
-  COMPLETED: '#18A66A',
-  PARTIAL_FAILED: '#e08c1a',
-  FAILED: '#D9363E',
-}
-
-const STATUS_FALLBACK_COLOR = '#94A3B2'
-
-/** 进度条三条基准色：进行中蓝、已完成绿、失败红 */
-const PROGRESS_RUNNING_COLOR = '#1677FF'
-const PROGRESS_DONE_COLOR = '#18A66A'
-const PROGRESS_FAILED_COLOR = '#D9363E'
-
 /**
  * 没有实时帧时按 REST 状态上色（排队与处理中都算进行中）；
- * 有实时帧时改用帧里的结束标记与失败数判断，见 progressColor。
+ * 有实时帧时改用帧里的结束标记与失败数判断，见 progressDisplay。
+ * 颜色取自全局调色板，未识别的状态用兜底色。
  */
 const PROGRESS_BAR_COLORS: Readonly<Record<string, string>> = {
-  QUEUED: PROGRESS_RUNNING_COLOR,
-  RUNNING: PROGRESS_RUNNING_COLOR,
-  COMPLETED: PROGRESS_DONE_COLOR,
-  PARTIAL_FAILED: PROGRESS_FAILED_COLOR,
-  FAILED: PROGRESS_FAILED_COLOR,
-}
-
-const PROGRESS_BAR_FALLBACK_COLOR = '#8394a0'
-
-/** 后端返回形如 2026-09-14T17:04:57.043286，展示为 2026-09-14 17:04:57 */
-function formatTime(value: string | null): string {
-  if (!value) return '—'
-  return value.replace('T', ' ').slice(0, 19)
+  QUEUED: PROGRESS_COLORS.running,
+  RUNNING: PROGRESS_COLORS.running,
+  COMPLETED: PROGRESS_COLORS.done,
+  PARTIAL_FAILED: PROGRESS_COLORS.failed,
+  FAILED: PROGRESS_COLORS.failed,
 }
 
 /**
@@ -121,8 +104,7 @@ function progressDisplay(row: TaskRow): {
   readonly color: string
   readonly label: string
 } {
-  const color =
-    PROGRESS_BAR_COLORS[row.taskStatus] ?? PROGRESS_BAR_FALLBACK_COLOR
+  const color = PROGRESS_BAR_COLORS[row.taskStatus] ?? STATUS_FALLBACK_COLOR
   if (row.taskStatus === 'QUEUED' || row.taskStatus === 'RUNNING') {
     const percent = row.livePercent ?? 0
     // 阶段名与序号依赖帧里的 currentStage.code，拿不到时只剩状态名
@@ -225,6 +207,8 @@ function buildColumns(
       width: 170,
       render: (_, record) => formatTime(record.finishTime),
     },
+    // 状态列（暂时注释掉）：要启用时请改用共享的 <StatusDot tone={...} label={...} />，
+    // 本文件已不再有 STATUS_COLORS 与 styles.statusSquare
     // {
     //   title: '状态',
     //   key: 'taskStatus',
@@ -235,7 +219,7 @@ function buildColumns(
     //         className={styles.statusSquare}
     //         style={{
     //           background:
-    //             STATUS_COLORS[record.taskStatus] ?? STATUS_FALLBACK_COLOR,
+    //               STATUS_COLORS[record.taskStatus] ?? STATUS_FALLBACK_COLOR,
     //         }}
     //         aria-hidden="true"
     //       />
@@ -252,32 +236,30 @@ function buildColumns(
       render: (_, record) => {
         const isPublishing = publishingId === record.id
         return (
-          <span className={styles.actionCell}>
-            <button
-              type="button"
-              className={styles.actionButton}
-              onClick={onView === undefined ? undefined : () => onView(record)}
-              disabled={onView === undefined}
-            >
-              查看
-            </button>
-            <button
-              type="button"
-              className={styles.actionButton}
-              onClick={
-                onPublish === undefined ? undefined : () => onPublish(record)
-              }
-              // 只开放已完成的地形/影像任务发布，其余状态与类型置灰
-              disabled={
-                record.taskStatus !== 'COMPLETED' ||
-                isPublishing ||
-                (record.processingType !== PROCESSING_TYPE_TERRAIN &&
-                  record.processingType !== PROCESSING_TYPE_IMAGERY)
-              }
-            >
-              {isPublishing ? '发布中…' : '发布'}
-            </button>
-          </span>
+          <TableActions
+            justify="evenly"
+            actions={[
+              {
+                key: 'view',
+                label: '查看',
+                onClick:
+                  onView === undefined ? undefined : () => onView(record),
+                disabled: onView === undefined,
+              },
+              {
+                key: 'publish',
+                label: isPublishing ? '发布中…' : '发布',
+                onClick:
+                  onPublish === undefined ? undefined : () => onPublish(record),
+                // 只开放已完成的地形/影像任务发布，其余状态与类型置灰
+                disabled:
+                  record.taskStatus !== 'COMPLETED' ||
+                  isPublishing ||
+                  (record.processingType !== PROCESSING_TYPE_TERRAIN &&
+                    record.processingType !== PROCESSING_TYPE_IMAGERY),
+              },
+            ]}
+          />
         )
       },
     },

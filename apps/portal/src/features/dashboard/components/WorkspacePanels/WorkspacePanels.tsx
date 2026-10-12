@@ -1,3 +1,4 @@
+import { STATUS_COLORS } from '@ocean-cloud/ui'
 import styles from './WorkspacePanels.module.css'
 import type { SystemMetrics } from '../../hooks/useSystemMetrics'
 import { useTaskOverview } from '../../hooks/useTaskOverview'
@@ -11,7 +12,7 @@ const STORAGE_CATEGORIES = ['影像数据', '矢量数据', '模型数据', '海
 /** 任务状态对应的进度颜色：运行中蓝、已完成绿、失败红、排队灰 */
 const TASK_STATUS_COLORS: Readonly<Record<string, string>> = {
   RUNNING: '#095ED4',
-  COMPLETED: '#089466',
+  COMPLETED: STATUS_COLORS.done,
   PARTIAL_FAILED: '#E03833',
   FAILED: '#E03833',
   QUEUED: '#576E85',

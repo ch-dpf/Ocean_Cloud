@@ -20,9 +20,9 @@ export const TASK_STATUS_LABELS: Readonly<Record<string, string>> = {
 
 /**
  * /ws/task 的帧按任务类型前缀分流：
- * 导入任务的帧进「上传进度」，三类处理任务的帧进「处理进度」。
+ * 分片上传（导入）任务的帧进「上传进度」，三类处理任务的帧进「处理进度」。
  */
-export const UPLOAD_TASK_KINDS = ['GIS_IMPORT'] as const
+export const UPLOAD_TASK_KINDS = ['GIS_UPLOAD'] as const
 
 export const PROCESSING_TASK_KINDS = [
   'GIS_TERRAIN',
@@ -237,7 +237,7 @@ export function toProcessingStageIndex(
 
 /**
  * WS 帧里的任务类型形如 GIS_IMAGERY，去掉 GIS_ 前缀就是处理类型 IMAGERY；
- * 导入任务是 GIS_IMPORT，没有对应的处理阶段。
+ * 分片上传任务是 GIS_UPLOAD，没有对应的处理阶段。
  */
 export function toProcessingTypeOfKind(kind: string): string {
   return kind.startsWith('GIS_') ? kind.slice(4) : kind

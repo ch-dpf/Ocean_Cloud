@@ -1,5 +1,5 @@
 import type { TableColumnType, TableColumnsType } from 'antd'
-import styles from './LogTables.module.css'
+import { StatusDot, formatTime } from '@ocean-cloud/ui'
 import {
   EXCEPTION_STATUS_LABELS,
   RESULT_STATUS_LABELS,
@@ -23,12 +23,6 @@ function indexColumn<T>(current: number, pageSize: number): TableColumnType<T> {
   }
 }
 
-/** 后端返回形如 2026-09-14T17:04:57.043286，展示为 2026-09-14 17:04:57 */
-function formatTime(value: string | null): string {
-  if (!value) return '—'
-  return value.replace('T', ' ').slice(0, 19)
-}
-
 /** 状态色块：1（成功/已处理）为绿，0（失败/未处理）为红 */
 function LogStatus({
   status,
@@ -38,14 +32,10 @@ function LogStatus({
   readonly labels: Readonly<Record<number, string>>
 }) {
   return (
-    <span className={styles.status}>
-      <span
-        className={styles.statusSquare}
-        style={{ background: status === 1 ? '#2fa84f' : '#d64545' }}
-        aria-hidden="true"
-      />
-      {labels[status] ?? status}
-    </span>
+    <StatusDot
+      tone={status === 1 ? 'done' : 'failed'}
+      label={labels[status] ?? String(status)}
+    />
   )
 }
 

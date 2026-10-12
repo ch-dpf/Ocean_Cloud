@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Table } from 'antd'
 import type { TableColumnsType } from 'antd'
+import { AppDialog, formatFileSize, formatTime } from '@ocean-cloud/ui'
 import styles from './FileOptDetailDialog.module.css'
 import { toOperationTypeLabel, toTaskStatusLabel } from '../../constants/task'
 import { getFileOptDetail } from '../../services/fileOptService'
@@ -9,27 +10,6 @@ import type { FileOptFile, FileOptRecord } from '../../types/fileOpt'
 interface FileOptDetailDialogProps {
   readonly recordNo: string
   readonly onClose: () => void
-}
-
-const SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB']
-
-/** 后端返回字节数字符串，展示为带单位的可读大小 */
-function formatFileSize(sizeBytes: string): string {
-  const bytes = Number(sizeBytes)
-  if (!Number.isFinite(bytes) || bytes < 0) return '—'
-  let value = bytes
-  let unit = 0
-  while (value >= 1024 && unit < SIZE_UNITS.length - 1) {
-    value /= 1024
-    unit += 1
-  }
-  return `${unit === 0 ? String(value) : value.toFixed(1)} ${SIZE_UNITS[unit]}`
-}
-
-/** 后端返回形如 2026-09-20T11:20:18.633696，展示为 2026-09-20 11:20:18 */
-function formatTime(value: string | null): string {
-  if (!value) return '—'
-  return value.replace('T', ' ').slice(0, 19)
 }
 
 const FILE_COLUMNS: TableColumnsType<FileOptFile> = [
@@ -87,15 +67,9 @@ export function FileOptDetailDialog({
   recordNo,
   onClose,
 }: FileOptDetailDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null)
-  const titleId = useId()
   const [detail, setDetail] = useState<FileOptRecord | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!dialogRef.current?.open) dialogRef.current?.showModal()
-  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -116,58 +90,48 @@ export function FileOptDetailDialog({
   const files = detail?.files ?? []
 
   return (
-    <dialog
-      ref={dialogRef}
+    <AppDialog
+      title="导入记录详情"
+      onClose={onClose}
+      closeOutside
       className={styles.dialog}
-      aria-labelledby={titleId}
-      onClose={() => onClose()}
     >
-      <div className={styles.heading}>
-        <h2 className={styles.title} id={titleId}>
-          导入记录详情
-        </h2>
-        <button
-          type="button"
-          className={styles.close}
-          onClick={() => onClose()}
-          aria-label="关闭详情"
-        >
-          ×
-        </button>
+      <div className={styles.body}>
+        {isLoading ? (
+          <p className={styles.state} role="status">
+            正在加载详情…
+          </p>
+        ) : error !== null || detail === null ? (
+          <p className={styles.state}>{error ?? '详情加载失败。'}</p>
+        ) : (
+          <>
+            <dl className={styles.summary}>
+              {buildSummaryFields(detail).map((field) => (
+                <div className={styles.summaryItem} key={field.label}>
+                  <dt>{field.label}</dt>
+                  <dd title={field.value}>{field.value}</dd>
+                </div>
+              ))}
+            </dl>
+            {detail.errorMessage !== null && detail.errorMessage !== '' && (
+              <p className={styles.errorText}>
+                错误信息：{detail.errorMessage}
+              </p>
+            )}
+
+            <p className={styles.sectionTitle}>文件列表（{files.length}）</p>
+            <Table<FileOptFile>
+              rowKey="id"
+              columns={FILE_COLUMNS}
+              dataSource={[...files]}
+              size="small"
+              pagination={false}
+              scroll={{ x: 1280 }}
+              locale={{ emptyText: '该记录下暂无文件' }}
+            />
+          </>
+        )}
       </div>
-
-      {isLoading ? (
-        <p className={styles.state} role="status">
-          正在加载详情…
-        </p>
-      ) : error !== null || detail === null ? (
-        <p className={styles.state}>{error ?? '详情加载失败。'}</p>
-      ) : (
-        <>
-          <dl className={styles.summary}>
-            {buildSummaryFields(detail).map((field) => (
-              <div className={styles.summaryItem} key={field.label}>
-                <dt>{field.label}</dt>
-                <dd title={field.value}>{field.value}</dd>
-              </div>
-            ))}
-          </dl>
-          {detail.errorMessage !== null && detail.errorMessage !== '' && (
-            <p className={styles.errorText}>错误信息：{detail.errorMessage}</p>
-          )}
-
-          <p className={styles.sectionTitle}>文件列表（{files.length}）</p>
-          <Table<FileOptFile>
-            rowKey="id"
-            columns={FILE_COLUMNS}
-            dataSource={[...files]}
-            size="small"
-            pagination={false}
-            scroll={{ x: 1280 }}
-            locale={{ emptyText: '该记录下暂无文件' }}
-          />
-        </>
-      )}
-    </dialog>
+    </AppDialog>
   )
 }

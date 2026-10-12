@@ -146,8 +146,9 @@ function readTask(task: Record<string, unknown>): UploadTaskItem | null {
 function createPendingTask(taskId: string, totalCount: number): UploadTaskItem {
   return {
     taskNo: taskId,
-    // 占位条目只用于导入任务
-    kind: 'GIS_IMPORT',
+    // 占位条目只用于上传（分片导入）任务；kind 必须与帧里的 taskType 一致，
+    // 否则占位条目会被 kind 过滤掉、或在换帧时被当成另一条任务
+    kind: 'GIS_UPLOAD',
     taskName: '上传任务',
     done: false,
     // 进度未知，因此不显示具体百分比，进度条改走流动动效

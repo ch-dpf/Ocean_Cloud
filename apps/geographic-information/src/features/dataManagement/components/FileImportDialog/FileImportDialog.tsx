@@ -1,13 +1,17 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent, UIEvent } from 'react'
+import { AppDialog } from '@ocean-cloud/ui'
 import { DATASET_CATEGORY_LABELS } from '../../constants/dataset'
 import { useDatasetOptions } from '../../hooks/useDatasetOptions'
 import type { GeoDataset } from '../../types/dataset'
 import styles from './FileImportDialog.module.css'
 
+/** 单批次文件数上限（后端分片上传的限制） */
+const MAX_IMPORT_FILES = 100
+
 interface FileImportDialogProps {
   readonly onClose: () => void
-  /** 提交回调：由页面负责关窗、建任务、上传，并把占位条目放进「上传进度」 */
+  /** 提交回调：由页面负责关窗、分片上传，并把占位条目放进「上传进度」 */
   readonly onSubmit: (input: {
     readonly dataSetId: string
     readonly files: readonly File[]
@@ -35,9 +39,7 @@ export function FileImportDialog({
   datasets: allDatasets,
   datasetsLoading,
 }: FileImportDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null)
   const optionsRef = useRef<HTMLUListElement>(null)
-  const titleId = useId()
   const datasetInputId = useId()
   const fileInputId = useId()
   const [keyword, setKeyword] = useState(initialKeyword)
@@ -48,10 +50,6 @@ export function FileImportDialog({
     allDatasets,
     keyword,
   )
-
-  useEffect(() => {
-    if (!dialogRef.current?.open) dialogRef.current?.showModal()
-  }, [])
 
   // 筛选条件变化后回到列表顶部，否则会停在上一次的滚动位置
   useEffect(() => {
@@ -88,22 +86,17 @@ export function FileImportDialog({
       setValidationError('请选择要导入的文件。')
       return
     }
+    if (files.length > MAX_IMPORT_FILES) {
+      setValidationError(`单批次最多导入 ${MAX_IMPORT_FILES} 个文件。`)
+      return
+    }
     setValidationError(null)
     onSubmit({ dataSetId: selected.id, files })
   }
 
   return (
-    <dialog
-      ref={dialogRef}
-      className={styles.dialog}
-      aria-labelledby={titleId}
-      onClose={() => onClose()}
-    >
+    <AppDialog title="导入GIS数据" onClose={onClose} className={styles.dialog}>
       <form className={styles.form} onSubmit={handleSubmit}>
-        <h2 className={styles.title} id={titleId}>
-          导入GIS数据
-        </h2>
-
         <div className={styles.field}>
           <label className={styles.label} htmlFor={datasetInputId}>
             数据集
@@ -198,6 +191,6 @@ export function FileImportDialog({
           </button>
         </div>
       </form>
-    </dialog>
+    </AppDialog>
   )
 }

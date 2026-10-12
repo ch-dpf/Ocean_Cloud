@@ -1,24 +1,11 @@
+/* 弹窗外壳（边框/圆角/内边距）由 AppDialog 统一提供，这里只保留尺寸 */
 .dialog {
   width: min(520px, 90vw);
-  padding: 24px 28px;
-  border: 1px solid #dce6ec;
-  border-radius: 14px;
-  color: #13293d;
-  font-family: 'Noto Sans SC', sans-serif;
-  box-shadow: 0 25px 80px #183f6322;
-}
-.dialog::backdrop {
-  background: #17384d55;
 }
 .form {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-.title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
 }
 .field {
   display: flex;

@@ -52,27 +52,3 @@
   background: #fdecec;
   color: #d64545;
 }
-/* 操作列容器是 flex，text-align 对它无效，靠 space-between 让两个按钮分居左右 */
-.actionCell {
-  display: flex;
-  align-items: center;
-  justify-content: space-evenly;
-}
-/* 操作列按钮：无边框无底色，只留文字；悬停不做任何视觉变化 */
-.actionButton {
-  height: 26px;
-  padding: 0 6px;
-  border: none;
-  border-radius: 6px;
-  /* 不声明 background 会露出按钮的默认灰底，必须显式去掉 */
-  background: none;
-  color: #1267d6;
-  cursor: pointer;
-  font-family: 'Noto Sans SC', sans-serif;
-  font-weight: 500;
-  font-size: 11px;
-}
-.actionButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}

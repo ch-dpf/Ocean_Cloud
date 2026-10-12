@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react'
+import { AppDialog } from '../AppDialog/AppDialog'
 import styles from './UserDetailDialog.module.css'
 import type { CurrentUser } from '../../hooks/useCurrentUser'
 
@@ -46,34 +46,13 @@ function buildFields(user: CurrentUser | null): readonly DetailField[] {
 
 /** 用户详情：头像 + 账号字段一览。不展示密码、失败次数等敏感信息 */
 export function UserDetailDialog({ user, onClose }: UserDetailDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null)
-  const titleId = useId()
-
-  useEffect(() => {
-    if (!dialogRef.current?.open) dialogRef.current?.showModal()
-  }, [])
-
   return (
-    <dialog
-      ref={dialogRef}
+    <AppDialog
+      title="用户详情"
+      onClose={onClose}
+      closeOutside
       className={styles.dialog}
-      aria-labelledby={titleId}
-      onClose={() => onClose()}
     >
-      <div className={styles.heading}>
-        <h2 className={styles.title} id={titleId}>
-          用户详情
-        </h2>
-        <button
-          type="button"
-          className={styles.close}
-          onClick={() => onClose()}
-          aria-label="关闭用户详情"
-        >
-          ×
-        </button>
-      </div>
-
       <div className={styles.identity}>
         <span className={styles.avatar}>
           {user?.avatar ? (
@@ -97,6 +76,6 @@ export function UserDetailDialog({ user, onClose }: UserDetailDialogProps) {
           </div>
         ))}
       </dl>
-    </dialog>
+    </AppDialog>
   )
 }

@@ -1,4 +1,5 @@
 import { Drawer } from 'antd'
+import { cellText, formatTime } from '@ocean-cloud/ui'
 import styles from './UserDetailDrawer.module.css'
 import {
   LOCK_LEVEL_LABELS,
@@ -22,17 +23,6 @@ interface DetailField {
 interface DetailGroup {
   readonly title: string
   readonly fields: readonly DetailField[]
-}
-
-/** 后端返回形如 2026-09-28T15:41:49.082257，展示为 2026-09-28 15:41:49 */
-function formatTime(value: string | null): string {
-  if (!value) return '—'
-  return value.replace('T', ' ').slice(0, 19)
-}
-
-/** 可空文本统一展示为 — */
-function text(value: string | null | undefined): string {
-  return value ? value : '—'
 }
 
 /** 数组字段：映射为中文后以「、」连接；空数组展示 — */
@@ -60,9 +50,9 @@ function buildGroups(user: MemberUser): readonly DetailGroup[] {
       title: '基本信息',
       fields: [
         { label: '用户名', value: user.username },
-        { label: '真实姓名', value: text(user.realName) },
-        { label: '邮箱', value: text(user.email) },
-        { label: '手机号', value: text(user.phone) },
+        { label: '真实姓名', value: cellText(user.realName) },
+        { label: '邮箱', value: cellText(user.email) },
+        { label: '手机号', value: cellText(user.phone) },
         {
           label: '账号状态',
           value: USER_STATUS_LABELS[user.status] ?? String(user.status),
@@ -86,7 +76,7 @@ function buildGroups(user: MemberUser): readonly DetailGroup[] {
       title: '登录与安全',
       fields: [
         { label: '最近登录时间', value: formatTime(user.lastLoginTime) },
-        { label: '最近登录 IP', value: text(user.lastLoginIp) },
+        { label: '最近登录 IP', value: cellText(user.lastLoginIp) },
         { label: '活跃会话', value: formatSessions(user) },
         {
           label: '锁定级别',
@@ -101,7 +91,7 @@ function buildGroups(user: MemberUser): readonly DetailGroup[] {
           label: '上次密码错误',
           value: formatTime(user.lastPasswordErrorTime),
         },
-        { label: '手动解锁人', value: text(user.manualUnlockBy) },
+        { label: '手动解锁人', value: cellText(user.manualUnlockBy) },
         { label: '手动解锁时间', value: formatTime(user.manualUnlockTime) },
       ],
     },

@@ -1,6 +1,12 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Table } from 'antd'
 import type { TableColumnsType } from 'antd'
+import {
+  AppDialog,
+  cellText,
+  formatFileSize,
+  formatTime,
+} from '@ocean-cloud/ui'
 import styles from './TaskDetailDialog.module.css'
 import {
   toInputKindLabel,
@@ -21,33 +27,6 @@ interface TaskDetailDialogProps {
 interface SummaryField {
   readonly label: string
   readonly value: string
-}
-
-const SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB']
-
-/** 后端返回字节数字符串，展示为带单位的可读大小 */
-function formatFileSize(sizeBytes: string | null): string {
-  if (sizeBytes === null) return '—'
-  const bytes = Number(sizeBytes)
-  if (!Number.isFinite(bytes) || bytes < 0) return '—'
-  let value = bytes
-  let unit = 0
-  while (value >= 1024 && unit < SIZE_UNITS.length - 1) {
-    value /= 1024
-    unit += 1
-  }
-  return `${unit === 0 ? String(value) : value.toFixed(1)} ${SIZE_UNITS[unit]}`
-}
-
-/** 后端返回形如 2026-09-24T14:04:03.318842，展示为 2026-09-24 14:04:03 */
-function formatTime(value: string | null): string {
-  if (!value) return '—'
-  return value.replace('T', ' ').slice(0, 19)
-}
-
-/** 可空文本统一展示为 — */
-function text(value: string | null | undefined): string {
-  return value ? value : '—'
 }
 
 /** 可空数字（int32 也可能以字符串返回） */
@@ -101,12 +80,12 @@ function buildTaskFields(detail: TaskDetail): readonly SummaryField[] {
 function buildParameterFields(detail: TaskDetail): readonly SummaryField[] {
   const p = detail.parameters
   return [
-    { label: '目标坐标系', value: text(p?.targetCrs) },
-    { label: '瓦片切分剖面', value: text(p?.tileProfile) },
-    { label: '输出格式', value: text(p?.outputFormat) },
+    { label: '目标坐标系', value: cellText(p?.targetCrs) },
+    { label: '瓦片切分剖面', value: cellText(p?.tileProfile) },
+    { label: '输出格式', value: cellText(p?.outputFormat) },
     { label: '最小层级', value: numberText(p?.minZoom) },
     { label: '最大层级', value: numberText(p?.maxZoom) },
-    { label: '重采样方式', value: text(p?.resampling) },
+    { label: '重采样方式', value: cellText(p?.resampling) },
     { label: '是否透明', value: boolText(p?.transparent) },
     {
       label: '参数版本',
@@ -121,22 +100,22 @@ function buildParameterFields(detail: TaskDetail): readonly SummaryField[] {
 /** 瓦片集概览字段 */
 function buildTileSetFields(tileSet: TaskTileSet): readonly SummaryField[] {
   return [
-    { label: '瓦片类型', value: text(tileSet.tileType) },
+    { label: '瓦片类型', value: cellText(tileSet.tileType) },
     {
       label: '瓦片状态',
       value: tileSet.tileSetStatus
         ? toTileSetStatusLabel(tileSet.tileSetStatus)
         : '—',
     },
-    { label: '目标坐标系', value: text(tileSet.targetCrs) },
-    { label: '瓦片切分剖面', value: text(tileSet.tileProfile) },
-    { label: '输出格式', value: text(tileSet.outputFormat) },
+    { label: '目标坐标系', value: cellText(tileSet.targetCrs) },
+    { label: '瓦片切分剖面', value: cellText(tileSet.tileProfile) },
+    { label: '输出格式', value: cellText(tileSet.outputFormat) },
     {
       label: '层级范围',
       value: `${numberText(tileSet.minZoom)} ~ ${numberText(tileSet.maxZoom)}`,
     },
-    { label: '产物路径', value: text(tileSet.outputKey) },
-    { label: '清单路径', value: text(tileSet.manifestKey) },
+    { label: '产物路径', value: cellText(tileSet.outputKey) },
+    { label: '清单路径', value: cellText(tileSet.manifestKey) },
     { label: '创建时间', value: formatTime(tileSet.createTime) },
     { label: '更新时间', value: formatTime(tileSet.updateTime) },
   ]
@@ -155,7 +134,7 @@ const INPUT_COLUMNS: TableColumnsType<TaskInput> = [
     ellipsis: true,
     render: (_, record) => (
       <span title={record.errorMessage ?? undefined}>
-        {text(record.originalName)}
+        {cellText(record.originalName)}
       </span>
     ),
   },
@@ -171,7 +150,7 @@ const INPUT_COLUMNS: TableColumnsType<TaskInput> = [
     width: 100,
     render: (_, record) => toInputStatusLabel(record.inputStatus),
   },
-  { title: '格式', dataIndex: 'extension', width: 80, render: text },
+  { title: '格式', dataIndex: 'extension', width: 80, render: cellText },
   {
     title: '大小',
     key: 'sizeBytes',
@@ -183,14 +162,14 @@ const INPUT_COLUMNS: TableColumnsType<TaskInput> = [
     dataIndex: 'sha256',
     width: 240,
     ellipsis: true,
-    render: text,
+    render: cellText,
   },
   {
     title: '错误信息',
     dataIndex: 'errorMessage',
     width: 180,
     ellipsis: true,
-    render: text,
+    render: cellText,
   },
   {
     title: '创建时间',
@@ -202,15 +181,9 @@ const INPUT_COLUMNS: TableColumnsType<TaskInput> = [
 
 /** 处理任务详情：任务概览 + 处理参数 + 输入文件 + 瓦片产物 */
 export function TaskDetailDialog({ taskId, onClose }: TaskDetailDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null)
-  const titleId = useId()
   const [detail, setDetail] = useState<TaskDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!dialogRef.current?.open) dialogRef.current?.showModal()
-  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -232,27 +205,13 @@ export function TaskDetailDialog({ taskId, onClose }: TaskDetailDialogProps) {
   const tileSet = detail?.tileSet ?? null
 
   return (
-    <dialog
-      ref={dialogRef}
+    <AppDialog
+      title="处理任务详情"
+      onClose={onClose}
+      closeOutside
       className={styles.dialog}
-      aria-labelledby={titleId}
-      onClose={() => onClose()}
     >
-      {/* 关闭按钮落在弹窗框外，内容滚动时不会跟着滚走 */}
-      <button
-        type="button"
-        className={styles.close}
-        onClick={() => onClose()}
-        aria-label="关闭详情"
-      >
-        ×
-      </button>
-
       <div className={styles.body}>
-        <h2 className={styles.title} id={titleId}>
-          处理任务详情
-        </h2>
-
         {isLoading ? (
           <p className={styles.state} role="status">
             正在加载详情…
@@ -330,6 +289,6 @@ export function TaskDetailDialog({ taskId, onClose }: TaskDetailDialogProps) {
           </>
         )}
       </div>
-    </dialog>
+    </AppDialog>
   )
 }

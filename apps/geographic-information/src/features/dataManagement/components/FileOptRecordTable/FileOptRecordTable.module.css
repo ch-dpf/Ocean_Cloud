@@ -1,31 +1,3 @@
-/* 状态：小方块颜色区分，颜色由行内样式给出 */
-.status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-}
-.statusSquare {
-  width: 8px;
-  height: 8px;
-  flex-shrink: 0;
-  border-radius: 2px;
-}
-/* 操作列按钮：无边框无底色，只留文字；悬停不做任何视觉变化 */
-.actionButton {
-  height: 26px;
-  padding: 0 6px;
-  border: none;
-  border-radius: 6px;
-  /* 不声明 background 会露出按钮的默认灰底，必须显式去掉 */
-  background: none;
-  color: #1267d6;
-  cursor: pointer;
-  font-family: 'Noto Sans SC', sans-serif;
-  font-weight: 500;
-  font-size: 11px;
-}
-
 /* 日期筛选用原生 date，样式对齐 antd 输入框；只选年月日，缩小宽度让操作按钮能同行 */
 .dateInput {
   width: 140px;

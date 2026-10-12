@@ -2,7 +2,14 @@ import { useState } from 'react'
 import { Form, Input, Select } from 'antd'
 import type { TableColumnsType } from 'antd'
 import styles from './PublicationTable.module.css'
-import { SearchTable } from '@ocean-cloud/ui'
+import {
+  SearchTable,
+  STATUS_COLORS,
+  TableActions,
+  cellText,
+  formatTime,
+} from '@ocean-cloud/ui'
+import type { StatusTone } from '@ocean-cloud/ui'
 import {
   PUBLICATION_STATUS,
   PUBLICATION_STATUS_LABELS,
@@ -32,13 +39,11 @@ interface PublicationTableProps {
   readonly onDisable?: (record: PublicationRow) => void
 }
 
-/** 状态小方块的颜色；未命中的取值用兜底色 */
-const STATUS_COLORS: Readonly<Record<string, string>> = {
-  [PUBLICATION_STATUS.published]: '#2fa84f',
-  [PUBLICATION_STATUS.disabled]: '#8394a0',
+/** 发布状态到调色板档次的映射；未命中的取值按「待处理」处理 */
+const STATUS_TONE_BY_VALUE: Readonly<Record<string, StatusTone>> = {
+  [PUBLICATION_STATUS.published]: 'done',
+  [PUBLICATION_STATUS.disabled]: 'pending',
 }
-
-const STATUS_FALLBACK_COLOR = '#8394a0'
 
 /** 操作列宽度：两个按钮（查看 / 停用） */
 const ACTION_COLUMN_WIDTH = 100
@@ -48,17 +53,6 @@ const SCROLL_X_BY_SCOPE: Readonly<Record<PublicationScope, number>> = {
   terrain: 1450,
   imagery: 1800,
   all: 1910,
-}
-
-/** 后端返回形如 2026-09-14T17:04:57.043286，展示为 2026-09-14 17:04:57 */
-function formatTime(value: string | null): string {
-  if (!value) return '—'
-  return value.replace('T', ' ').slice(0, 19)
-}
-
-/** 空字符串 / null 统一展示为 — */
-function cellText(value: string | null): string {
-  return value ? value : '—'
 }
 
 /** 影像层级区间：minZoom ~ maxZoom，任一缺失都展示 — */
@@ -174,7 +168,8 @@ function buildColumns(
           <span
             className={styles.statusSquare}
             style={{
-              background: STATUS_COLORS[record.status] ?? STATUS_FALLBACK_COLOR,
+              background:
+                STATUS_COLORS[STATUS_TONE_BY_VALUE[record.status] ?? 'pending'],
             }}
             aria-hidden="true"
           />
@@ -248,26 +243,27 @@ function buildColumns(
       // 横向滚动时固定在表格右侧，按钮始终可见
       fixed: 'right',
       render: (_, record) => (
-        <span className={styles.actionCell}>
-          {/* 服务详情尚未接入，按钮先置灰占位 */}
-          <button type="button" className={styles.actionButton} disabled>
-            查看
-          </button>
-          <button
-            type="button"
-            className={styles.actionButton}
-            onClick={
-              onDisable === undefined ? undefined : () => onDisable(record)
-            }
-            // 只有已发布的服务可以停用，已停用的无需重复下发
-            disabled={
-              onDisable === undefined ||
-              record.status !== PUBLICATION_STATUS.published
-            }
-          >
-            停用
-          </button>
-        </span>
+        <TableActions
+          justify="evenly"
+          actions={[
+            {
+              key: 'view',
+              label: '查看',
+              // 服务详情尚未接入，按钮先置灰占位
+              disabled: true,
+            },
+            {
+              key: 'disable',
+              label: '停用',
+              onClick:
+                onDisable === undefined ? undefined : () => onDisable(record),
+              // 只有已发布的服务可以停用，已停用的无需重复下发
+              disabled:
+                onDisable === undefined ||
+                record.status !== PUBLICATION_STATUS.published,
+            },
+          ]}
+        />
       ),
     },
   ]

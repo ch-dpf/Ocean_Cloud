@@ -1,5 +1,6 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
+import { AppDialog, formatFileSize } from '@ocean-cloud/ui'
 import {
   IMAGERY_OUTPUT_FORMAT_OPTIONS,
   IMAGERY_TARGET_CRS_OPTIONS,
@@ -77,21 +78,6 @@ interface ProcessingCreateDialogProps {
   readonly onSubmitWorkspace?: (input: WorkspaceSubmitInput) => void
 }
 
-const SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB']
-
-/** 后端返回字节数字符串，展示为带单位的可读大小 */
-function formatFileSize(sizeBytes: string): string {
-  const bytes = Number(sizeBytes)
-  if (!Number.isFinite(bytes) || bytes < 0) return '—'
-  let value = bytes
-  let unit = 0
-  while (value >= 1024 && unit < SIZE_UNITS.length - 1) {
-    value /= 1024
-    unit += 1
-  }
-  return `${unit === 0 ? String(value) : value.toFixed(1)} ${SIZE_UNITS[unit]}`
-}
-
 /** 选项统一成 { value, label }：没有单独标签的直接用取值展示 */
 function toOptions(
   options: readonly { readonly value: string; readonly label?: string }[],
@@ -123,10 +109,8 @@ export function ProcessingCreateDialog({
   onSubmitManaged,
   onSubmitWorkspace,
 }: ProcessingCreateDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null)
   // 本地上传的原生文件输入：视觉隐藏，由「选择文件」按钮代为触发
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const titleId = useId()
   const pathInputId = useId()
   const hasPresetFile = presetFile !== undefined
   // 从数据管理页进入时锁定在「数据管理数据」，否则只用本地上传
@@ -196,12 +180,6 @@ export function ProcessingCreateDialog({
         toProcessingTypeLabel(processingType),
         selectedFileNames,
       )
-
-  // 选择浮层期间 <dialog> 会卸载，关闭后需要重新打开
-  useEffect(() => {
-    if (isSelecting) return
-    if (!dialogRef.current?.open) dialogRef.current?.showModal()
-  }, [isSelecting])
 
   /** 切换处理类型时把预处理参数重置为该类型的默认值，避免残留上一类型的取值 */
   function handleTypeChange(value: string) {
@@ -321,7 +299,8 @@ export function ProcessingCreateDialog({
     onSubmitLocal({ processingType, taskName: name, parameters, files })
   }
 
-  // 选择数据期间让位给选择浮层：<dialog> 卸载，但组件状态（任务名称、参数、已选文件）保留
+  // 选择数据期间让位给选择浮层：AppDialog（含 <dialog>）随之卸载；本组件状态不卸载，
+  // 任务名称、参数、已选文件都保留。关闭浮层后 AppDialog 重新挂载并自行 showModal 打开弹窗。
   if (isSelecting) {
     return (
       <ManagedFileSelectOverlay
@@ -337,17 +316,8 @@ export function ProcessingCreateDialog({
   }
 
   return (
-    <dialog
-      ref={dialogRef}
-      className={styles.dialog}
-      aria-labelledby={titleId}
-      onClose={() => onClose()}
-    >
+    <AppDialog title="新建处理任务" onClose={onClose} className={styles.dialog}>
       <form className={styles.form} onSubmit={handleSubmit}>
-        <h2 className={styles.title} id={titleId}>
-          新建处理任务
-        </h2>
-
         <div className={styles.tabs} role="tablist" aria-label="文件来源">
           {SOURCE_TABS.map((tab) => {
             const isActive = tab.key === sourceTab
@@ -620,6 +590,6 @@ export function ProcessingCreateDialog({
           </button>
         </div>
       </form>
-    </dialog>
+    </AppDialog>
   )
 }

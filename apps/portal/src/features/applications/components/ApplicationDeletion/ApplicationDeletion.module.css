@@ -7,20 +7,8 @@
 }
 .dialog {
   width: min(460px, calc(100vw - 32px));
-  padding: 26px;
-  border: 1px solid #e5dcdc;
-  border-radius: 12px;
-  color: #193248;
   max-height: 85vh;
   overflow-y: auto;
-}
-.dialog::backdrop {
-  background: #19324866;
-}
-.dialog h2 {
-  font-size: 20px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
 }
 .dialog p {
   font-size: 13px;

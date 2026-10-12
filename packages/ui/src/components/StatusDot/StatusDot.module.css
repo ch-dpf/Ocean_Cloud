@@ -1,13 +1,12 @@
-/* 状态：小方块颜色区分，颜色由行内样式给出 */
+/* 状态小方块 + 文案：方块颜色由 props 给（取自全局调色板） */
 .status {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  white-space: nowrap;
 }
-.statusSquare {
+.square {
+  flex-shrink: 0;
   width: 8px;
   height: 8px;
-  flex-shrink: 0;
   border-radius: 2px;
 }

@@ -1,7 +1,13 @@
 import { Form, Input, Select } from 'antd'
 import type { TableColumnsType } from 'antd'
 import styles from './FileOptRecordTable.module.css'
-import { SearchTable } from '@ocean-cloud/ui'
+import {
+  SearchTable,
+  StatusDot,
+  TableActions,
+  formatTime,
+  type StatusTone,
+} from '@ocean-cloud/ui'
 import { toOperationTypeLabel, toTaskStatusLabel } from '../../constants/task'
 import type { FileOptFilters, FileOptRecord } from '../../types/fileOpt'
 
@@ -27,21 +33,16 @@ interface FileOptRecordTableProps {
   readonly onDetail: (record: FileOptRecord) => void
 }
 
-/** 状态小方块的颜色；未命中的取值用兜底色 */
-const STATUS_COLORS: Readonly<Record<string, string>> = {
-  COMPLETED: '#2fa84f',
-  RUNNING: '#1f75f2',
-  QUEUED: '#e08c1a',
-  PARTIAL_FAILED: '#e08c1a',
-  FAILED: '#d64545',
-}
-
-const STATUS_FALLBACK_COLOR = '#8394a0'
-
-/** 后端返回形如 2026-09-20T11:20:18.633696，展示为 2026-09-20 11:20:18 */
-function formatTime(value: string | null): string {
-  if (!value) return '—'
-  return value.replace('T', ' ').slice(0, 19)
+/**
+ * 状态 → 语义档次（业务映射保留）；具体颜色由 StatusDot 从全局调色板取，
+ * 未识别的取值兜底到 pending（其色值即全局兜底色）。
+ */
+const STATUS_TONES: Readonly<Record<string, StatusTone>> = {
+  COMPLETED: 'done',
+  RUNNING: 'running',
+  QUEUED: 'pending',
+  PARTIAL_FAILED: 'warning',
+  FAILED: 'failed',
 }
 
 /** 待处理与失败数合成一列，避免列太多 */
@@ -82,17 +83,10 @@ function buildColumns(
       key: 'recordStatus',
       width: 120,
       render: (_, record) => (
-        <span className={styles.status}>
-          <span
-            className={styles.statusSquare}
-            style={{
-              background:
-                STATUS_COLORS[record.recordStatus] ?? STATUS_FALLBACK_COLOR,
-            }}
-            aria-hidden="true"
-          />
-          {toTaskStatusLabel(record.recordStatus)}
-        </span>
+        <StatusDot
+          tone={STATUS_TONES[record.recordStatus] ?? 'pending'}
+          label={toTaskStatusLabel(record.recordStatus)}
+        />
       ),
     },
     {
@@ -126,13 +120,15 @@ function buildColumns(
       // 横向滚动时固定在表格右侧，按钮始终可见
       fixed: 'right',
       render: (_, record) => (
-        <button
-          type="button"
-          className={styles.actionButton}
-          onClick={() => onDetail(record)}
-        >
-          详情
-        </button>
+        <TableActions
+          actions={[
+            {
+              key: 'detail',
+              label: '详情',
+              onClick: () => onDetail(record),
+            },
+          ]}
+        />
       ),
     },
   ]

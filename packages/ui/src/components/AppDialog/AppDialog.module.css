@@ -1,0 +1,73 @@
+/* 弹窗外壳：边框、圆角、内边距统一在这里，各弹窗只通过 className 定制尺寸 */
+.dialog {
+  margin: auto;
+  padding: 20px 24px;
+  border: 1px solid #dee5ed;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #13293d;
+  font-family: 'Noto Sans SC', sans-serif;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+}
+/* 遮罩：原先 11 个弹窗各写了一份 */
+.dialog::backdrop {
+  background: #17384d55;
+}
+/* 关闭按钮放到弹窗外侧时，弹窗自身不能裁掉它 */
+.dialogOutsideClose {
+  position: relative;
+  overflow: visible;
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* 标题与内容之间留出统一间距（原先各弹窗靠自身容器的 gap 提供） */
+  margin-bottom: 16px;
+}
+.headingText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.eyebrow {
+  color: #668497;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+}
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #8394a0;
+  font-family: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+/* 外侧变体：贴在弹窗右上角外，内容滚动时位置不变 */
+.closeOutside {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #dce6ec;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+}

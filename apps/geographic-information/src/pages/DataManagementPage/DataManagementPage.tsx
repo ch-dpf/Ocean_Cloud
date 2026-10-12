@@ -32,13 +32,12 @@ import { useFileOptPage } from '../../features/dataManagement/hooks/useFileOptPa
 import { useSidebarCounts } from '../../features/dataManagement/hooks/useSidebarCounts'
 import { useUploadTasks } from '../../features/dataManagement/hooks/useUploadTasks'
 import {
-  createImportTask,
   deleteFileMeta,
   downloadFileMeta,
   purgeDeletedFileMeta,
   restoreDeletedFileMeta,
-  uploadImportBatch,
 } from '../../features/dataManagement/services/fileMetaService'
+import { uploadGisFiles } from '../../features/dataManagement/services/gisUpload'
 import { deleteDataset } from '../../features/dataManagement/services/datasetService'
 import { createManagedProcessingTask } from '../../features/dataManagement/services/taskService'
 import type { GeoDataset } from '../../features/dataManagement/types/dataset'
@@ -249,8 +248,9 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
   }
 
   /**
-   * 导入数据：先建任务拿到编号并插入「上传中」占位，再按该任务上传文件。
-   * 提交后立即关窗，进度到「上传进度」里看；失败时把占位标为失败。
+   * 导入数据：分片上传，任务由后端在第一块上传时创建，拿到任务编号后再插「上传中」占位。
+   * 提交后立即关窗，进度到「上传进度」里看；失败时把占位标为失败
+   * （连第一块都没成功时还没有占位可收口）。失败提示由 RequestErrorNotice 统一展示。
    */
   async function handleImport(input: {
     readonly dataSetId: string
@@ -259,11 +259,18 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     setIsImportOpen(false)
     let taskId: string | null = null
     try {
-      taskId = await createImportTask(input.dataSetId, input.files.length)
-      addPendingTask(taskId, input.files.length)
-      await uploadImportBatch(taskId, input.files)
-    } catch {
-      // 失败提示由 RequestErrorNotice 统一展示；建任务失败时进度列表里还没有占位可收口
+      await uploadGisFiles({
+        dataSetId: input.dataSetId,
+        files: input.files,
+        onTaskCreated(createdTaskId) {
+          taskId = createdTaskId
+          addPendingTask(createdTaskId, input.files.length)
+        },
+      })
+    } catch (error) {
+      // http 层失败会自己派发全局错误条；这里只兜住非 http 的异常（例如浏览器 API 不可用），
+      // 至少不让它静默消失
+      console.error('导入上传失败', error)
       if (taskId !== null) failTask(taskId)
     }
   }

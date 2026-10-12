@@ -1,7 +1,12 @@
 import { Form, Input, Select } from 'antd'
 import type { TableColumnsType } from 'antd'
-import styles from './FileMetaTable.module.css'
-import { SearchTable } from '@ocean-cloud/ui'
+import {
+  SearchTable,
+  TableActions,
+  formatFileSize,
+  formatTime,
+  type TableAction,
+} from '@ocean-cloud/ui'
 import {
   DATASET_CATEGORY_LABELS,
   FILE_FORMAT_OPTIONS,
@@ -37,27 +42,6 @@ interface FileMetaTableProps {
   readonly onSearch: (filters: FileMetaFilters) => void
   /** 点击重置（表单已重置后触发） */
   readonly onReset: () => void
-}
-
-const SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB']
-
-/** 后端返回字节数字符串，展示为带单位的可读大小 */
-function formatFileSize(sizeBytes: string): string {
-  const bytes = Number(sizeBytes)
-  if (!Number.isFinite(bytes) || bytes < 0) return '—'
-  let value = bytes
-  let unit = 0
-  while (value >= 1024 && unit < SIZE_UNITS.length - 1) {
-    value /= 1024
-    unit += 1
-  }
-  return `${unit === 0 ? String(value) : value.toFixed(1)} ${SIZE_UNITS[unit]}`
-}
-
-/** 后端返回形如 2026-09-11T20:55:43.623167，展示为 2026-09-11 20:55:43 */
-function formatTime(value: string): string {
-  if (!value) return '—'
-  return value.replace('T', ' ').slice(0, 19)
 }
 
 /** 列定义；序号需要按当前页换算，因此每次渲染重建 */
@@ -121,32 +105,26 @@ function buildColumns(
       // 横向滚动时固定在表格右侧，按钮始终可见
       fixed: 'right',
       render: (_, record) => (
-        <span className={styles.actionCell}>
-          {actions?.map((item) => {
+        <TableActions
+          justify="evenly"
+          actions={(actions ?? []).map((item): TableAction => {
             const isPending = item.pendingId === record.id
             const isRowDisabled =
               typeof item.disabled === 'function'
                 ? item.disabled(record)
                 : item.disabled === true
-            return (
-              <button
-                key={item.label}
-                type="button"
-                className={`${styles.actionButton}${
-                  item.tone === 'danger' ? '' : ` ${styles.actionButtonDefault}`
-                }`}
-                onClick={
-                  item.onClick === undefined
-                    ? undefined
-                    : () => item.onClick?.(record)
-                }
-                disabled={isRowDisabled || isPending}
-              >
-                {isPending ? '处理中…' : item.label}
-              </button>
-            )
+            return {
+              key: item.label,
+              label: isPending ? '处理中…' : item.label,
+              tone: item.tone === 'danger' ? 'danger' : 'default',
+              disabled: isRowDisabled || isPending,
+              onClick:
+                item.onClick === undefined
+                  ? undefined
+                  : () => item.onClick?.(record),
+            }
           })}
-        </span>
+        />
       ),
     },
   ]

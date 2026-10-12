@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef } from 'react'
 import type { UploadTaskItem } from '../../hooks/useUploadTasks'
 import {
+  UPLOAD_TASK_KINDS,
   toProcessingStageIndex,
   toProcessingStageLabel,
   toProcessingTypeOfKind,
@@ -36,7 +37,8 @@ function formatTaskMeta(task: UploadTaskItem): string {
  * 阶段推进靠这行文字表达。上传任务没有处理阶段，返回空串。
  */
 function formatTaskStage(task: UploadTaskItem): string {
-  if (task.kind === 'GIS_IMPORT') return ''
+  // 上传类任务没有处理阶段，不显示阶段行
+  if (UPLOAD_TASK_KINDS.some((kind) => kind === task.kind)) return ''
   const stage = toProcessingStageLabel(task.stageCode)
   if (stage === '') return ''
   const index = toProcessingStageIndex(

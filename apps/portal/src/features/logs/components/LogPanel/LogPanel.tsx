@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Form, Input, Select } from 'antd'
 import type { TableColumnType, TableColumnsType } from 'antd'
-import { ConfirmDialog, SearchTable } from '@ocean-cloud/ui'
+import { ConfirmDialog, SearchTable, TableActions } from '@ocean-cloud/ui'
 import styles from './LogPanel.module.css'
 import { LOG_PAGE_SIZE } from '../../constants/log'
 import { useLogPage } from '../../hooks/useLogPage'
@@ -110,14 +110,17 @@ export function LogPanel<T extends { readonly id: string }>({
     width: 110,
     fixed: 'right',
     render: (_, record) => (
-      <button
-        type="button"
-        className={styles.actionButton}
-        onClick={() => setPendingDelete(record)}
-        disabled={deletingId === record.id}
-      >
-        {deletingId === record.id ? '删除中…' : '删除'}
-      </button>
+      <TableActions
+        actions={[
+          {
+            key: 'delete',
+            label: deletingId === record.id ? '删除中…' : '删除',
+            tone: 'danger',
+            onClick: () => setPendingDelete(record),
+            disabled: deletingId === record.id,
+          },
+        ]}
+      />
     ),
   }
   const tableColumns =

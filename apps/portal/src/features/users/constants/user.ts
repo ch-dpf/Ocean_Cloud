@@ -1,3 +1,4 @@
+import { STATUS_COLORS, STATUS_FALLBACK_COLOR } from '@ocean-cloud/ui'
 import type { SystemManagementSection } from '../types/user'
 
 /** 用户列表每页条数 */
@@ -36,13 +37,13 @@ export const USER_STATUS_LABELS: Readonly<Record<number, string>> = {
   0: '已禁用',
 }
 
-/** 状态小方块的颜色；未命中的取值用兜底色 */
+/** 状态小方块的颜色；取自全局调色板，未命中的取值用兜底色 */
 export const USER_STATUS_COLORS: Readonly<Record<number, string>> = {
-  1: '#2fa84f',
-  0: '#8394a0',
+  1: STATUS_COLORS.done,
+  0: STATUS_COLORS.pending,
 }
 
-export const USER_STATUS_FALLBACK_COLOR = '#8394a0'
+export const USER_STATUS_FALLBACK_COLOR: string = STATUS_FALLBACK_COLOR
 
 /** 锁定级别：0 未锁定；其余取值后端未给对照表，按原样展示 */
 export const LOCK_LEVEL_LABELS: Readonly<Record<number, string>> = {

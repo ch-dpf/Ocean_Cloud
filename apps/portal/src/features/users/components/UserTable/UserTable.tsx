@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { TableColumnsType } from 'antd'
-import { SearchTable } from '@ocean-cloud/ui'
+import { SearchTable, TableActions, formatTime } from '@ocean-cloud/ui'
 import styles from './UserTable.module.css'
 import {
   ROLE_CODE_LABELS,
@@ -15,12 +15,6 @@ import type { MemberUser } from '../../types/user'
 
 /** 列宽合计 1050 */
 const SCROLL_X = 1050
-
-/** 后端返回形如 2026-09-28T15:41:49.082257，展示为 2026-09-28 15:41:49 */
-function formatTime(value: string | null): string {
-  if (!value) return '—'
-  return value.replace('T', ' ').slice(0, 19)
-}
 
 /** 角色展示：角色码映射为中文后以「、」连接；无角色展示 — */
 function formatRoles(record: MemberUser): string {
@@ -132,13 +126,11 @@ function buildColumns(
       // 横向滚动时固定在表格右侧，按钮始终可见
       fixed: 'right',
       render: (_, record) => (
-        <button
-          type="button"
-          className={styles.actionButton}
-          onClick={() => onView(record)}
-        >
-          详情
-        </button>
+        <TableActions
+          actions={[
+            { key: 'detail', label: '详情', onClick: () => onView(record) },
+          ]}
+        />
       ),
     },
   ]

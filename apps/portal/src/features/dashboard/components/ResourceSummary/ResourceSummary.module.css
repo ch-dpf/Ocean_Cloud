@@ -73,7 +73,8 @@
 }
 
 .green span {
-  background: #089466;
+  /* 与 packages/ui 的 STATUS_COLORS.done 一致，改色时两处一起改 */
+  background: #2fa84f;
 }
 
 @media (max-width: 760px) {
