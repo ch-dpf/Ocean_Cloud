@@ -21,6 +21,7 @@ export function getResources(signal?: AbortSignal) {
 默认超时 15 秒；支持 signal、params、headers、responseType 等 Axios 参数；请求失败始终 reject RequestError。
 `silentError: true` 仅关闭事件广播，不将失败转换为成功。
 请求实例不暴露给组件，不自动重试写请求，不假定登录页地址，也不进行自动 Token 刷新。
+读请求（GET）在**无响应、超时、服务端 5xx、429** 时自动重发一次（共两次尝试，间隔 500ms），两次都失败才广播错误；业务失败与 401/403/404/参数校验等 4xx 不重试，用户主动取消更不重试。
 
 ## 错误码和处理事件
 
