@@ -49,8 +49,8 @@ export const DATA_MANAGEMENT_SECTIONS = [
     activeIcon: dataManagementBlueIcon,
   },
   {
-    path: '/data-management/imports',
-    label: '导入记录',
+    path: '/data-management/transfers',
+    label: '传输记录',
     icon: ImportRecordIcon,
     activeIcon: ImportRecordBlueIcon,
   },

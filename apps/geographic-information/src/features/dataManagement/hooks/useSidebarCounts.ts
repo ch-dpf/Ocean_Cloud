@@ -1,22 +1,29 @@
 import { useEffect, useState } from 'react'
-import { getDeletedFileMetaPage } from '../services/fileMetaService'
-import { getFileOptPage } from '../services/fileOptService'
+import {
+  getDeletedFileMetaPage,
+  getFileMetaPage,
+} from '../services/fileMetaService'
+import { getTransferPage } from '../services/fileTransferService'
 
 interface SidebarCounts {
+  /** 全部数据（数据工作区）条数；未取到时为 null */
+  readonly workspaceTotal: number | null
   /** 回收站（已删除数据文件）条数；未取到时为 null */
   readonly recycleBinTotal: number | null
-  /** 导入记录条数；未取到时为 null */
-  readonly importRecordTotal: number | null
+  /** 传输记录条数；未取到时为 null */
+  readonly transferTotal: number | null
 }
 
 const EMPTY_COUNTS: SidebarCounts = {
+  workspaceTotal: null,
   recycleBinTotal: null,
-  importRecordTotal: null,
+  transferTotal: null,
 }
 
 /**
- * 侧边栏「回收站」「导入记录」的计数：各发一个 size=1 的轻量请求，只取 total。
- * 「全部数据」的计数由数据列表请求带回（useFileMetaPage 的 allTotal），不在这里重复取。
+ * 侧边栏「全部数据」「回收站」「传输记录」的计数：各发一个 size=1 的轻量请求，只取 total。
+ * 这三个计数与当前停在哪个栏目无关：放在页面级一次性取回，切到传输记录、回收站后
+ * 「全部数据」的条数才不会因为数据列表未发起请求而消失。
  * 单个请求失败保留上一次的数字，不把已有的计数清空。
  */
 export function useSidebarCounts() {
@@ -26,20 +33,27 @@ export function useSidebarCounts() {
   useEffect(() => {
     const controller = new AbortController()
     Promise.all([
+      getFileMetaPage({ current: 1, size: 1 }, controller.signal).catch(
+        () => null,
+      ),
       getDeletedFileMetaPage({ current: 1, size: 1 }, controller.signal).catch(
         () => null,
       ),
-      getFileOptPage({ current: 1, size: 1 }, controller.signal).catch(
+      getTransferPage({ current: 1, size: 1 }, controller.signal).catch(
         () => null,
       ),
-    ]).then(([deleted, records]) => {
+    ]).then(([workspace, deleted, records]) => {
       // 主动取消不提示；其余错误同时由 RequestErrorNotice 统一展示
       if (controller.signal.aborted) return
       setCounts((previous) => ({
+        workspaceTotal:
+          workspace === null
+            ? previous.workspaceTotal
+            : Number(workspace.total),
         recycleBinTotal:
           deleted === null ? previous.recycleBinTotal : Number(deleted.total),
-        importRecordTotal:
-          records === null ? previous.importRecordTotal : Number(records.total),
+        transferTotal:
+          records === null ? previous.transferTotal : Number(records.total),
       }))
     })
     return () => controller.abort()

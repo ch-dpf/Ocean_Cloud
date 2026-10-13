@@ -55,6 +55,13 @@ export interface TaskPage {
   readonly records: readonly TaskRecord[]
 }
 
+/** 可发起发布的最小任务形状：任务行与任务详情都能满足，发布接口只需要这几项 */
+export interface TaskPublishTarget {
+  readonly id: string
+  readonly taskName: string
+  readonly processingType: string | null
+}
+
 /** 任务详情里的处理参数（/task/{taskId} 的 parameters；未使用的字段为 null） */
 export interface TaskDetailParameters {
   readonly targetCrs: string | null

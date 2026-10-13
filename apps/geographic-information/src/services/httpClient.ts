@@ -1,6 +1,8 @@
 import { createHttpClient } from '@ocean-cloud/http'
+/** 后端基地址：与实例的 baseURL 同源，供 <a> 直接下载等走不了封装的场景复用 */
+export const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api/gis'
 export const httpClient = createHttpClient({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/gis',
+  baseURL: apiBaseUrl,
   // 生产环境与主平台同域，sessionStorage 中的 token 共享
   getAccessToken: () => sessionStorage.getItem('token'),
   // 业务接口统一响应体：code 200 为成功，其余按业务错误处理

@@ -25,3 +25,19 @@ export function formatFileSize(sizeBytes: string | null | undefined): string {
   }
   return `${unit === 0 ? String(value) : value.toFixed(1)} ${SIZE_UNITS[unit]}`
 }
+
+/** 开始到结束的耗时；任一端缺失或时间非法时展示 —（表格与详情共用） */
+export function formatDuration(
+  start: string | null | undefined,
+  finish: string | null | undefined,
+): string {
+  if (!start || !finish) return '—'
+  const seconds = Math.round(
+    (new Date(finish).getTime() - new Date(start).getTime()) / 1000,
+  )
+  if (!Number.isFinite(seconds) || seconds < 0) return '—'
+  if (seconds < 60) return `${seconds} 秒`
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes} 分 ${seconds % 60} 秒`
+  return `${Math.floor(minutes / 60)} 小时 ${minutes % 60} 分`
+}

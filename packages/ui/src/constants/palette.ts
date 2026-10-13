@@ -30,3 +30,10 @@ export const PROGRESS_COLORS = {
   done: STATUS_COLORS.done,
   failed: STATUS_COLORS.failed,
 } as const
+
+/** 状态浅色底：用于需要整块上色的容器（如任务详情顶部卡片）；与 PROGRESS_COLORS 同组状态 */
+export const STATUS_TINTS = {
+  running: '#e8f1fd',
+  done: '#e0f7e8',
+  failed: '#fff4f4',
+} as const

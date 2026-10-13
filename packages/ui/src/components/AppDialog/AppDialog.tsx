@@ -42,6 +42,23 @@ export function AppDialog({
     if (!dialogRef.current?.open) dialogRef.current?.showModal()
   }, [])
 
+  // 弹窗打开期间锁住页面滚动：原生 showModal 只让背景不可交互，滚轮仍会滚动 document，
+  // 弹窗内滚到边界后背景就跟着动。隐藏滚动条会占掉宽度导致内容横向跳动，用等宽内边距补回。
+  useEffect(() => {
+    const { body, documentElement } = document
+    const previousOverflow = body.style.overflow
+    const previousPaddingRight = body.style.paddingRight
+    const scrollbarWidth = window.innerWidth - documentElement.clientWidth
+    body.style.overflow = 'hidden'
+    if (scrollbarWidth > 0) {
+      body.style.paddingRight = `${scrollbarWidth}px`
+    }
+    return () => {
+      body.style.overflow = previousOverflow
+      body.style.paddingRight = previousPaddingRight
+    }
+  }, [])
+
   const closeButton = (
     <button
       type="button"

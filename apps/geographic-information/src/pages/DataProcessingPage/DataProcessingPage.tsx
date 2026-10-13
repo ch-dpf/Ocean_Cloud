@@ -32,7 +32,7 @@ import {
   publishImageryFromTask,
   publishTerrainFromTask,
 } from '../../features/dataPublishing/services/publicationService'
-import type { TaskRecord } from '../../features/dataManagement/types/task'
+import type { TaskPublishTarget } from '../../features/dataManagement/types/task'
 
 /** 页签与任务状态的对应关系；「全部任务」不传 taskStatus */
 const STATUS_TABS = [
@@ -111,6 +111,13 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
     }
   })
 
+  // 详情弹窗要展示的实时进度：按 id 从当前 rows 里查即可，帧一到 rows 重算、弹窗随之刷新，
+  // 不额外存一份 state（列表可能翻页/刷新，行不在本页时退回 null，弹窗自行用快照兜底）
+  const detailRow =
+    detailTaskId === null
+      ? undefined
+      : rows.find((row) => row.id === detailTaskId)
+
   function handleTabClick(status: string) {
     setTaskStatus(status)
     // 同步筛选栏里的状态下拉，避免两处显示不一致
@@ -134,15 +141,15 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
     refresh()
   }
 
-  /** 发布已完成的任务：按处理类型分流到地形或影像发布接口 */
-  async function handlePublish(record: TaskRecord) {
-    if (!window.confirm(`确定发布任务「${record.taskName}」吗？`)) return
-    setPublishingId(record.id)
+  /** 发布已完成的任务：按处理类型分流到地形或影像发布接口（列表行与详情弹窗共用） */
+  async function handlePublish(target: TaskPublishTarget) {
+    if (!window.confirm(`确定发布任务「${target.taskName}」吗？`)) return
+    setPublishingId(target.id)
     try {
-      if (record.processingType === PROCESSING_TYPE_IMAGERY) {
-        await publishImageryFromTask(record.id)
+      if (target.processingType === PROCESSING_TYPE_IMAGERY) {
+        await publishImageryFromTask(target.id)
       } else {
-        await publishTerrainFromTask(record.id)
+        await publishTerrainFromTask(target.id)
       }
       refresh()
     } catch {
@@ -283,6 +290,10 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
       {detailTaskId !== null && (
         <TaskDetailDialog
           taskId={detailTaskId}
+          livePercent={detailRow?.livePercent ?? null}
+          liveStageCode={detailRow?.liveStageCode ?? ''}
+          onPublish={handlePublish}
+          publishing={detailRow !== undefined && publishingId === detailRow.id}
           onClose={() => setDetailTaskId(null)}
         />
       )}

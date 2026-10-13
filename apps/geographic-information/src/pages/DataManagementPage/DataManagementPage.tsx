@@ -10,17 +10,17 @@ import { DatasetEditDialog } from '../../features/dataManagement/components/Data
 import { DatasetSearch } from '../../features/dataManagement/components/DatasetSearch/DatasetSearch'
 import { FileImportDialog } from '../../features/dataManagement/components/FileImportDialog/FileImportDialog'
 import { FileMetaTable } from '../../features/dataManagement/components/FileMetaTable/FileMetaTable'
-import { FileOptDetailDialog } from '../../features/dataManagement/components/FileOptDetailDialog/FileOptDetailDialog'
-import { FileOptRecordTable } from '../../features/dataManagement/components/FileOptRecordTable/FileOptRecordTable'
 import { ProcessingCreateDialog } from '../../features/dataManagement/components/ProcessingCreateDialog/ProcessingCreateDialog'
 import type { ManagedSubmitInput } from '../../features/dataManagement/components/ProcessingCreateDialog/ProcessingCreateDialog'
+import { TransferDetailDialog } from '../../features/dataManagement/components/TransferDetailDialog/TransferDetailDialog'
+import { TransferRecordTable } from '../../features/dataManagement/components/TransferRecordTable/TransferRecordTable'
 import { UploadProgressDialog } from '../../features/dataManagement/components/UploadProgressDialog/UploadProgressDialog'
 import DocumentFolderIcon from '../../assets/icons/DocumentFolder.svg'
 import {
   DATASET_CATEGORY_LABELS,
   DATASET_CATEGORY_ORDER,
-  FILE_OPT_PAGE_SIZE,
   FILE_PAGE_SIZE,
+  TRANSFER_PAGE_SIZE,
 } from '../../features/dataManagement/constants/dataset'
 import {
   CATEGORY_PROCESSING_TYPES,
@@ -28,12 +28,12 @@ import {
 } from '../../features/dataManagement/constants/task'
 import { useDatasetCatalog } from '../../features/dataManagement/hooks/useDatasetCatalog'
 import { useFileMetaPage } from '../../features/dataManagement/hooks/useFileMetaPage'
-import { useFileOptPage } from '../../features/dataManagement/hooks/useFileOptPage'
 import { useSidebarCounts } from '../../features/dataManagement/hooks/useSidebarCounts'
+import { useTransferPage } from '../../features/dataManagement/hooks/useTransferPage'
 import { useUploadTasks } from '../../features/dataManagement/hooks/useUploadTasks'
 import {
+  buildFileDownloadUrl,
   deleteFileMeta,
-  downloadFileMeta,
   purgeDeletedFileMeta,
   restoreDeletedFileMeta,
 } from '../../features/dataManagement/services/fileMetaService'
@@ -41,7 +41,7 @@ import { uploadGisFiles } from '../../features/dataManagement/services/gisUpload
 import { deleteDataset } from '../../features/dataManagement/services/datasetService'
 import { createManagedProcessingTask } from '../../features/dataManagement/services/taskService'
 import type { GeoDataset } from '../../features/dataManagement/types/dataset'
-import type { FileOptFilters } from '../../features/dataManagement/types/fileOpt'
+import type { TransferFilters } from '../../features/dataManagement/types/fileTransfer'
 import type {
   FileMeta,
   FileMetaFilters,
@@ -54,7 +54,7 @@ interface DataManagementPageProps {
 
 const SECTION_DESCRIPTION: Readonly<Record<string, string>> = {
   '/data-management': '浏览、筛选与检索全部已登记的数据。',
-  '/data-management/imports': '查看数据导入记录与进度。',
+  '/data-management/transfers': '查看数据上传导入与下载导出的记录与进度。',
   '/data-management/recycle-bin': '恢复或彻底删除已移除的数据。',
 }
 
@@ -67,8 +67,8 @@ const WORKSPACE_LABEL = DATA_MANAGEMENT_SECTIONS[0].label
 /** 空筛选条件：引用稳定，避免每次渲染都触发查询条件比对 */
 const NO_FILE_FILTERS: FileMetaFilters = {}
 
-/** 导入记录的路径 */
-const IMPORTS_PATH = '/data-management/imports'
+/** 传输记录的路径 */
+const TRANSFERS_PATH = '/data-management/transfers'
 
 /** 回收站的路径 */
 const RECYCLE_BIN_PATH = '/data-management/recycle-bin'
@@ -91,19 +91,6 @@ type DatasetSelection =
       readonly dataSetName: string
     }
 
-/** 把二进制内容存成本地文件：临时 a 标签 + object URL，稍后再回收 */
-function saveBlob(blob: Blob, fileName: string) {
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = fileName
-  document.body.append(link)
-  link.click()
-  link.remove()
-  // 立即回收会让部分浏览器来不及读取，延后释放
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
-}
-
 export function DataManagementPage({ activePath }: DataManagementPageProps) {
   const active =
     DATA_MANAGEMENT_SECTIONS.find((item) => item.path === activePath) ??
@@ -116,7 +103,6 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
   const [isImportOpen, setIsImportOpen] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [processingId, setProcessingId] = useState<string | null>(null)
-  const [downloadingId, setDownloadingId] = useState<string | null>(null)
   const [isProgressOpen, setIsProgressOpen] = useState(false)
   // 数据集右键菜单触发的弹窗：详情、重命名与删除
   const [detailDataset, setDetailDataset] = useState<GeoDataset | null>(null)
@@ -136,16 +122,16 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     useState<FileMetaFilters>(NO_FILE_FILTERS)
   // 两类列表的每页条数，改动后由 hook 回到第 1 页
   const [filePageSize, setFilePageSize] = useState(FILE_PAGE_SIZE)
-  const [fileOptPageSize, setFileOptPageSize] = useState(FILE_OPT_PAGE_SIZE)
-  // 导入记录的筛选条件（记录编号、数据集、分类、状态、文件名、格式、创建时间）
-  const [fileOptFilters, setFileOptFilters] = useState<FileOptFilters>({})
+  const [transferPageSize, setTransferPageSize] = useState(TRANSFER_PAGE_SIZE)
+  // 传输记录的筛选条件（记录编号、传输类型、数据集、创建时间）
+  const [transferFilters, setTransferFilters] = useState<TransferFilters>({})
   // 打开详情弹窗的记录编号
   const [detailRecordNo, setDetailRecordNo] = useState<string | null>(null)
 
   const isWorkspace = active.path === WORKSPACE_PATH
-  const isImports = active.path === IMPORTS_PATH
+  const isTransfers = active.path === TRANSFERS_PATH
   const isRecycleBin = active.path === RECYCLE_BIN_PATH
-  // 数据目录的选择只在「全部数据」页面生效：切到导入记录、回收站后视为未选择
+  // 数据目录的选择只在「全部数据」页面生效：切到传输记录、回收站后视为未选择
   const activeSelection = isWorkspace ? selection : null
   const {
     datasets: allDatasets,
@@ -167,19 +153,23 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
   const {
     records,
     total,
-    allTotal,
     current,
     isLoading,
     error,
     goToPage,
     refresh: refreshFiles,
   } = useFileMetaPage(resolveFileScope(), fileFilters, filePageSize)
-  // 第三个参数是「当前是否停在导入记录栏目」：切到该栏目时变化，从而重新查询一次
-  const fileOptPage = useFileOptPage(fileOptFilters, fileOptPageSize, isImports)
-  const { refresh: refreshFileOpt } = fileOptPage
+  // 第三个参数是「当前是否停在传输记录栏目」：切到该栏目时变化，从而重新查询一次
+  const transferPage = useTransferPage(
+    transferFilters,
+    transferPageSize,
+    isTransfers,
+  )
+  const { refresh: refreshTransfer } = transferPage
   const {
+    workspaceTotal,
     recycleBinTotal,
-    importRecordTotal,
+    transferTotal,
     refresh: refreshSidebarCounts,
   } = useSidebarCounts()
   // 只展示导入任务的帧，处理任务的帧归数据处理页的「处理进度」
@@ -195,10 +185,10 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     if (newlyFinished.length === 0) return
     for (const task of newlyFinished) finishedTaskNos.current.add(task.taskNo)
     refreshFiles()
-    // 导入完成后「导入记录」列表与侧边栏计数都变了
+    // 导入完成后「传输记录」列表与侧边栏计数都变了
     refreshSidebarCounts()
-    refreshFileOpt()
-  }, [tasks, refreshFiles, refreshSidebarCounts, refreshFileOpt])
+    refreshTransfer()
+  }, [tasks, refreshFiles, refreshSidebarCounts, refreshTransfer])
   // 导入弹窗的初始上下文：全部数据为空、分类为分类名、数据集为数据集名
   const selectedDataset =
     activeSelection !== null && activeSelection.kind === 'dataset'
@@ -335,19 +325,6 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     }
   }
 
-  /** 下载数据文件：取回二进制内容后交给浏览器保存 */
-  async function handleDownloadFile(record: FileMeta) {
-    setDownloadingId(record.id)
-    try {
-      const blob = await downloadFileMeta(record.id)
-      saveBlob(blob, record.originalName)
-    } catch {
-      // 失败提示由 RequestErrorNotice 统一展示
-    } finally {
-      setDownloadingId(null)
-    }
-  }
-
   /** 删除数据集：成功后刷新目录；若正选中该数据集则回到「全部数据」 */
   async function confirmDeleteDataset() {
     if (deletingDataset === null) return
@@ -387,24 +364,24 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     goToPage(page)
   }
 
-  /** 导入记录：每页条数变化时由 hook 回到第 1 页 */
-  function handleFileOptPageChange(page: number, size: number) {
-    setFileOptPageSize(size)
-    fileOptPage.goToPage(page)
+  /** 传输记录：每页条数变化时由 hook 回到第 1 页 */
+  function handleTransferPageChange(page: number, size: number) {
+    setTransferPageSize(size)
+    transferPage.goToPage(page)
   }
 
   /**
-   * 导入记录：点查询重新查询；条件与上次相同时也发一次请求（与主平台日志、发布页一致）。
+   * 传输记录：点查询重新查询；条件与上次相同时也发一次请求（与主平台日志、发布页一致）。
    * 条件确实变化时两者在同一次渲染里生效，只发一次请求。
    */
-  function handleFileOptSearch(filters: FileOptFilters) {
-    setFileOptFilters(filters)
-    fileOptPage.refresh()
+  function handleTransferSearch(filters: TransferFilters) {
+    setTransferFilters(filters)
+    transferPage.refresh()
   }
 
-  /** 导入记录：重置筛选条件，回到无筛选的第 1 页 */
-  function handleFileOptReset() {
-    setFileOptFilters({})
+  /** 传输记录：重置筛选条件，回到无筛选的第 1 页 */
+  function handleTransferReset() {
+    setTransferFilters({})
   }
 
   /**
@@ -421,16 +398,16 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     setFileFilters(NO_FILE_FILTERS)
   }
 
-  // 导入记录的数据集下拉：显示数据集名称，取不到名称时退回 id
+  // 传输记录的数据集下拉：显示数据集名称，取不到名称时退回 id
   const datasetFilterOptions = allDatasets.map((dataset) => ({
     value: dataset.id,
     label: dataset.dataSetName === '' ? dataset.id : dataset.dataSetName,
   }))
 
-  // 侧边栏各栏目的计数：全部数据用列表带回的全量条数，另两个来自轻量计数请求
+  // 侧边栏各栏目的计数：三个都来自轻量计数请求，与当前停在哪个栏目无关
   const sectionCounts: Readonly<Record<string, number | null>> = {
-    [WORKSPACE_PATH]: allTotal,
-    [IMPORTS_PATH]: importRecordTotal,
+    [WORKSPACE_PATH]: workspaceTotal,
+    [TRANSFERS_PATH]: transferTotal,
     [RECYCLE_BIN_PATH]: recycleBinTotal,
   }
   return (
@@ -655,25 +632,25 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
               ]}
             />
           </div>
-        ) : isImports ? (
+        ) : isTransfers ? (
           <div className={styles.contentPanel}>
             <div className={styles.contentHeader}>
               <div>
-                <h2>导入记录</h2>
-                <p>{SECTION_DESCRIPTION[IMPORTS_PATH] ?? ''}</p>
+                <h2>传输记录</h2>
+                <p>{SECTION_DESCRIPTION[TRANSFERS_PATH] ?? ''}</p>
               </div>
             </div>
-            <FileOptRecordTable
-              records={fileOptPage.records}
-              isLoading={fileOptPage.isLoading}
-              error={fileOptPage.error}
-              current={fileOptPage.current}
-              total={fileOptPage.total}
-              pageSize={fileOptPageSize}
-              onPageChange={handleFileOptPageChange}
+            <TransferRecordTable
+              records={transferPage.records}
+              isLoading={transferPage.isLoading}
+              error={transferPage.error}
+              current={transferPage.current}
+              total={transferPage.total}
+              pageSize={transferPageSize}
+              onPageChange={handleTransferPageChange}
               datasetOptions={datasetFilterOptions}
-              onSearch={handleFileOptSearch}
-              onReset={handleFileOptReset}
+              onSearch={handleTransferSearch}
+              onReset={handleTransferReset}
               onDetail={(record) => setDetailRecordNo(record.recordNo)}
             />
           </div>
@@ -724,9 +701,13 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                     undefined,
                 },
                 {
+                  // 下载走 <a> 原生导航：整份文件流式落盘，不进内存、不经过 axios。
+                  // 代价是带不上 Authorization 头，也没有「下载中…」状态与失败提示
                   label: '下载',
-                  onClick: (record) => void handleDownloadFile(record),
-                  pendingId: downloadingId,
+                  link: (record) => ({
+                    href: buildFileDownloadUrl(record.id),
+                    download: record.originalName,
+                  }),
                 },
                 {
                   label: '删除',
@@ -813,7 +794,7 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
         />
       )}
       {detailRecordNo !== null && (
-        <FileOptDetailDialog
+        <TransferDetailDialog
           recordNo={detailRecordNo}
           onClose={() => setDetailRecordNo(null)}
         />

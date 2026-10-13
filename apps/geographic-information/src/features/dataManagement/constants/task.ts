@@ -45,8 +45,8 @@ export function toInputKindLabel(kind: string): string {
 
 /** 任务输入项状态（inputs[].inputStatus）；未命中的取值按原样展示 */
 export const INPUT_STATUS_LABELS: Readonly<Record<string, string>> = {
-  PENDING: '待处理',
-  CONSUMED: '已消费',
+  PENDING: '处理中',
+  CONSUMED: '已处理',
   FAILED: '失败',
   SKIPPED: '已跳过',
 }
@@ -78,13 +78,31 @@ export function toSourceTypeLabel(type: string): string {
   return SOURCE_TYPE_LABELS[type] ?? type
 }
 
-/** 文件操作类型名称（fileOpt 的 operationType）；未命中的取值按原样展示 */
+/** 传输类型代号：上传导入 */
+export const OPERATION_TYPE_IMPORT = 'IMPORT'
+/** 传输类型代号：下载导出 */
+export const OPERATION_TYPE_EXPORT = 'EXPORT'
+
+/**
+ * 传输类型名称（file-transfer-records 的 operationType）；未命中的取值按原样展示。
+ * 该接口只定义 IMPORT / EXPORT 两种，其余取值走 toOperationTypeLabel 的兜底
+ */
 export const OPERATION_TYPE_LABELS: Readonly<Record<string, string>> = {
-  IMPORT: '导入',
-  PROCESS: '处理',
-  PUBLISH: '发布',
-  EXPORT: '导出',
+  [OPERATION_TYPE_IMPORT]: '上传导入',
+  [OPERATION_TYPE_EXPORT]: '下载导出',
 }
+
+/** 传输记录搜索栏的类型下拉选项 */
+export const OPERATION_TYPE_OPTIONS = [
+  {
+    value: OPERATION_TYPE_IMPORT,
+    label: OPERATION_TYPE_LABELS[OPERATION_TYPE_IMPORT],
+  },
+  {
+    value: OPERATION_TYPE_EXPORT,
+    label: OPERATION_TYPE_LABELS[OPERATION_TYPE_EXPORT],
+  },
+] as const
 
 export function toOperationTypeLabel(type: string): string {
   return OPERATION_TYPE_LABELS[type] ?? type

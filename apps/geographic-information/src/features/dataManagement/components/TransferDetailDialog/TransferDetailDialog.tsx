@@ -2,17 +2,17 @@ import { useEffect, useState } from 'react'
 import { Table } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { AppDialog, formatFileSize, formatTime } from '@ocean-cloud/ui'
-import styles from './FileOptDetailDialog.module.css'
+import styles from './TransferDetailDialog.module.css'
 import { toOperationTypeLabel, toTaskStatusLabel } from '../../constants/task'
-import { getFileOptDetail } from '../../services/fileOptService'
-import type { FileOptFile, FileOptRecord } from '../../types/fileOpt'
+import { getTransferDetail } from '../../services/fileTransferService'
+import type { TransferFile, TransferRecord } from '../../types/fileTransfer'
 
-interface FileOptDetailDialogProps {
+interface TransferDetailDialogProps {
   readonly recordNo: string
   readonly onClose: () => void
 }
 
-const FILE_COLUMNS: TableColumnsType<FileOptFile> = [
+const FILE_COLUMNS: TableColumnsType<TransferFile> = [
   {
     title: '序号',
     key: 'index',
@@ -39,13 +39,13 @@ const FILE_COLUMNS: TableColumnsType<FileOptFile> = [
 ]
 
 /** 概览字段：与详情接口返回的记录级字段一一对应 */
-function buildSummaryFields(record: FileOptRecord): readonly {
+function buildSummaryFields(record: TransferRecord): readonly {
   readonly label: string
   readonly value: string
 }[] {
   return [
     { label: '记录编号', value: record.recordNo },
-    { label: '操作类型', value: toOperationTypeLabel(record.operationType) },
+    { label: '传输类型', value: toOperationTypeLabel(record.operationType) },
     { label: '数据集', value: record.dataSetName ?? record.dataSetId },
     { label: '记录状态', value: toTaskStatusLabel(record.recordStatus) },
     { label: '当前阶段', value: toTaskStatusLabel(record.currentStage) },
@@ -62,18 +62,18 @@ function buildSummaryFields(record: FileOptRecord): readonly {
   ]
 }
 
-/** 导入记录详情：上半部分是记录级概览，下半部分是该记录下的文件列表 */
-export function FileOptDetailDialog({
+/** 传输记录详情：上半部分是记录级概览，下半部分是该记录下的文件列表 */
+export function TransferDetailDialog({
   recordNo,
   onClose,
-}: FileOptDetailDialogProps) {
-  const [detail, setDetail] = useState<FileOptRecord | null>(null)
+}: TransferDetailDialogProps) {
+  const [detail, setDetail] = useState<TransferRecord | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
-    getFileOptDetail(recordNo, controller.signal)
+    getTransferDetail(recordNo, controller.signal)
       .then((record) => {
         setDetail(record)
         setIsLoading(false)
@@ -91,7 +91,7 @@ export function FileOptDetailDialog({
 
   return (
     <AppDialog
-      title="导入记录详情"
+      title="传输记录详情"
       onClose={onClose}
       closeOutside
       className={styles.dialog}
@@ -120,7 +120,7 @@ export function FileOptDetailDialog({
             )}
 
             <p className={styles.sectionTitle}>文件列表（{files.length}）</p>
-            <Table<FileOptFile>
+            <Table<TransferFile>
               rowKey="id"
               columns={FILE_COLUMNS}
               dataSource={[...files]}

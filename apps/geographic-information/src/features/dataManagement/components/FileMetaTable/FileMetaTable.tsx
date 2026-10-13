@@ -25,6 +25,14 @@ export interface FileRowAction {
   readonly disabled?: boolean | ((record: FileMeta) => boolean)
   /** 按钮色调：danger 为红色（删除类），默认蓝色 */
   readonly tone?: 'default' | 'danger'
+  /**
+   * 渲染成 <a> 直接发起导航下载（浏览器原生落盘，不经 axios）。
+   * 与 onClick 互斥，pendingId / disabled 对它均不生效——导航请求带不上请求头，也回传不了状态
+   */
+  readonly link?: (record: FileMeta) => {
+    readonly href: string
+    readonly download: string
+  }
 }
 
 interface FileMetaTableProps {
@@ -113,11 +121,14 @@ function buildColumns(
               typeof item.disabled === 'function'
                 ? item.disabled(record)
                 : item.disabled === true
+            const link = item.link?.(record)
             return {
               key: item.label,
               label: isPending ? '处理中…' : item.label,
               tone: item.tone === 'danger' ? 'danger' : 'default',
               disabled: isRowDisabled || isPending,
+              href: link?.href,
+              download: link?.download,
               onClick:
                 item.onClick === undefined
                   ? undefined

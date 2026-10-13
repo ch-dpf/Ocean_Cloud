@@ -7,6 +7,7 @@ import {
   STATUS_COLORS,
   TableActions,
   cellText,
+  copyText,
   formatTime,
 } from '@ocean-cloud/ui'
 import type { StatusTone } from '@ocean-cloud/ui'
@@ -68,35 +69,6 @@ const COPY_HINT_MS = 1600
 interface CopyHint {
   readonly rowKey: string
   readonly ok: boolean
-}
-
-/**
- * 写文本到剪贴板：优先用剪贴板 API，非安全上下文（http 访问）下它不存在或被拒，
- * 此时退回临时 textarea + execCommand 的老方案。返回是否写入成功，供界面给提示。
- */
-async function writeToClipboard(value: string): Promise<boolean> {
-  if (navigator.clipboard !== undefined) {
-    try {
-      await navigator.clipboard.writeText(value)
-      return true
-    } catch {
-      // 继续尝试下面的兜底方案
-    }
-  }
-  try {
-    const textarea = document.createElement('textarea')
-    textarea.value = value
-    // 放在视口外并透明，避免影响布局与滚动
-    textarea.style.position = 'fixed'
-    textarea.style.opacity = '0'
-    document.body.append(textarea)
-    textarea.select()
-    const ok = document.execCommand('copy')
-    textarea.remove()
-    return ok
-  } catch {
-    return false
-  }
 }
 
 /** 列定义；序号需要按当前页换算，因此每次渲染重建 */
@@ -288,7 +260,7 @@ export function PublicationTable({
 
   /** 点击服务地址格：复制后在本行闪现结果，避免依赖全局轻提示组件 */
   async function handleCopy(record: PublicationRow) {
-    const ok = await writeToClipboard(record.serviceUrl)
+    const ok = await copyText(record.serviceUrl)
     const hint: CopyHint = { rowKey: record.rowKey, ok }
     setCopyHint(hint)
     window.setTimeout(() => {

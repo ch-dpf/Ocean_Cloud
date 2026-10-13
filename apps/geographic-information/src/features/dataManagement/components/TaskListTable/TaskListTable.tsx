@@ -6,6 +6,7 @@ import {
   STATUS_FALLBACK_COLOR,
   SearchTable,
   TableActions,
+  formatDuration,
   formatTime,
 } from '@ocean-cloud/ui'
 import {
@@ -79,19 +80,6 @@ function splitTaskName(taskName: string): {
   return {
     name: taskName.slice(0, index),
   }
-}
-
-/** 开始到结束的耗时；任务未结束时展示 — */
-function formatDuration(start: string | null, finish: string | null): string {
-  if (!start || !finish) return '—'
-  const seconds = Math.round(
-    (new Date(finish).getTime() - new Date(start).getTime()) / 1000,
-  )
-  if (!Number.isFinite(seconds) || seconds < 0) return '—'
-  if (seconds < 60) return `${seconds} 秒`
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes} 分 ${seconds % 60} 秒`
-  return `${Math.floor(minutes / 60)} 小时 ${minutes % 60} 分`
 }
 
 /**

@@ -11,6 +11,13 @@ export interface TableAction {
   readonly tone?: TableActionTone
   readonly disabled?: boolean
   readonly onClick?: () => void
+  /**
+   * 给了 href 就渲染成 <a> 直接发起导航（如交给浏览器原生下载流式落盘），
+   * 此时不使用 onClick / disabled：导航请求无法附加自定义请求头，也无法回传状态
+   */
+  readonly href?: string
+  /** 仅 href 有效：<a download> 的保存文件名 */
+  readonly download?: string
 }
 
 interface TableActionsProps {
@@ -22,6 +29,7 @@ interface TableActionsProps {
 /**
  * 表格操作列的按钮组：无边框、无底色、只有文字（仍是真的 button），
  * 悬停只改 cursor。原先这份样式在 6 张表里各存了一份。
+ * 需要直接导航（下载）时给 TableAction.href，改为渲染同款样式的 <a>。
  */
 export function TableActions({
   justify = 'between',
@@ -31,21 +39,34 @@ export function TableActions({
     justify === 'evenly' ? styles.actionsEvenly : styles.actionsBetween
   return (
     <span className={`${styles.actions} ${justifyClass}`}>
-      {actions.map((action) => (
-        <button
-          key={action.key}
-          type="button"
-          className={`${styles.button} ${
-            action.tone === 'danger'
-              ? styles.buttonDanger
-              : styles.buttonDefault
-          }`}
-          onClick={action.onClick}
-          disabled={action.disabled ?? false}
-        >
-          {action.label}
-        </button>
-      ))}
+      {actions.map((action) => {
+        const className = `${styles.button} ${
+          action.tone === 'danger' ? styles.buttonDanger : styles.buttonDefault
+        }`
+        if (action.href !== undefined) {
+          return (
+            <a
+              key={action.key}
+              className={`${className} ${styles.link}`}
+              href={action.href}
+              download={action.download}
+            >
+              {action.label}
+            </a>
+          )
+        }
+        return (
+          <button
+            key={action.key}
+            type="button"
+            className={className}
+            onClick={action.onClick}
+            disabled={action.disabled ?? false}
+          >
+            {action.label}
+          </button>
+        )
+      })}
     </span>
   )
 }

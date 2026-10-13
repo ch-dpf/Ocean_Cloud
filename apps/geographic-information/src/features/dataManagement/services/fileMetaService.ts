@@ -1,4 +1,4 @@
-import { httpClient } from '../../../services/httpClient'
+import { apiBaseUrl, httpClient } from '../../../services/httpClient'
 import type { ApiResult } from '../../../services/apiResult'
 import type {
   FileMeta,
@@ -92,12 +92,10 @@ export async function deleteFileMeta(id: string): Promise<void> {
 }
 
 /**
- * 下载数据文件内容：接口返回二进制流，由调用方保存为本地文件。
- * 下载耗时不可控，因此放开实例上 15 秒的默认超时。
+ * 数据文件的下载直链：交给浏览器原生导航下载（<a href>），整个文件流式落盘，
+ * 不经过 axios，因此不会把文件读进内存。导航请求无法附加 Authorization 头，
+ * 所以该地址不带鉴权，由后端放行（详见 DataManagementPage 的下载按钮）。
  */
-export async function downloadFileMeta(id: string): Promise<Blob> {
-  return httpClient.get<Blob>(
-    '/filemeta/' + encodeURIComponent(id) + '/download',
-    { responseType: 'blob', timeout: 0 },
-  )
+export function buildFileDownloadUrl(id: string): string {
+  return `${apiBaseUrl}/filemeta/${encodeURIComponent(id)}/download`
 }

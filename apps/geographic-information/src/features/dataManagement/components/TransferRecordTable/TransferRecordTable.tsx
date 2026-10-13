@@ -1,6 +1,6 @@
 import { Form, Input, Select } from 'antd'
 import type { TableColumnsType } from 'antd'
-import styles from './FileOptRecordTable.module.css'
+import styles from './TransferRecordTable.module.css'
 import {
   SearchTable,
   StatusDot,
@@ -8,11 +8,15 @@ import {
   formatTime,
   type StatusTone,
 } from '@ocean-cloud/ui'
-import { toOperationTypeLabel, toTaskStatusLabel } from '../../constants/task'
-import type { FileOptFilters, FileOptRecord } from '../../types/fileOpt'
+import {
+  OPERATION_TYPE_OPTIONS,
+  toOperationTypeLabel,
+  toTaskStatusLabel,
+} from '../../constants/task'
+import type { TransferFilters, TransferRecord } from '../../types/fileTransfer'
 
-interface FileOptRecordTableProps {
-  readonly records: readonly FileOptRecord[]
+interface TransferRecordTableProps {
+  readonly records: readonly TransferRecord[]
   readonly isLoading: boolean
   readonly error: string | null
   readonly current: number
@@ -26,11 +30,11 @@ interface FileOptRecordTableProps {
     readonly label: string
   }[]
   /** 点击搜索，回传本次筛选条件（已去除空值） */
-  readonly onSearch: (filters: FileOptFilters) => void
+  readonly onSearch: (filters: TransferFilters) => void
   /** 点击重置（表单已重置后触发） */
   readonly onReset: () => void
   /** 点击详情 */
-  readonly onDetail: (record: FileOptRecord) => void
+  readonly onDetail: (record: TransferRecord) => void
 }
 
 /**
@@ -46,17 +50,17 @@ const STATUS_TONES: Readonly<Record<string, StatusTone>> = {
 }
 
 /** 待处理与失败数合成一列，避免列太多 */
-function formatCounts(record: FileOptRecord): string {
+function formatCounts(record: TransferRecord): string {
   const failed = record.failedCount > 0 ? `（失败 ${record.failedCount}）` : ''
   return `${record.completedCount} / ${record.totalCount}${failed}`
 }
 
-/** 列定义；序号需要按当前页换算，因此每次渲染重建；列宽合计 1510 */
+/** 列定义；序号需要按当前页换算，因此每次渲染重建；列宽合计 1430 */
 function buildColumns(
   current: number,
   pageSize: number,
-  onDetail: (record: FileOptRecord) => void,
-): TableColumnsType<FileOptRecord> {
+  onDetail: (record: TransferRecord) => void,
+): TableColumnsType<TransferRecord> {
   return [
     {
       title: '序号',
@@ -73,7 +77,7 @@ function buildColumns(
       render: (_, record) => record.dataSetName ?? record.dataSetId,
     },
     {
-      title: '操作类型',
+      title: '传输类型',
       key: 'operationType',
       width: 110,
       render: (_, record) => toOperationTypeLabel(record.operationType),
@@ -151,21 +155,23 @@ function toDayEnd(value: string): string | undefined {
 }
 
 /** 表单值转查询条件：空值不提交 */
-function toFilters(values: Record<string, unknown>): FileOptFilters {
+function toFilters(values: Record<string, unknown>): TransferFilters {
   const recordNo = toText(values.recordNo)
+  const operationType = toText(values.operationType)
   const dataSetId = typeof values.dataSetId === 'string' ? values.dataSetId : ''
   const createTimeStart = toDayStart(toText(values.createTimeStart))
   const createTimeEnd = toDayEnd(toText(values.createTimeEnd))
   return {
     ...(recordNo === '' ? {} : { recordNo }),
+    ...(operationType === '' ? {} : { operationType }),
     ...(dataSetId === '' ? {} : { dataSetId }),
     ...(createTimeStart === undefined ? {} : { createTimeStart }),
     ...(createTimeEnd === undefined ? {} : { createTimeEnd }),
   }
 }
 
-/** 导入记录：按记录编号、数据集与创建时间筛选 */
-export function FileOptRecordTable({
+/** 传输记录：按记录编号、传输类型、数据集与创建时间筛选 */
+export function TransferRecordTable({
   records,
   isLoading,
   error,
@@ -177,9 +183,9 @@ export function FileOptRecordTable({
   onSearch,
   onReset,
   onDetail,
-}: FileOptRecordTableProps) {
+}: TransferRecordTableProps) {
   return (
-    <SearchTable<FileOptRecord>
+    <SearchTable<TransferRecord>
       columns={buildColumns(current, pageSize, onDetail)}
       dataSource={records}
       rowKey="id"
@@ -190,12 +196,20 @@ export function FileOptRecordTable({
       onPageChange={onPageChange}
       onSearch={(values) => onSearch(toFilters(values))}
       onReset={onReset}
-      scrollX={1510}
+      scrollX={1430}
       emptyText={error ?? undefined}
       searchFormItems={
         <>
           <Form.Item label="记录编号" name="recordNo">
             <Input placeholder="请输入记录编号" allowClear />
+          </Form.Item>
+          <Form.Item label="传输类型" name="operationType">
+            <Select
+              placeholder="全部类型"
+              allowClear
+              style={{ width: 140 }}
+              options={[...OPERATION_TYPE_OPTIONS]}
+            />
           </Form.Item>
           <Form.Item label="数据集" name="dataSetId">
             <Select

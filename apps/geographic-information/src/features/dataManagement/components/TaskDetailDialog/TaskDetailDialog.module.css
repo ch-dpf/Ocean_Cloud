@@ -2,16 +2,18 @@
 .dialog {
   display: flex;
   flex-direction: column;
-  width: min(1180px, 94vw);
+  width: min(800px, 85vw);
   max-height: 88vh;
 }
-/* 内容区自行滚动，弹窗框与关闭按钮保持不动 */
+/* 内容区自行滚动，弹窗框与关闭按钮保持不动；
+   overscroll-behavior: contain 让滚到顶/底后不再把滚动传给页面（否则背景会跟着滚） */
 .body {
   display: flex;
   flex: 1;
   flex-direction: column;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .state {
@@ -20,12 +22,140 @@
   font-size: 13px;
 }
 
+/* 输入文件列表：行高 56px、行距 8px，容器高度刚好 3 行（3×56 + 2×8 = 184），
+   第 4 条起在列表内滚动；overscroll-behavior 让列表滚到边界后不再带动弹窗内容 */
+.inputList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 184px;
+  margin: 0;
+  /* 给滚动条留出位置，避免压住行内容 */
+  padding: 0 6px 0 0;
+  overflow-y: auto;
+  list-style: none;
+  overscroll-behavior: contain;
+}
+.inputItem {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+  height: 56px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: #f7fafc;
+}
+/* 处理类型图标：与顶部卡片同一个（整列一致），装饰性 */
+.inputIcon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+}
+/* 文件名与「扩展名 · 大小」上下两行，中间列可压缩以便省略号生效 */
+.inputIdentity {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.inputName {
+  overflow: hidden;
+  color: #173042;
+  font-family: Noto Sans SC;
+  font-weight: 600;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inputMeta {
+  color: #8394a0;
+  font-family: Noto Sans SC;
+  font-size: 12px;
+}
+/* 状态小签：浅底 + 同色文字，颜色由内联 style 给（见 INPUT_STATUS_TONES） */
+.inputStatus {
+  flex-shrink: 0;
+  padding: 0 8px;
+  border-radius: 4px;
+  font-family: Noto Sans SC;
+  font-size: 12px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+.inputEmpty {
+  margin: 0;
+  color: #81919e;
+  font-size: 12px;
+}
+
+/* 顶部状态卡片：浅色底由任务状态决定（内联 style 取自 STATUS_TINTS），文字统一深色 */
+.headerCard {
+  padding: 18px 20px 14px;
+  border-radius: 12px;
+  color: #13293d;
+}
+.headerMain {
+  display: flex;
+  align-items: center;
+  /* 图标与名称成组靠左，百分比自己靠右（见 .headerPercent 的 margin-left: auto） */
+  gap: 16px;
+}
+/* 处理类型图标：装饰性，尺寸固定避免撑高卡片 */
+.headerIcon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+}
+.headerIdentity {
+  min-width: 0;
+}
+.headerName {
+  margin: 0;
+  overflow: hidden;
+  color: #13293d;
+  font-size: 16px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.headerType {
+  margin: 4px 0 0;
+}
+/* 百分比颜色由内联 style 按状态给（状态饱和色），这里只管字号 */
+.headerPercent {
+  flex-shrink: 0;
+  /* 图标与名称成组靠左，百分比推到卡片最右 */
+  margin: 0 0 0 auto;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+/* 卡片底部细进度条：轨道用中性浅底（与任务表进度条一致），浅色卡片上才看得见；
+   填充色由内联 style 按状态给状态饱和色，宽度为百分比 */
+.headerTrack {
+  display: block;
+  height: 6px;
+  margin-top: 14px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #eef3f8;
+}
+.headerBar {
+  /* 必须显式块级：span 默认 inline，inline 上 width 不生效，彩条会整根消失 */
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.2s;
+}
+
 /* 概览字段：两列排布，值过长时省略并由 title 展示全量 */
 .summary {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 24px;
-  margin: 16px 0 0;
+  gap: 10px 15px;
+  margin: 0px 0 5px;
 }
 .summaryItem {
   display: flex;
@@ -36,13 +166,22 @@
 .summaryItem dt {
   flex-shrink: 0;
   width: 96px;
-  color: #8394a0;
+  color: #3f5665;
+  font-family: Noto Sans SC;
+  font-weight: 400;
+  font-style: Regular;
+  font-size: 12px;
 }
 .summaryItem dd {
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-family: Noto Sans SC;
+  font-weight: 400;
+  font-style: Regular;
+  font-size: 12px;
+  color: #3f5665;
 }
 
 .errorText {
@@ -53,12 +192,184 @@
 }
 
 .sectionTitle {
-  margin: 20px 0 10px;
-  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: Noto Sans SC;
   font-weight: 700;
+  font-size: 15px;
+  color: #173042;
+}
+/* 标题左侧小条：颜色由内联 style 按任务状态给（与顶部卡片进度条同色） */
+.sectionBar {
+  flex-shrink: 0;
+  width: 3px;
+  height: 20px;
+  border-radius: 2px;
 }
 .sectionTitle:first-of-type {
   margin-top: 16px;
+}
+
+/* 处理产物卡片：与顶部状态卡片同构（圆角浅底 + 一行内容），底色用中性浅色不与状态色混淆 */
+.artifactCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: #f2f6fa;
+}
+/* 卡片内标识左侧的产物图标：装饰性，尺寸固定避免撑高卡片 */
+.artifactIcon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+/* 产物标识：上一行按处理类型给「影像 / 地形 / 矢量产物」，下一行是切割层级；
+   段落默认上下外边距会撑高卡片，这里清零 */
+.artifactIdentity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+  font-family: Noto Sans SC;
+}
+.artifactTitle {
+  color: #173042;
+  font-weight: 700;
+  font-size: 15px;
+}
+.artifactZoom {
+  color: #576e85;
+  font-size: 12px;
+}
+/* 两个操作按钮推到卡片最右 */
+.artifactActions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+  margin-left: auto;
+}
+.artifactButton {
+  height: 28px;
+  padding: 0 14px;
+  border: 1px solid #dce6ec;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #13293d;
+  font-family: Noto Sans SC;
+  font-size: 12px;
+  cursor: pointer;
+}
+.artifactButton:hover:not(:disabled) {
+  border-color: #1267d6;
+  color: #1267d6;
+}
+/* 未接入接口 / 不满足发布条件：置灰且不可点 */
+.artifactButton:disabled {
+  color: #a9b7c2;
+  cursor: not-allowed;
+}
+
+/* 卡片下一行产物路径：单行省略，悬停由 title 展示全量 */
+.artifactPath {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  font-family: Noto Sans SC;
+  font-size: 12px;
+  background: #f7fafc;
+}
+.artifactPathText {
+  overflow: hidden;
+  min-width: 0;
+  color: #3f5665;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 产物路径的复制按钮：白底描边小按钮，图标 + 文字；字体按设计稿 11px / 700 / #1267d6 */
+.copyButton {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid #dce6ec;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #1267d6;
+  font-family: Noto Sans SC;
+  font-weight: 700;
+  font-size: 11px;
+  /* 100% 行高：小按钮里靠 flex 垂直居中，不额外撑高 */
+  line-height: 1;
+  cursor: pointer;
+}
+.copyButton:hover:not(:disabled) {
+  border-color: #1267d6;
+  background: #f2f7ff;
+}
+/* 产物路径为空时没东西可复制 */
+.copyButton:disabled {
+  border-color: #e6edf3;
+  color: #a9b7c2;
+  cursor: not-allowed;
+}
+/* 图标是写死蓝色的 SVG，置灰态靠透明度跟着变淡 */
+.copyButton:disabled .copyIcon {
+  opacity: 0.45;
+}
+.copyIcon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+
+/* 技术详情折叠区：原生 details，默认收起 */
+.details {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid rgb(19 41 61 / 10%);
+}
+.detailsSummary {
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.detailSubTitle {
+  margin: 16px 0 6px;
+  color: #8394a0;
+  font-size: 12px;
+  font-weight: 700;
+}
+/* 输入文件逐条明细：文件名 + SHA256/错误/创建时间，紧凑列表而非表格 */
+.inputDetailList {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.inputDetailItem {
+  padding: 6px 0;
+  font-size: 12px;
+  border-top: 1px dashed rgb(19 41 61 / 8%);
+}
+.inputDetailItem:first-child {
+  border-top: 0;
+}
+.inputDetailName {
+  font-weight: 600;
+}
+.inputDetailMeta {
+  display: block;
+  margin-top: 2px;
+  color: #8394a0;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 760px) {

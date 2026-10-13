@@ -7,7 +7,7 @@ import type {
   TaskPageQuery,
 } from '../types/task'
 
-/** 分页查询任务（导入记录） */
+/** 分页查询处理任务（数据处理页的任务列表） */
 export async function getTaskPage(
   query: TaskPageQuery,
   signal?: AbortSignal,

@@ -5,13 +5,15 @@
   width: min(1180px, 94vw);
   max-height: 88vh;
 }
-/* 内容区自行滚动，弹窗框与关闭按钮保持不动 */
+/* 内容区自行滚动，弹窗框与关闭按钮保持不动；
+   overscroll-behavior: contain 让滚到顶/底后不再把滚动传给页面 */
 .body {
   display: flex;
   flex: 1;
   flex-direction: column;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .state {

@@ -40,8 +40,8 @@ export function toProcessLabel(categoryId: number): string {
 /** 数据文件分页查询每页条数 */
 export const FILE_PAGE_SIZE = 10
 
-/** 文件操作记录（导入记录）分页查询每页条数 */
-export const FILE_OPT_PAGE_SIZE = 10
+/** 传输记录分页查询每页条数 */
+export const TRANSFER_PAGE_SIZE = 10
 
 /**
  * 「数据格式」筛选项：值即后端 extension 字段（小写、不带点），与列表里的数据格式列一致。
