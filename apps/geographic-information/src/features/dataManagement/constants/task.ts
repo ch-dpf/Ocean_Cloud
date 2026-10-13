@@ -3,12 +3,6 @@ import { DATASET_CATEGORY_IDS } from './dataset'
 /** 任务列表每页条数 */
 export const TASK_PAGE_SIZE = 10
 
-/** 任务类型：导入任务（/api/gis/task/page 的 taskType 参数） */
-export const TASK_TYPE_IMPORT = '1'
-
-/** 任务类型：切片（数据处理）任务 */
-export const TASK_TYPE_PROCESS = '2'
-
 /** 任务状态名称；未命中的取值按原样展示 */
 export const TASK_STATUS_LABELS: Readonly<Record<string, string>> = {
   QUEUED: '排队中',
@@ -69,9 +63,9 @@ export function toTileSetStatusLabel(status: string): string {
 
 /** 数据接入方式（task.sourceType）；未命中的取值按原样展示 */
 export const SOURCE_TYPE_LABELS: Readonly<Record<string, string>> = {
-  MANAGED_FILE: '本地文件',
-  FILE: '文件',
-  URL: '链接',
+  UPLOAD: '文件上传',
+  WORKSPACE: '工作空间',
+  MANAGED_FILE: '已管理文件',
 }
 
 export function toSourceTypeLabel(type: string): string {

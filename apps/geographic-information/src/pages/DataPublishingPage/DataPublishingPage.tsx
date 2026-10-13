@@ -8,10 +8,7 @@ import {
   PUBLICATION_STATUS,
 } from '../../features/dataPublishing/constants/publication'
 import { usePublicationPage } from '../../features/dataPublishing/hooks/usePublicationPage'
-import {
-  disableImageryPublication,
-  disableTerrainPublication,
-} from '../../features/dataPublishing/services/publicationService'
+import { disablePublication } from '../../features/dataPublishing/services/publicationService'
 import type {
   PublicationRow,
   PublicationScope,
@@ -76,18 +73,12 @@ export function DataPublishingPage({ activePath }: DataPublishingPageProps) {
     refresh()
   }
 
-  /**
-   * 停用服务：按记录类型分流到地形 / 影像接口（路径参数是 serviceCode）。
-   * 失败时抛错，由 ConfirmDialog 保留弹窗并交给 RequestErrorNotice 提示。
-   */
+  /** 停用服务；失败时由 ConfirmDialog 保留弹窗并交给统一错误提示。 */
   async function handleDisableConfirm() {
     if (disablingRow === null) return
     const { kind, serviceCode: code } = disablingRow
-    if (kind === 'imagery') {
-      await disableImageryPublication(code)
-    } else {
-      await disableTerrainPublication(code)
-    }
+    const processingType = kind.toUpperCase() as 'TERRAIN' | 'IMAGERY' | 'VECTOR'
+    await disablePublication(processingType, code)
     refresh()
   }
 

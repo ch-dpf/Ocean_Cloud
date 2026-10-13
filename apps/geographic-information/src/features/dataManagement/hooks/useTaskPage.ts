@@ -15,8 +15,6 @@ interface TaskPageData {
 interface UseTaskPageOptions {
   /** 不在该页面时传 false，不发起请求 */
   readonly enabled: boolean
-  /** 任务类型：1-上传、2-切片、3-发布、4-导出或下载 */
-  readonly taskType: string
   /** 处理类型：TERRAIN、IMAGERY、VECTOR；不传表示不按类型筛选 */
   readonly processingType?: string
   /** 任务状态；不传表示全部状态 */
@@ -30,13 +28,12 @@ interface UseTaskPageOptions {
  */
 export function useTaskPage({
   enabled,
-  taskType,
   processingType,
   taskStatus,
   size = TASK_PAGE_SIZE,
 }: UseTaskPageOptions) {
   const scopeKey = enabled
-    ? `${taskType}:${processingType ?? ''}:${taskStatus ?? ''}`
+    ? `${processingType ?? ''}:${taskStatus ?? ''}`
     : null
   const [paging, setPaging] = useState({ scopeKey, size, current: 1 })
   const [revision, setRevision] = useState(0)
@@ -51,7 +48,7 @@ export function useTaskPage({
     if (queryKey === null) return
     const controller = new AbortController()
     getTaskPage(
-      { current, size, taskType, processingType, taskStatus },
+      { current, size, processingType, taskStatus },
       controller.signal,
     )
       .then((page) => {
@@ -76,7 +73,7 @@ export function useTaskPage({
         })
       })
     return () => controller.abort()
-  }, [current, processingType, queryKey, size, taskStatus, taskType])
+  }, [current, processingType, queryKey, size, taskStatus])
 
   const ready = data !== null && data.key === queryKey
   return {

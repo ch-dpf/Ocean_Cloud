@@ -34,20 +34,21 @@ export interface TransferPageQuery extends TransferFilters {
 
 /** 记录里附带的文件（详情接口的 files，列表接口里为 null） */
 export interface TransferFile {
-  readonly id: string
-  readonly categoryId: string
-  readonly dataSetId: string
+  readonly recordItemId: string
+  readonly fileMetaId: string | null
+  readonly sequenceNo: number
+  readonly operationStatus: string
   readonly originalName: string
+  readonly storageName: string
+  readonly storageKey: string
+  readonly storageType: string
   readonly extension: string
   /** 字节数，后端以字符串返回 */
   readonly sizeBytes: string
   readonly sha256: string
-  readonly storageKey: string
-  readonly storageName: string
-  readonly storageType: string
+  readonly uploadedBy: string | null
   readonly uploadStatus: string
   readonly cleanupStatus: string
-  readonly uploadedBy: string | null
   readonly errorMessage: string | null
   readonly createTime: string
   readonly updateTime: string

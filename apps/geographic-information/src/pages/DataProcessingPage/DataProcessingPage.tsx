@@ -19,7 +19,6 @@ import {
   PROCESSING_TYPE_TERRAIN,
   PROCESSING_TYPE_VECTOR,
   TASK_PAGE_SIZE,
-  TASK_TYPE_PROCESS,
 } from '../../features/dataManagement/constants/task'
 import { useTaskPage } from '../../features/dataManagement/hooks/useTaskPage'
 import { useUploadTasks } from '../../features/dataManagement/hooks/useUploadTasks'
@@ -28,10 +27,7 @@ import {
   createProcessingTask,
   createWorkspaceProcessingTask,
 } from '../../features/dataManagement/services/taskService'
-import {
-  publishImageryFromTask,
-  publishTerrainFromTask,
-} from '../../features/dataPublishing/services/publicationService'
+import { publishFromTask } from '../../features/dataPublishing/services/publicationService'
 import type { TaskPublishTarget } from '../../features/dataManagement/types/task'
 
 /** 页签与任务状态的对应关系；「全部任务」不传 taskStatus */
@@ -76,7 +72,6 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
   const { records, total, current, isLoading, error, goToPage, refresh } =
     useTaskPage({
       enabled: true,
-      taskType: TASK_TYPE_PROCESS,
       processingType,
       taskStatus: taskStatus === '' ? undefined : taskStatus,
       size: pageSize,
@@ -141,16 +136,14 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
     refresh()
   }
 
-  /** 发布已完成的任务：按处理类型分流到地形或影像发布接口（列表行与详情弹窗共用） */
+  /** 发布已完成的任务；列表行与详情弹窗共用统一发布接口。 */
   async function handlePublish(target: TaskPublishTarget) {
     if (!window.confirm(`确定发布任务「${target.taskName}」吗？`)) return
+    const type = target.processingType
+    if (type !== PROCESSING_TYPE_IMAGERY && type !== PROCESSING_TYPE_TERRAIN) return
     setPublishingId(target.id)
     try {
-      if (target.processingType === PROCESSING_TYPE_IMAGERY) {
-        await publishImageryFromTask(target.id)
-      } else {
-        await publishTerrainFromTask(target.id)
-      }
+      await publishFromTask(type, target.id)
       refresh()
     } catch {
       // 失败提示由 RequestErrorNotice 统一展示

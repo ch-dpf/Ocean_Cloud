@@ -172,7 +172,9 @@ function buildTechFields(detail: TaskDetail): readonly SummaryField[] {
     { label: '任务编号', value: task.taskNo },
     {
       label: '数据接入方式',
-      value: task.sourceType ? toSourceTypeLabel(task.sourceType) : '—',
+      value:
+        task.sourceTypeName ??
+        (task.sourceType ? toSourceTypeLabel(task.sourceType) : '—'),
     },
     {
       label: '优先级',

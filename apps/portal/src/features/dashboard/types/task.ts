@@ -3,7 +3,6 @@ export interface TaskRecord {
   readonly id: string
   readonly taskNo: string
   readonly taskName: string
-  readonly taskType: string
   /** 任务状态：QUEUED、RUNNING、COMPLETED、PARTIAL_FAILED、FAILED */
   readonly taskStatus: string
   readonly currentStage: string
