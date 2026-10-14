@@ -16,8 +16,6 @@ export interface ProcessingParameters {
 export interface TaskPageQuery {
   readonly current: number
   readonly size: number
-  /** 任务类型：1-上传、2-切片、3-发布、4-导出或下载 */
-  readonly taskType: string
   /** 处理类型：TERRAIN、IMAGERY、VECTOR；不传表示不按类型筛选 */
   readonly processingType?: string
   /** 任务状态；不传表示全部状态 */
@@ -29,10 +27,8 @@ export interface TaskRecord {
   readonly id: string
   readonly taskNo: string
   readonly taskName: string
-  readonly taskType: string
   readonly taskStatus: string
-  readonly currentStage: string
-  readonly dataSetId: string | null
+  readonly currentStage: string | null
   /** 处理类型：TERRAIN、IMAGERY、VECTOR */
   readonly processingType: string | null
   readonly completedCount: string
@@ -43,8 +39,11 @@ export interface TaskRecord {
   readonly createTime: string
   readonly updateTime: string
   readonly errorMessage: string | null
-  /** 数据接入方式：FILE、URL */
+  /** 数据接入方式：UPLOAD、WORKSPACE、MANAGED_FILE */
   readonly sourceType: string | null
+  /** 后端按 sourceType 返回的中文名称 */
+  readonly sourceTypeName: string | null
+  readonly priority: number | null
 }
 
 /** 任务分页结果 */
@@ -104,6 +103,7 @@ export interface TaskDetailInfo {
   readonly taskStatus: string
   readonly currentStage: string | null
   readonly sourceType: string | null
+  readonly sourceTypeName: string | null
   readonly priority: number | null
   readonly completedCount: string
   readonly failedCount: string

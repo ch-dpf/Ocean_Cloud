@@ -146,7 +146,8 @@ function buildColumns(
       width: 130,
       ellipsis: true,
       render: (_, record) => {
-        const inputType = record.sourceType || ''
+        const inputType =
+          record.sourceTypeName ?? record.sourceType ?? ''
         return <span title={inputType}>{inputType}</span>
       },
     },

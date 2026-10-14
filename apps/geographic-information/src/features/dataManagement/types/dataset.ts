@@ -6,7 +6,6 @@ export interface GeoDataset {
   readonly description: string
   readonly categoryId: string
   readonly fileCount: number
-  readonly deleted: number
   readonly createTime: string
   readonly updateTime: string
 }

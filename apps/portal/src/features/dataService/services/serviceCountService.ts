@@ -33,5 +33,5 @@ export function getTaskTotal(signal?: AbortSignal): Promise<number | null> {
 export function getPublicationTotal(
   signal?: AbortSignal,
 ): Promise<number | null> {
-  return getPageTotal('/gis/terrain-publications/page', signal)
+  return getPageTotal('/gis/publications/page', signal)
 }

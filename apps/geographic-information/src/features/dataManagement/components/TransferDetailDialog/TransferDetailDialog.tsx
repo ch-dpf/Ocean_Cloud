@@ -27,7 +27,7 @@ const FILE_COLUMNS: TableColumnsType<TransferFile> = [
     width: 100,
     render: (_, record) => formatFileSize(record.sizeBytes),
   },
-  { title: '上传状态', dataIndex: 'uploadStatus', width: 110 },
+  { title: '操作状态', dataIndex: 'operationStatus', width: 110 },
   { title: 'SHA256', dataIndex: 'sha256', width: 240, ellipsis: true },
   { title: '存储路径', dataIndex: 'storageKey', width: 300, ellipsis: true },
   {
@@ -121,7 +121,7 @@ export function TransferDetailDialog({
 
             <p className={styles.sectionTitle}>文件列表（{files.length}）</p>
             <Table<TransferFile>
-              rowKey="id"
+              rowKey="recordItemId"
               columns={FILE_COLUMNS}
               dataSource={[...files]}
               size="small"
