@@ -1,8 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  getDeletedFileMetaPage,
-  getFileMetaPage,
-} from '../services/fileMetaService'
+import { getDeletedFileMetaPage, getFileMetaPage } from '../services/fileMetaService'
 import { getTransferPage } from '../services/fileTransferService'
 
 interface SidebarCounts {
@@ -47,9 +44,7 @@ export function useSidebarCounts() {
       if (controller.signal.aborted) return
       setCounts((previous) => ({
         workspaceTotal:
-          workspace === null
-            ? previous.workspaceTotal
-            : Number(workspace.total),
+          workspace === null ? previous.workspaceTotal : Number(workspace.total),
         recycleBinTotal:
           deleted === null ? previous.recycleBinTotal : Number(deleted.total),
         transferTotal:

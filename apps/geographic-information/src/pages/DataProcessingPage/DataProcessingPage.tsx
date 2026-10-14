@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { Form } from 'antd'
 import { SubNav } from '@ocean-cloud/ui'
 import styles from './DataProcessingPage.module.css'
-import { DATA_PROCESSING_SECTIONS } from '../../config/navigation'
+import {
+  DATA_PROCESSING_GROUPS,
+  DATA_PROCESSING_SECTIONS,
+} from '../../config/navigation'
 import { ProcessingCreateDialog } from '../../features/dataManagement/components/ProcessingCreateDialog/ProcessingCreateDialog'
 import type {
   LocalSubmitInput,
@@ -54,9 +57,12 @@ interface DataProcessingPageProps {
 }
 
 export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
-  const section =
-    DATA_PROCESSING_SECTIONS.find((item) => item.path === activePath) ??
-    DATA_PROCESSING_SECTIONS[0]
+  // 上层（原始数据处理任务）与下层（任务类型）互斥高亮：命中哪个就高亮哪个
+  const group = DATA_PROCESSING_GROUPS.find((item) => item.path === activePath)
+  const section = DATA_PROCESSING_SECTIONS.find(
+    (item) => item.path === activePath,
+  )
+  const activeItem = group ?? section
   // 页签与筛选栏的「任务状态」共用一份状态
   const [searchForm] = Form.useForm()
   const [taskStatus, setTaskStatus] = useState('')
@@ -70,8 +76,10 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
   // 只展示三类处理任务的帧（导入任务的帧归数据管理页的「上传进度」）
   const { tasks, clearFinished } = useUploadTasks(PROCESSING_TASK_KINDS)
   const runningCount = tasks.filter((task) => !task.done).length
-  // 左侧导航即分类入口：影像 / 矢量 / 地形任务分别按 processingType 过滤
-  const processingType = SECTION_PROCESSING_TYPES[section.path]
+  // 下层分类即入口：影像 / 矢量 / 地形任务分别按 processingType 过滤；
+  // 选中上层「原始数据处理任务」时不带处理类型，即展示全部任务
+  const processingType =
+    section === undefined ? undefined : SECTION_PROCESSING_TYPES[section.path]
 
   const { records, total, current, isLoading, error, goToPage, refresh } =
     useTaskPage({
@@ -202,17 +210,19 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
     <section className={styles.page}>
       <SubNav
         items={DATA_PROCESSING_SECTIONS}
-        activePath={section.path}
-        title={section.label}
-        subtitle="按处理类型筛选"
+        activePath={section === undefined ? '' : section.path}
+        topItems={DATA_PROCESSING_GROUPS}
+        topActivePath={group === undefined ? '' : group.path}
+        title="数据处理"
+        sectionTitle="任务类型"
       />
       <div className={styles.content}>
         <div className={styles.contentHeader}>
           <div>
             <h2>GIS数据处理</h2>
             <p>
-              {section.pending === true
-                ? `${section.label}接口待接入，暂展示全部任务`
+              {activeItem?.pending === true
+                ? `${activeItem.label}接口待接入，暂展示全部任务`
                 : '对影像、矢量、地形、倾斜模型和电子海图进行转换、切片与服务化处理'}
             </p>
           </div>

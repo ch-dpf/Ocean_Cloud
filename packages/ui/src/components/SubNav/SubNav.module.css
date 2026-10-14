@@ -25,13 +25,38 @@
   font-size: 11px;
 }
 
+/* 一组导航项的容器：分层后每层各占一块，避免两层的 padding 叠加 */
+.group {
+  padding: 12px;
+}
+/* 前面已有小标题时，下层不再重复留出顶部间距 */
+.groupTight {
+  padding-top: 0;
+}
+
 .list {
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin: 0;
-  padding: 12px;
+  padding: 0;
   list-style: none;
+}
+
+/* 上下两层之间的分隔线：与数据管理页的侧边栏分隔线同款 */
+.divider {
+  height: 1px;
+  margin: 8px 12px;
+  background: #e5e5e5;
+}
+
+/* 下层小标题：与数据管理页「数据目录」同款 */
+.sectionTitle {
+  margin: 0;
+  padding: 8px 12px 6px;
+  color: #8394a0;
+  font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  font-size: 12px;
 }
 
 .item {
@@ -169,6 +194,11 @@
 /* hover 时图标不参与切换，保持默认态 */
 .itemDisabled:hover .iconDefault {
   opacity: 1;
+}
+/* 禁用项的图标是写死蓝色的 SVG，去色并压暗，与禁用文字同一档灰度 */
+.itemDisabled .icon img {
+  filter: grayscale(1);
+  opacity: 0.5;
 }
 .chevronDisabled {
   display: inline-flex;

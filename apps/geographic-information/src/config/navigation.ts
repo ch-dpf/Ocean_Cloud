@@ -18,6 +18,7 @@ import AllServiceIcon from '../assets/icons/AllService.svg'
 import AllServiceBlueIcon from '../assets/icons/AllService_blue.svg'
 import AllTasksIcon from '../assets/icons/AllTasks.svg'
 import AllTasksBlueIcon from '../assets/icons/AllTasks_blue.svg'
+import ProductIcon from '../assets/icons/Product.svg'
 
 export const NAVIGATION_ITEMS = [
   {
@@ -77,16 +78,31 @@ export interface SubNavSection {
 }
 
 /**
- * 数据处理二级导航：全部任务 + 影像/矢量/地形三类按 processingType 过滤，
- * 倾斜模型与电子海图暂无对应枚举，置灰不可点。
+ * 数据处理上层导航：原始数据处理任务（即全部任务）+ 数据处理成果导出。
+ * 成果导出的接口尚未接入，先置灰不可点。
  */
-export const DATA_PROCESSING_SECTIONS: readonly SubNavSection[] = [
+export const DATA_PROCESSING_GROUPS: readonly SubNavSection[] = [
   {
     path: '/data-processing',
-    label: '全部任务',
+    label: '原始数据处理任务',
     icon: AllTasksIcon,
     activeIcon: AllTasksBlueIcon,
   },
+  {
+    path: '/data-processing/exports',
+    label: '数据处理成果导出',
+    icon: ProductIcon,
+    activeIcon: ProductIcon,
+    pending: true,
+    disabled: true,
+  },
+]
+
+/**
+ * 数据处理下层导航：任务类型分类。全部任务已上移为上层「原始数据处理任务」，
+ * 影像/矢量/地形按 processingType 过滤；倾斜模型与电子海图暂无对应枚举，置灰不可点。
+ */
+export const DATA_PROCESSING_SECTIONS: readonly SubNavSection[] = [
   {
     path: '/data-processing/imagery',
     label: '影像任务',
