@@ -69,20 +69,6 @@ const PROGRESS_BAR_COLORS: Readonly<Record<string, string>> = {
 }
 
 /**
- * 任务名称形如「地形目录处理：gDEM_N」：冒号前为任务名称，冒号后为输入数据。
- * 没有冒号时整串作为任务名称，输入数据展示 —。
- */
-function splitTaskName(taskName: string): {
-  readonly name: string
-} {
-  const index = taskName.search(/[:：]/)
-  if (index < 0) return { name: taskName }
-  return {
-    name: taskName.slice(0, index),
-  }
-}
-
-/**
  * 进度列的展示值：颜色一律由 REST 的 taskStatus 决定（终态只有后端说了算），
  * 条上方那行文字承担阶段信息 —— 进行中显示「阶段名 序号 · 百分比」，
  * 终态整条填满表示已结束，其中已完成带 100%，失败类不再显示进度。
@@ -130,13 +116,18 @@ function buildColumns(
     {
       title: '任务名称',
       key: 'taskName',
-      // 定宽后 ellipsis 才生效：手输的长任务名会截断，悬浮由 title 展示全量
+      // 定宽 200px，超长由单元格内部自己打省略号；
+      // 不开启列上的 ellipsis：它会给单元格加 overflow: hidden，把悬浮小签一起裁掉
       width: 200,
-      ellipsis: true,
-      render: (_, record) => {
-        const { name } = splitTaskName(record.taskName)
-        return <span title={record.taskName}>{name}</span>
-      },
+      render: (_, record) => (
+        <span className={styles.nameCell}>
+          <span className={styles.nameText}>{record.taskName}</span>
+          {/* 悬浮小签展示完整任务名；小签是单元格的子元素，鼠标移上去不会中断 hover */}
+          <span className={styles.nameTip} role="tooltip">
+            {record.taskName}
+          </span>
+        </span>
+      ),
     },
     {
       title: '数据接入方式',
@@ -146,8 +137,7 @@ function buildColumns(
       width: 130,
       ellipsis: true,
       render: (_, record) => {
-        const inputType =
-          record.sourceTypeName ?? record.sourceType ?? ''
+        const inputType = record.sourceTypeName ?? record.sourceType ?? ''
         return <span title={inputType}>{inputType}</span>
       },
     },

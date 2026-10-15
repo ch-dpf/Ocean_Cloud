@@ -1,3 +1,42 @@
+/* 任务名单元格：定宽内打省略号 + 悬浮小签展示完整名称。
+   .nameCell 必须 position: relative，小签才能相对它定位 */
+.nameCell {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+.nameText {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 悬浮小签：默认隐藏，鼠标移到任务名上后展示全量；白底描边，与页面其他小签同款 */
+.nameTip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  z-index: 3;
+  display: none;
+  max-width: 320px;
+  padding: 4px 8px;
+  transform: translateX(-50%);
+  border: 1px solid #dce6ec;
+  border-radius: 4px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 12%);
+  color: #13293d;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  /* 超长文件名需要断行，否则小签会被拉成很长一条 */
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.nameCell:hover .nameTip {
+  display: block;
+}
+
 /* 进度列：文字在条上方，条铺满单元格宽度 */
 .progress {
   display: flex;
