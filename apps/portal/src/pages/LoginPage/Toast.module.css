@@ -20,3 +20,9 @@
   color: #cf1322;
   border: 1px solid #ffa39e;
 }
+/* 会话过期等需要提醒但不属错误的提示 */
+.warning {
+  background: #fffbe6;
+  color: #d48806;
+  border: 1px solid #ffe58f;
+}

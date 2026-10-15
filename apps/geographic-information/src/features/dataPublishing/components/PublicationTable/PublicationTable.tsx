@@ -36,6 +36,8 @@ interface PublicationTableProps {
   readonly onSearch: (values: Record<string, unknown>) => void
   /** 点击重置（表单已重置后触发） */
   readonly onReset: () => void
+  /** 点击「查看」打开服务详情；不传时按钮仅作为占位展示 */
+  readonly onView?: (record: PublicationRow) => void
   /** 点击「停用」；不传时按钮仅作为占位展示 */
   readonly onDisable?: (record: PublicationRow) => void
 }
@@ -76,6 +78,7 @@ function buildColumns(
   scope: PublicationScope,
   current: number,
   pageSize: number,
+  onView: ((record: PublicationRow) => void) | undefined,
   onDisable: ((record: PublicationRow) => void) | undefined,
   copyHint: CopyHint | null,
   onCopy: (record: PublicationRow) => void,
@@ -221,8 +224,8 @@ function buildColumns(
             {
               key: 'view',
               label: '查看',
-              // 服务详情尚未接入，按钮先置灰占位
-              disabled: true,
+              onClick: onView === undefined ? undefined : () => onView(record),
+              disabled: onView === undefined,
             },
             {
               key: 'disable',
@@ -253,6 +256,7 @@ export function PublicationTable({
   onValuesChange,
   onSearch,
   onReset,
+  onView,
   onDisable,
 }: PublicationTableProps) {
   // 复制结果的短暂提示；到点后自动清空
@@ -275,6 +279,7 @@ export function PublicationTable({
         scope,
         current,
         pageSize,
+        onView,
         onDisable,
         copyHint,
         handleCopy,

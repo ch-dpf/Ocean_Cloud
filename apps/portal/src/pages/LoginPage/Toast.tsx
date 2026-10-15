@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import styles from './Toast.module.css'
 
-export type ToastType = 'success' | 'error'
+export type ToastType = 'success' | 'error' | 'warning'
 
 export interface ToastData {
   readonly id: number

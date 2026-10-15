@@ -31,6 +31,7 @@ import {
   createWorkspaceProcessingTask,
 } from '../../features/dataManagement/services/taskService'
 import { publishFromTask } from '../../features/dataPublishing/services/publicationService'
+import { createTileSetArchive } from '../../features/tileSetArchive/services/archiveService'
 import type { TaskPublishTarget } from '../../features/dataManagement/types/task'
 
 /** 页签与任务状态的对应关系；「全部任务」不传 taskStatus */
@@ -64,6 +65,7 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
   const [taskStatus, setTaskStatus] = useState('')
   const [pageSize, setPageSize] = useState(TASK_PAGE_SIZE)
   const [publishingId, setPublishingId] = useState<string | null>(null)
+  const [archivingId, setArchivingId] = useState<string | null>(null)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isProgressOpen, setIsProgressOpen] = useState(false)
   // 打开详情弹窗的任务 id；null 表示弹窗关闭
@@ -148,7 +150,8 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
   async function handlePublish(target: TaskPublishTarget) {
     if (!window.confirm(`确定发布任务「${target.taskName}」吗？`)) return
     const type = target.processingType
-    if (type !== PROCESSING_TYPE_IMAGERY && type !== PROCESSING_TYPE_TERRAIN) return
+    if (type !== PROCESSING_TYPE_IMAGERY && type !== PROCESSING_TYPE_TERRAIN)
+      return
     setPublishingId(target.id)
     try {
       await publishFromTask(type, target.id)
@@ -157,6 +160,22 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
       // 失败提示由 RequestErrorNotice 统一展示
     }
     setPublishingId(null)
+  }
+
+  /**
+   * 归档已完成的任务：把它的瓦片集打成静态成果包，去「数据处理成果导出」页看进度。
+   * 归档是后台任务，提交成功后刷新列表；失败提示由 RequestErrorNotice 统一展示。
+   */
+  async function handleArchive(target: TaskPublishTarget) {
+    if (!window.confirm(`确定归档任务「${target.taskName}」吗？`)) return
+    setArchivingId(target.id)
+    try {
+      await createTileSetArchive(target.id)
+      refresh()
+    } catch {
+      // 失败提示由 RequestErrorNotice 统一展示
+    }
+    setArchivingId(null)
   }
 
   /**
@@ -270,6 +289,8 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
           onView={(record) => setDetailTaskId(record.id)}
           onPublish={handlePublish}
           publishingId={publishingId}
+          onArchive={handleArchive}
+          archivingId={archivingId}
         />
       </div>
       {isCreateOpen && (

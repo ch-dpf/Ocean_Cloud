@@ -1,0 +1,32 @@
+/* 进度列：状态与进度合成一条，文字在条上方、条铺满单元格宽度。
+   与任务列表（TaskListTable）同款，便于两处观感一致 */
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+.progressTrack {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #eef3f8;
+}
+.progressBar {
+  /* 必须显式块级：span 默认 inline，inline 上 width / height 都不生效，彩条会整根消失 */
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  /* 收到新的实时帧时让条平滑过去，而不是瞬变 */
+  transition: width 0.2s;
+}
+/* 状态 + 阶段 + 百分比；高度固定，避免没有文字时行高变化 */
+.progressText {
+  min-height: 16px;
+  color: #576e85;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}

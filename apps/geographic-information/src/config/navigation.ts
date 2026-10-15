@@ -77,9 +77,12 @@ export interface SubNavSection {
   readonly disabled?: boolean
 }
 
+/** 数据处理成果导出的路径：与「原始数据处理任务」共用同一页面的两层导航 */
+export const DATA_PROCESSING_EXPORTS_PATH = '/data-processing/exports'
+
 /**
  * 数据处理上层导航：原始数据处理任务（即全部任务）+ 数据处理成果导出。
- * 成果导出的接口尚未接入，先置灰不可点。
+ * 后者是有独立页面的归档成果包列表
  */
 export const DATA_PROCESSING_GROUPS: readonly SubNavSection[] = [
   {
@@ -89,12 +92,10 @@ export const DATA_PROCESSING_GROUPS: readonly SubNavSection[] = [
     activeIcon: AllTasksBlueIcon,
   },
   {
-    path: '/data-processing/exports',
+    path: DATA_PROCESSING_EXPORTS_PATH,
     label: '数据处理成果导出',
     icon: ProductIcon,
     activeIcon: ProductIcon,
-    pending: true,
-    disabled: true,
   },
 ]
 

@@ -13,7 +13,7 @@ export interface TableAction {
   readonly onClick?: () => void
   /**
    * 给了 href 就渲染成 <a> 直接发起导航（如交给浏览器原生下载流式落盘），
-   * 此时不使用 onClick / disabled：导航请求无法附加自定义请求头，也无法回传状态
+   * 此时不使用 onClick；disabled 为 true 时不给 href，按钮置灰且不可点
    */
   readonly href?: string
   /** 仅 href 有效：<a download> 的保存文件名 */
@@ -44,12 +44,17 @@ export function TableActions({
           action.tone === 'danger' ? styles.buttonDanger : styles.buttonDefault
         }`
         if (action.href !== undefined) {
+          const disabled = action.disabled ?? false
           return (
             <a
               key={action.key}
-              className={`${className} ${styles.link}`}
-              href={action.href}
-              download={action.download}
+              className={`${className} ${styles.link}${
+                disabled ? ` ${styles.linkDisabled}` : ''
+              }`}
+              // 禁用时不给 href：只要带了 href 就必然可点，灰按钮挡不住导航
+              href={disabled ? undefined : action.href}
+              download={disabled ? undefined : action.download}
+              aria-disabled={disabled || undefined}
             >
               {action.label}
             </a>

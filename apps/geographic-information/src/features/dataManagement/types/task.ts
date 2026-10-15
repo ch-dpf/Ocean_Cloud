@@ -44,6 +44,11 @@ export interface TaskRecord {
   /** 后端按 sourceType 返回的中文名称 */
   readonly sourceTypeName: string | null
   readonly priority: number | null
+  /**
+   * 归档状态：该任务已存在归档记录时给出（QUEUED / RUNNING / COMPLETED / PARTIAL_FAILED / FAILED），
+   * 没有归档记录时为 null。列表按它判断能否再次发起归档
+   */
+  readonly archiveStatus: string | null
 }
 
 /** 任务分页结果 */

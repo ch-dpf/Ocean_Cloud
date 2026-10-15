@@ -49,10 +49,14 @@ interface TaskListTableProps {
   readonly onReset: () => void
   /** 点击「发布」；不传时按钮仅作为占位展示 */
   readonly onPublish?: (record: TaskRecord) => void
+  /** 点击「归档」发起静态瓦片集归档；不传时按钮仅作为占位展示 */
+  readonly onArchive?: (record: TaskRecord) => void
   /** 点击「查看」打开任务详情；不传时按钮仅作为占位展示 */
   readonly onView?: (record: TaskRecord) => void
   /** 正在发布的任务 id：该行按钮显示「发布中…」 */
   readonly publishingId?: string | null
+  /** 正在归档的任务 id：该行按钮显示「归档中…」 */
+  readonly archivingId?: string | null
 }
 
 /**
@@ -104,7 +108,9 @@ function buildColumns(
   pageSize: number,
   onView: ((record: TaskRecord) => void) | undefined,
   onPublish: ((record: TaskRecord) => void) | undefined,
+  onArchive: ((record: TaskRecord) => void) | undefined,
   publishingId: string | null | undefined,
+  archivingId: string | null | undefined,
 ): TableColumnsType<TaskRow> {
   return [
     {
@@ -112,6 +118,12 @@ function buildColumns(
       key: 'index',
       width: 70,
       render: (_, __, index) => (current - 1) * pageSize + index + 1,
+    },
+    {
+      title: '任务编号',
+      key: 'no',
+      width: 180,
+      render: (_, record) => record.taskNo,
     },
     {
       title: '任务名称',
@@ -209,11 +221,22 @@ function buildColumns(
     {
       title: '操作',
       key: 'action',
-      width: 100,
+      // 三个按钮（查看 / 发布 / 归档），宽度要够均分
+      width: 170,
       // 横向滚动时固定在表格右侧，按钮始终可见
       fixed: 'right',
       render: (_, record) => {
         const isPublishing = publishingId === record.id
+        const isArchiving = archivingId === record.id
+        // 发布与归档都只对已完成的地形/影像任务开放：没有瓦片集时两者都无处落
+        const isProcessable =
+          record.taskStatus === 'COMPLETED' &&
+          (record.processingType === PROCESSING_TYPE_TERRAIN ||
+            record.processingType === PROCESSING_TYPE_IMAGERY)
+        // 已经归档过就不再重复归档：不管上次是成功、进行中还是失败，
+        // 失败的归档去「数据处理成果导出」页点重试
+        const hasArchive =
+          record.archiveStatus !== null && record.archiveStatus !== ''
         return (
           <TableActions
             justify="evenly"
@@ -230,12 +253,20 @@ function buildColumns(
                 label: isPublishing ? '发布中…' : '发布',
                 onClick:
                   onPublish === undefined ? undefined : () => onPublish(record),
-                // 只开放已完成的地形/影像任务发布，其余状态与类型置灰
                 disabled:
-                  record.taskStatus !== 'COMPLETED' ||
-                  isPublishing ||
-                  (record.processingType !== PROCESSING_TYPE_TERRAIN &&
-                    record.processingType !== PROCESSING_TYPE_IMAGERY),
+                  onPublish === undefined || !isProcessable || isPublishing,
+              },
+              {
+                key: 'archive',
+                label: isArchiving ? '归档中…' : '归档',
+                onClick:
+                  onArchive === undefined ? undefined : () => onArchive(record),
+                // 已经归档过的任务不再开放（重复提交只会被后端拒掉）
+                disabled:
+                  onArchive === undefined ||
+                  !isProcessable ||
+                  isArchiving ||
+                  hasArchive,
               },
             ]}
           />
@@ -259,11 +290,21 @@ export function TaskListTable({
   onReset,
   onView,
   onPublish,
+  onArchive,
   publishingId,
+  archivingId,
 }: TaskListTableProps) {
   return (
     <SearchTable<TaskRow>
-      columns={buildColumns(current, pageSize, onView, onPublish, publishingId)}
+      columns={buildColumns(
+        current,
+        pageSize,
+        onView,
+        onPublish,
+        onArchive,
+        publishingId,
+        archivingId,
+      )}
       dataSource={records}
       rowKey="id"
       loading={isLoading}

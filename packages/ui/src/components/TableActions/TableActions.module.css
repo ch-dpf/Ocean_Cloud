@@ -41,3 +41,10 @@
   align-items: center;
   text-decoration: none;
 }
+/* 不可点的 <a>（如当前不可下载）：文字压灰，并挡掉点击与悬停反馈
+   放在 .buttonDefault / .buttonDanger 之后，靠同权重下后定义者胜出覆盖颜色 */
+.linkDisabled {
+  color: #a9b7c2;
+  cursor: not-allowed;
+  pointer-events: none;
+}

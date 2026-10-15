@@ -30,6 +30,22 @@ export async function getPublicationPage(
   return result.data
 }
 
+/** 查询单个发布服务详情；processingType 与 serviceCode 都是路径参数。 */
+export async function getPublicationDetail(
+  processingType: PublicationProcessingType,
+  serviceCode: string,
+  signal?: AbortSignal,
+): Promise<Publication> {
+  const result = await httpClient.get<ApiResult<Publication>>(
+    '/publications/' +
+      encodeURIComponent(processingType) +
+      '/' +
+      encodeURIComponent(serviceCode),
+    { signal },
+  )
+  return result.data
+}
+
 /** 发布已完成的瓦片处理任务。 */
 export async function publishFromTask(
   processingType: PublicationProcessingType,

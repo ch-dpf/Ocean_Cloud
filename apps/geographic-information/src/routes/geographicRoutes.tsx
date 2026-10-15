@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react'
 import { NotFound } from '@ocean-cloud/ui'
 import { DataManagementPage } from '../pages/DataManagementPage/DataManagementPage'
+import { DataProcessingExportPage } from '../pages/DataProcessingExportPage/DataProcessingExportPage'
 import { DataProcessingPage } from '../pages/DataProcessingPage/DataProcessingPage'
 import { DataPublishingPage } from '../pages/DataPublishingPage/DataPublishingPage'
 import {
   DATA_MANAGEMENT_SECTIONS,
+  DATA_PROCESSING_EXPORTS_PATH,
   DATA_PROCESSING_GROUPS,
   DATA_PROCESSING_SECTIONS,
   DATA_PUBLISHING_SECTIONS,
@@ -27,17 +29,21 @@ export function resolveGeographicRoute(pathname: string): GeographicRoute {
       element: <DataManagementPage activePath={managementSection.path} />,
     }
   }
-  // 数据处理：上层（原始数据处理任务）与下层（任务类型）共用同一页面，由 activePath 决定高亮。
-  // 上层里接口未接入的项（数据处理成果导出）不参与路由，直接访问该路径走 404
+  // 数据处理：上层（原始数据处理任务 / 数据处理成果导出）与下层（任务类型）共用同一套导航，
+  // 由 activePath 决定高亮；成果导出是独立页面，其余路径都进任务列表
   const processingItem =
-    DATA_PROCESSING_GROUPS.find(
-      (item) => item.path === target && item.disabled !== true,
-    ) ?? DATA_PROCESSING_SECTIONS.find((item) => item.path === target)
+    DATA_PROCESSING_GROUPS.find((item) => item.path === target) ??
+    DATA_PROCESSING_SECTIONS.find((item) => item.path === target)
   if (processingItem) {
     return {
       title: '数据处理',
       subTitle: processingItem.label,
-      element: <DataProcessingPage activePath={processingItem.path} />,
+      element:
+        processingItem.path === DATA_PROCESSING_EXPORTS_PATH ? (
+          <DataProcessingExportPage activePath={processingItem.path} />
+        ) : (
+          <DataProcessingPage activePath={processingItem.path} />
+        ),
     }
   }
   // 数据发布的二级导航：各类型共用同一页面，由 activePath 决定高亮

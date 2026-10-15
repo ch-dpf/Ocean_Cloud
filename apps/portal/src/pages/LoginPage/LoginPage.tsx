@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Brand } from '@ocean-cloud/ui'
+import { Brand, isSessionExpiredRedirect } from '@ocean-cloud/ui'
 import styles from './LoginPage.module.css'
 import { Toast } from './Toast'
 import type { ToastData } from './Toast'
@@ -8,6 +8,7 @@ import {
   login,
   navigateAfterLogin,
 } from '../../features/auth/services/authService'
+import { LOGIN_PATH } from '../../features/auth/constants'
 import eyeIcon from './assets/eye.svg'
 
 export function LoginPage() {
@@ -15,16 +16,33 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   // 强制登录：勾选后挤掉该账号在其他设备的会话。确认启用后取消注释
-   const [forceLogin, setForceLogin] = useState(false)
+  const [forceLogin, setForceLogin] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [toast, setToast] = useState<ToastData | null>(null)
+  // 会话过期跳回来时（地址带 ?reason=session-expired）直接给出提示：
+  // 在初始化 state 时派生，避免在 effect 里 setState 引发级联渲染
+  const [toast, setToast] = useState<ToastData | null>(() =>
+    isSessionExpiredRedirect(window.location.hash)
+      ? {
+          id: Date.now(),
+          type: 'warning',
+          text: '太久没操作，登录已过期，请重新登录',
+        }
+      : null,
+  )
+
+  // 标记只提示一次：清掉 hash 上的查询串，用户刷新登录页时不再重复弹出
+  useEffect(() => {
+    if (isSessionExpiredRedirect(window.location.hash)) {
+      window.history.replaceState(null, '', `#${LOGIN_PATH}`)
+    }
+  }, [])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setLoading(true)
     try {
       // 强制登录启用后改用下面这行
-       await login({ username, password, forceLogin })
+      await login({ username, password, forceLogin })
       setToast({ id: Date.now(), type: 'success', text: '登录成功' })
       navigateAfterLogin()
     } catch (error) {
@@ -271,7 +289,6 @@ export function LoginPage() {
                 />
                 强制登录
               </label>
-             
             </div>
 
             <button

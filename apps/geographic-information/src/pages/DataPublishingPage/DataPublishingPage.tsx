@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ConfirmDialog, SubNav } from '@ocean-cloud/ui'
 import styles from './DataPublishingPage.module.css'
 import { DATA_PUBLISHING_SECTIONS } from '../../config/navigation'
+import { PublicationDetailDialog } from '../../features/dataPublishing/components/PublicationDetailDialog/PublicationDetailDialog'
 import { PublicationTable } from '../../features/dataPublishing/components/PublicationTable/PublicationTable'
 import {
   PUBLICATION_PAGE_SIZE,
@@ -10,6 +11,7 @@ import {
 import { usePublicationPage } from '../../features/dataPublishing/hooks/usePublicationPage'
 import { disablePublication } from '../../features/dataPublishing/services/publicationService'
 import type {
+  PublicationProcessingType,
   PublicationRow,
   PublicationScope,
 } from '../../features/dataPublishing/types/publication'
@@ -42,6 +44,8 @@ export function DataPublishingPage({ activePath }: DataPublishingPageProps) {
   const [pageSize, setPageSize] = useState(PUBLICATION_PAGE_SIZE)
   // 待停用的记录；非空时弹出二次确认
   const [disablingRow, setDisablingRow] = useState<PublicationRow | null>(null)
+  // 待查看详情的记录；非空时弹出详情弹窗
+  const [viewingRow, setViewingRow] = useState<PublicationRow | null>(null)
 
   const { records, total, current, isLoading, error, goToPage, refresh } =
     usePublicationPage({ scope, status, serviceCode, size: pageSize })
@@ -77,7 +81,8 @@ export function DataPublishingPage({ activePath }: DataPublishingPageProps) {
   async function handleDisableConfirm() {
     if (disablingRow === null) return
     const { kind, serviceCode: code } = disablingRow
-    const processingType = kind.toUpperCase() as 'TERRAIN' | 'IMAGERY' | 'VECTOR'
+    const processingType = kind.toUpperCase() as
+      'TERRAIN' | 'IMAGERY' | 'VECTOR'
     await disablePublication(processingType, code)
     refresh()
   }
@@ -114,9 +119,19 @@ export function DataPublishingPage({ activePath }: DataPublishingPageProps) {
           onValuesChange={handleValuesChange}
           onSearch={handleSearch}
           onReset={handleReset}
+          onView={setViewingRow}
           onDisable={setDisablingRow}
         />
       </div>
+      {viewingRow !== null && (
+        <PublicationDetailDialog
+          processingType={
+            viewingRow.kind.toUpperCase() as PublicationProcessingType
+          }
+          serviceCode={viewingRow.serviceCode}
+          onClose={() => setViewingRow(null)}
+        />
+      )}
       {disablingRow !== null && (
         <ConfirmDialog
           title="停用服务"

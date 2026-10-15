@@ -1,7 +1,11 @@
 import { RequestError } from '@ocean-cloud/http'
+import { buildSessionExpiredLoginUrl } from '@ocean-cloud/ui'
 import { httpClient } from '../../services/httpClient'
 import type { ApiResult } from '../../services/apiResult'
 import { PORTAL_ORIGIN } from '../../config/application'
+
+/** 主平台登录页路径：子应用不依赖主平台源码，因此在这里显式写死 */
+const PORTAL_LOGIN_PATH = '/login'
 
 /**
  * 校验当前 token 是否仍然有效。
@@ -25,7 +29,10 @@ export async function validateToken(signal: AbortSignal): Promise<boolean> {
   }
 }
 
-/** token 失效：清理本地会话并跳回主平台登录页 */
+/**
+ * token 失效：清理本地会话并跳回主平台登录页。
+ * 跳转地址带上会话过期标记，登录页据此弹出「太久没操作」的提示
+ */
 export function redirectToLogin(): void {
   try {
     sessionStorage.removeItem('token')
@@ -33,5 +40,8 @@ export function redirectToLogin(): void {
   } catch {
     // 忽略存储异常
   }
-  window.location.href = `${PORTAL_ORIGIN.replace(/\/$/, '')}/#/login`
+  window.location.href = buildSessionExpiredLoginUrl(
+    PORTAL_ORIGIN,
+    PORTAL_LOGIN_PATH,
+  )
 }
