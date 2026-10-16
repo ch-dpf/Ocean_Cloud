@@ -33,7 +33,9 @@ export function PortalLayout({
       ? `${pageTitle} / 全部`
       : `${pageTitle} / ${subTitle}`
   return (
-    <div className={styles.shell}>
+    <div
+      className={`${styles.shell}${flush ? ` ${styles.shellContained}` : ''}`}
+    >
       <Sidebar
         pathname={navPathname}
         collapsed={collapsed}

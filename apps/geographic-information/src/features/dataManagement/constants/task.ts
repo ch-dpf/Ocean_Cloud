@@ -254,3 +254,12 @@ export function toProcessingStageIndex(
 export function toProcessingTypeOfKind(kind: string): string {
   return kind.startsWith('GIS_') ? kind.slice(4) : kind
 }
+
+export const IMPORT_STAGE_LABELS: Readonly<Record<string, string>> = {
+  UPLOADING: '文件传输中',
+  EXTRACTING_METADATA: '空间信息提取中',
+}
+
+export function toImportStageLabel(stage: string): string {
+  return IMPORT_STAGE_LABELS[stage] ?? toTaskStatusLabel(stage)
+}

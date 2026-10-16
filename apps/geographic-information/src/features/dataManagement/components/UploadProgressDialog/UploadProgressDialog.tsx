@@ -5,6 +5,7 @@ import {
   toProcessingStageIndex,
   toProcessingStageLabel,
   toProcessingTypeOfKind,
+  toImportStageLabel,
 } from '../../constants/task'
 import styles from './UploadProgressDialog.module.css'
 
@@ -24,7 +25,9 @@ interface UploadProgressDialogProps {
 function formatTaskMeta(task: UploadTaskItem): string {
   return [
     task.statusText || '正在处理…',
-    // task.totalCount !== null ? `${task.completedCount}/${task.totalCount}` : '',
+    task.totalCount !== null
+      ? `已完成 ${task.completedCount}/${task.totalCount}`
+      : '',
     task.failedCount > 0 ? `失败 ${task.failedCount}` : '',
     task.percent !== null ? `${task.percent}%` : '',
   ]
@@ -34,11 +37,16 @@ function formatTaskMeta(task: UploadTaskItem): string {
 
 /**
  * 处理任务条上方的阶段行（如「分析中 2/4」）：颜色只区分成败，
- * 阶段推进靠这行文字表达。上传任务没有处理阶段，返回空串。
+ * 阶段推进靠这行文字表达；导入任务明确区分传输与空间信息提取。
  */
 function formatTaskStage(task: UploadTaskItem): string {
-  // 上传类任务没有处理阶段，不显示阶段行
-  if (UPLOAD_TASK_KINDS.some((kind) => kind === task.kind)) return ''
+  // 导入完成以服务端终态为准，传输结束后继续展示提取阶段。
+  if (UPLOAD_TASK_KINDS.some((kind) => kind === task.kind)) {
+    if (task.done) return ''
+    return task.stageCode === 'EXTRACTING_METADATA'
+      ? '空间信息提取中 · 2/2'
+      : toImportStageLabel(task.stageCode) + ' · 1/2'
+  }
   const stage = toProcessingStageLabel(task.stageCode)
   if (stage === '') return ''
   const index = toProcessingStageIndex(
@@ -99,15 +107,23 @@ export function UploadProgressDialog({
       ) : (
         <ul className={styles.list}>
           {tasks.map((task) => {
-            // 处理任务在条上方标出当前阶段，上传任务没有阶段行
+            // 导入和切片任务均展示当前阶段。
             const stage = formatTaskStage(task)
             return (
               <li className={styles.task} key={task.taskNo}>
                 <p className={styles.taskName}>{task.taskName || taskLabel}</p>
                 <p className={styles.taskNo}>{task.taskNo}</p>
                 {stage !== '' && <p className={styles.stage}>{stage}</p>}
-                <div className={styles.track}>
-                  {task.pending === true ? (
+                <div
+                  className={styles.track}
+                  role="progressbar"
+                  aria-label={task.taskName + '进度'}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={task.percent ?? undefined}
+                >
+                  {task.pending === true ||
+                  (!task.done && task.percent === null) ? (
                     // 还没收到任何进度帧：用循环流动的条表示正在上传，而不是停在 0%
                     <div className={styles.barPending} aria-hidden="true" />
                   ) : (

@@ -59,7 +59,6 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
   const section = DATA_PROCESSING_SECTIONS.find(
     (item) => item.path === activePath,
   )
-  const activeItem = group ?? section
   // 页签与筛选栏的「任务状态」共用一份状态
   const [searchForm] = Form.useForm()
   const [taskStatus, setTaskStatus] = useState('')
@@ -229,33 +228,6 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
         sectionTitle="任务类型"
       />
       <div className={styles.content}>
-        <div className={styles.contentHeader}>
-          <div>
-            <h2>GIS数据处理</h2>
-            <p>
-              {activeItem?.pending === true
-                ? `${activeItem.label}接口待接入，暂展示全部任务`
-                : '对影像、矢量、地形、倾斜模型和电子海图进行转换、切片与服务化处理'}
-            </p>
-          </div>
-          <div className={styles.headerActions}>
-            <button
-              type="button"
-              className={styles.progressButton}
-              onClick={() => setIsProgressOpen(true)}
-            >
-              处理进度{runningCount > 0 ? ` (${runningCount})` : ''}
-            </button>
-            <button
-              type="button"
-              className={styles.createButton}
-              onClick={() => setIsCreateOpen(true)}
-            >
-              新建处理任务
-            </button>
-          </div>
-        </div>
-
         <div className={styles.tabs} role="tablist" aria-label="任务状态">
           {STATUS_TABS.map((tab) => {
             const isActive = tab.status === taskStatus
@@ -275,6 +247,24 @@ export function DataProcessingPage({ activePath }: DataProcessingPageProps) {
         </div>
 
         <TaskListTable
+          extraActions={
+            <div className={styles.headerActions}>
+              <button
+                type="button"
+                className={styles.progressButton}
+                onClick={() => setIsProgressOpen(true)}
+              >
+                处理进度{runningCount > 0 ? ` (${runningCount})` : ''}
+              </button>
+              <button
+                type="button"
+                className={styles.createButton}
+                onClick={() => setIsCreateOpen(true)}
+              >
+                新建处理任务
+              </button>
+            </div>
+          }
           records={rows}
           isLoading={isLoading}
           error={error}

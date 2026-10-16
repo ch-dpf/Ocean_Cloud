@@ -225,6 +225,7 @@ export function ArchiveTable({
 }: ArchiveTableProps) {
   return (
     <SearchTable<ArchiveRow>
+      compact
       columns={buildColumns(current, pageSize, onDetail, onRetry, retryingNo)}
       dataSource={records}
       rowKey="id"

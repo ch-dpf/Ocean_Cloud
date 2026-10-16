@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { TRANSFER_PAGE_SIZE } from '../constants/dataset'
 import { getTransferPage } from '../services/fileTransferService'
 import type { TransferFilters, TransferRecord } from '../types/fileTransfer'
@@ -113,6 +113,11 @@ export function useTransferPage(
   ])
 
   const ready = data !== null && data.key === queryKey
+  const refresh = useCallback(
+    () => setRevision((previous) => previous + 1),
+    [setRevision],
+  )
+
   return {
     records: ready ? data.records : [],
     total: ready ? data.total : 0,
@@ -121,6 +126,6 @@ export function useTransferPage(
     isLoading: !ready,
     goToPage: (next: number) => setPaging({ filterKey, size, current: next }),
     /** 按当前条件重新查询 */
-    refresh: () => setRevision((previous) => previous + 1),
+    refresh,
   }
 }

@@ -1,5 +1,8 @@
-import { useEffect, useState } from 'react'
-import { getDeletedFileMetaPage, getFileMetaPage } from '../services/fileMetaService'
+import { useCallback, useEffect, useState } from 'react'
+import {
+  getDeletedFileMetaPage,
+  getFileMetaPage,
+} from '../services/fileMetaService'
 import { getTransferPage } from '../services/fileTransferService'
 
 interface SidebarCounts {
@@ -44,7 +47,9 @@ export function useSidebarCounts() {
       if (controller.signal.aborted) return
       setCounts((previous) => ({
         workspaceTotal:
-          workspace === null ? previous.workspaceTotal : Number(workspace.total),
+          workspace === null
+            ? previous.workspaceTotal
+            : Number(workspace.total),
         recycleBinTotal:
           deleted === null ? previous.recycleBinTotal : Number(deleted.total),
         transferTotal:
@@ -54,9 +59,14 @@ export function useSidebarCounts() {
     return () => controller.abort()
   }, [revision])
 
+  const refresh = useCallback(
+    () => setRevision((previous) => previous + 1),
+    [setRevision],
+  )
+
   return {
     ...counts,
     /** 写操作（上传完成、删除文件）后重取 */
-    refresh: () => setRevision((previous) => previous + 1),
+    refresh,
   }
 }

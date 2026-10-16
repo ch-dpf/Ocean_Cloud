@@ -34,6 +34,8 @@ import { useUploadTasks } from '../../features/dataManagement/hooks/useUploadTas
 import {
   buildFileDownloadUrl,
   deleteFileMeta,
+  getFileMetaDetail,
+  retryFileMetadata,
   purgeDeletedFileMeta,
   restoreDeletedFileMeta,
 } from '../../features/dataManagement/services/fileMetaService'
@@ -52,17 +54,8 @@ interface DataManagementPageProps {
   readonly activePath: string
 }
 
-const SECTION_DESCRIPTION: Readonly<Record<string, string>> = {
-  '/data-management': '浏览、筛选与检索全部已登记的数据。',
-  '/data-management/transfers': '查看数据上传导入与下载导出的记录与进度。',
-  '/data-management/recycle-bin': '恢复或彻底删除已移除的数据。',
-}
-
 /** 数据工作区（全部数据）的路径 */
 const WORKSPACE_PATH = DATA_MANAGEMENT_SECTIONS[0].path
-
-/** 「全部数据」在副标题里的名字 */
-const WORKSPACE_LABEL = DATA_MANAGEMENT_SECTIONS[0].label
 
 /** 空筛选条件：引用稳定，避免每次渲染都触发查询条件比对 */
 const NO_FILE_FILTERS: FileMetaFilters = {}
@@ -117,6 +110,12 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
   const [purgingFile, setPurgingFile] = useState<FileMeta | null>(null)
   const [restoringId, setRestoringId] = useState<string | null>(null)
   const [purgingId, setPurgingId] = useState<string | null>(null)
+  const [retryingMetadataId, setRetryingMetadataId] = useState<string | null>(
+    null,
+  )
+  const [metadataRetryIds, setMetadataRetryIds] = useState<readonly string[]>(
+    [],
+  )
   // 文件列表的筛选条件（数据格式、文件名），由表格的搜索栏回传
   const [fileFilters, setFileFilters] =
     useState<FileMetaFilters>(NO_FILE_FILTERS)
@@ -173,22 +172,114 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     refresh: refreshSidebarCounts,
   } = useSidebarCounts()
   // 只展示导入任务的帧，处理任务的帧归数据处理页的「处理进度」
-  const { tasks, clearFinished, addPendingTask, failTask } =
-    useUploadTasks(UPLOAD_TASK_KINDS)
+  const {
+    tasks,
+    clearFinished,
+    addPendingTask,
+    updateChunkProgress,
+    failTask,
+  } = useUploadTasks(UPLOAD_TASK_KINDS)
   const runningCount = tasks.filter((task) => !task.done).length
   // 有任务完成时刷新列表，让新上传的文件显示出来
   const finishedTaskNos = useRef<Set<string>>(new Set())
   useEffect(() => {
     const newlyFinished = tasks.filter(
-      (task) => task.done && !finishedTaskNos.current.has(task.taskNo),
+      (task) =>
+        task.done &&
+        !finishedTaskNos.current.has(
+          [
+            task.taskNo,
+            task.status,
+            task.completedCount,
+            task.failedCount,
+          ].join(':'),
+        ),
     )
     if (newlyFinished.length === 0) return
-    for (const task of newlyFinished) finishedTaskNos.current.add(task.taskNo)
+    for (const task of newlyFinished)
+      finishedTaskNos.current.add(
+        [task.taskNo, task.status, task.completedCount, task.failedCount].join(
+          ':',
+        ),
+      )
     refreshFiles()
     // 导入完成后「传输记录」列表与侧边栏计数都变了
     refreshSidebarCounts()
     refreshTransfer()
-  }, [tasks, refreshFiles, refreshSidebarCounts, refreshTransfer])
+    refreshCatalog()
+  }, [
+    tasks,
+    refreshFiles,
+    refreshSidebarCounts,
+    refreshTransfer,
+    refreshCatalog,
+  ])
+
+  // 活动导入和重新提取期间持续刷新，单个文件就绪即可进入可用列表。
+  const watchingMetadata =
+    fileFilters.metadataStatus === 'QUEUED' ||
+    fileFilters.metadataStatus === 'RUNNING'
+  useEffect(() => {
+    if (
+      runningCount === 0 &&
+      metadataRetryIds.length === 0 &&
+      !watchingMetadata
+    )
+      return
+    const controller = new AbortController()
+    let timer: ReturnType<typeof setTimeout> | undefined
+    async function poll() {
+      const results = await Promise.allSettled(
+        metadataRetryIds.map((id) => getFileMetaDetail(id, controller.signal)),
+      )
+      if (controller.signal.aborted) return
+      const finished = results.flatMap((result) =>
+        result.status === 'fulfilled' &&
+        result.value.metadataStatus !== 'QUEUED' &&
+        result.value.metadataStatus !== 'RUNNING'
+          ? [result.value.id]
+          : [],
+      )
+      if (finished.length > 0) {
+        setMetadataRetryIds((previous) =>
+          previous.filter((id) => !finished.includes(id)),
+        )
+        refreshCatalog()
+      }
+      refreshFiles()
+      refreshSidebarCounts()
+      refreshTransfer()
+      timer = setTimeout(() => void poll(), 2500)
+    }
+    timer = setTimeout(() => void poll(), 2500)
+    return () => {
+      controller.abort()
+      clearTimeout(timer)
+    }
+  }, [
+    runningCount,
+    metadataRetryIds,
+    watchingMetadata,
+    refreshFiles,
+    refreshSidebarCounts,
+    refreshTransfer,
+    refreshCatalog,
+  ])
+
+  async function handleRetryMetadata(record: FileMeta) {
+    setRetryingMetadataId(record.id)
+    try {
+      await retryFileMetadata(record.id)
+      setMetadataRetryIds((previous) =>
+        previous.includes(record.id) ? previous : [...previous, record.id],
+      )
+      refreshFiles()
+      refreshSidebarCounts()
+    } finally {
+      setRetryingMetadataId(null)
+    }
+  }
+
   // 导入弹窗的初始上下文：全部数据为空、分类为分类名、数据集为数据集名
   const selectedDataset =
     activeSelection !== null && activeSelection.kind === 'dataset'
@@ -200,14 +291,6 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
       : activeSelection.kind === 'category'
         ? DATASET_CATEGORY_LABELS[activeSelection.categoryId]
         : activeSelection.dataSetName
-  // 副标题的当前域：全部数据 / 分类名 / 数据集名
-  const scopeLabel =
-    activeSelection === null
-      ? WORKSPACE_LABEL
-      : activeSelection.kind === 'category'
-        ? DATASET_CATEGORY_LABELS[activeSelection.categoryId]
-        : activeSelection.dataSetName
-
   /** 选中数据目录项：同时回到「全部数据」页面，保证内容区展示对应数据 */
   function handleSelectEntry(next: DatasetSelection) {
     setSelection(next)
@@ -255,6 +338,9 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
         onTaskCreated(createdTaskId) {
           taskId = createdTaskId
           addPendingTask(createdTaskId, input.files.length)
+        },
+        onChunkResult(result) {
+          updateChunkProgress(result, input.files.length)
         },
       })
     } catch (error) {
@@ -601,13 +687,8 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
       <div className={styles.geoContent}>
         {isRecycleBin ? (
           <div className={styles.contentPanel}>
-            <div className={styles.contentHeader}>
-              <div>
-                <h2>回收站</h2>
-                <p>{SECTION_DESCRIPTION[RECYCLE_BIN_PATH] ?? ''}</p>
-              </div>
-            </div>
             <FileMetaTable
+              recycleBin
               records={records}
               isLoading={isLoading}
               error={error}
@@ -634,12 +715,6 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
           </div>
         ) : isTransfers ? (
           <div className={styles.contentPanel}>
-            <div className={styles.contentHeader}>
-              <div>
-                <h2>传输记录</h2>
-                <p>{SECTION_DESCRIPTION[TRANSFERS_PATH] ?? ''}</p>
-              </div>
-            </div>
             <TransferRecordTable
               records={transferPage.records}
               isLoading={transferPage.isLoading}
@@ -656,31 +731,25 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
           </div>
         ) : (
           <div className={styles.contentPanel}>
-            <div className={styles.contentHeader}>
-              <div>
-                <h2>GIS 数据管理</h2>
-                <p className={styles.contentMetaLine}>
-                  当前域：{scopeLabel} · {total} 条数据
-                </p>
-              </div>
-              <div className={styles.headerActions}>
-                <button
-                  type="button"
-                  className={styles.progressButton}
-                  onClick={() => setIsProgressOpen(true)}
-                >
-                  上传进度{runningCount > 0 ? ` (${runningCount})` : ''}
-                </button>
-                <button
-                  type="button"
-                  className={styles.importButton}
-                  onClick={() => setIsImportOpen(true)}
-                >
-                  导入GIS数据
-                </button>
-              </div>
-            </div>
             <FileMetaTable
+              extraActions={
+                <div className={styles.headerActions}>
+                  <button
+                    type="button"
+                    className={styles.progressButton}
+                    onClick={() => setIsProgressOpen(true)}
+                  >
+                    导入进度{runningCount > 0 ? ` (${runningCount})` : ''}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.importButton}
+                    onClick={() => setIsImportOpen(true)}
+                  >
+                    导入GIS数据
+                  </button>
+                </div>
+              }
               records={records}
               isLoading={isLoading}
               error={error}
@@ -690,6 +759,8 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
               onPageChange={handleFilePageChange}
               onSearch={handleFileSearch}
               onReset={handleFileReset}
+              onRetryMetadata={handleRetryMetadata}
+              retryingMetadataId={retryingMetadataId}
               actions={[
                 {
                   label: '处理',
@@ -697,8 +768,9 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                   pendingId: processingId,
                   // 目前开放在地形与影像数据上发起处理，其余分类按钮置灰
                   disabled: (record) =>
+                    record.metadataStatus !== 'COMPLETED' ||
                     CATEGORY_PROCESSING_TYPES[Number(record.categoryId)] ===
-                    undefined,
+                      undefined,
                 },
                 {
                   // 下载走 <a> 原生导航：整份文件流式落盘，不进内存、不经过 axios。
@@ -713,6 +785,9 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                   label: '删除',
                   onClick: (record) => void handleDeleteFile(record),
                   pendingId: deletingId,
+                  disabled: (record) =>
+                    record.metadataStatus === 'QUEUED' ||
+                    record.metadataStatus === 'RUNNING',
                   tone: 'danger',
                 },
               ]}
@@ -745,6 +820,9 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
       )}
       {isProgressOpen && (
         <UploadProgressDialog
+          title="导入进度"
+          emptyText="暂无导入任务。"
+          taskLabel="GIS数据导入"
           tasks={tasks}
           onClearFinished={clearFinished}
           onClose={() => setIsProgressOpen(false)}

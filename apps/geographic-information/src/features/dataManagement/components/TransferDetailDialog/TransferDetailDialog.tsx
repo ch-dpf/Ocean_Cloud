@@ -3,7 +3,11 @@ import { Table } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { AppDialog, formatFileSize, formatTime } from '@ocean-cloud/ui'
 import styles from './TransferDetailDialog.module.css'
-import { toOperationTypeLabel, toTaskStatusLabel } from '../../constants/task'
+import {
+  toOperationTypeLabel,
+  toTaskStatusLabel,
+  toImportStageLabel,
+} from '../../constants/task'
 import { getTransferDetail } from '../../services/fileTransferService'
 import type { TransferFile, TransferRecord } from '../../types/fileTransfer'
 
@@ -27,7 +31,20 @@ const FILE_COLUMNS: TableColumnsType<TransferFile> = [
     width: 100,
     render: (_, record) => formatFileSize(record.sizeBytes),
   },
-  { title: '操作状态', dataIndex: 'operationStatus', width: 110 },
+  {
+    title: '操作状态',
+    key: 'operationStatus',
+    width: 150,
+    render: (_, record) =>
+      ({
+        SUCCESS: '成功',
+        FAILED: '失败',
+        PENDING: '等待中',
+        RUNNING:
+          record.uploadStatus === 'READY' ? '空间信息提取中' : '文件传输中',
+      })[record.operationStatus] ?? record.operationStatus,
+  },
+  { title: '失败原因', dataIndex: 'errorMessage', width: 260, ellipsis: true },
   { title: 'SHA256', dataIndex: 'sha256', width: 240, ellipsis: true },
   { title: '存储路径', dataIndex: 'storageKey', width: 300, ellipsis: true },
   {
@@ -48,8 +65,15 @@ function buildSummaryFields(record: TransferRecord): readonly {
     { label: '传输类型', value: toOperationTypeLabel(record.operationType) },
     { label: '数据集', value: record.dataSetName ?? record.dataSetId },
     { label: '记录状态', value: toTaskStatusLabel(record.recordStatus) },
-    { label: '当前阶段', value: toTaskStatusLabel(record.currentStage) },
-    { label: '进度', value: `${record.progress}%` },
+    { label: '当前阶段', value: toImportStageLabel(record.currentStage) },
+    {
+      label: '进度',
+      value:
+        record.recordStatus === 'RUNNING' &&
+        record.currentStage === 'EXTRACTING_METADATA'
+          ? '正在提取空间信息'
+          : `${record.progress}%`,
+    },
     {
       label: '已完成 / 总数',
       value: `${record.completedCount} / ${record.totalCount}`,
@@ -73,18 +97,30 @@ export function TransferDetailDialog({
 
   useEffect(() => {
     const controller = new AbortController()
-    getTransferDetail(recordNo, controller.signal)
-      .then((record) => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    async function load() {
+      try {
+        const record = await getTransferDetail(recordNo, controller.signal)
+        if (controller.signal.aborted) return
         setDetail(record)
         setIsLoading(false)
-      })
-      .catch(() => {
-        // 主动取消不提示；其余错误同时由 RequestErrorNotice 统一展示
+        setError(null)
+        if (
+          record.recordStatus === 'RUNNING' ||
+          record.recordStatus === 'QUEUED'
+        )
+          timer = setTimeout(() => void load(), 2500)
+      } catch {
         if (controller.signal.aborted) return
         setIsLoading(false)
         setError('详情加载失败。')
-      })
-    return () => controller.abort()
+      }
+    }
+    void load()
+    return () => {
+      controller.abort()
+      clearTimeout(timer)
+    }
   }, [recordNo])
 
   const files = detail?.files ?? []

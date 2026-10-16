@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getAllDatasets } from '../services/datasetService'
 import type { GeoDataset } from '../types/dataset'
 
@@ -30,9 +30,10 @@ export function useDatasetCatalog() {
   const catalog = useMemo(() => groupByCategory(result.datasets), [result])
 
   /** 重新读取目录，用于新增数据集后刷新 */
-  function refresh() {
-    setRevision((previous) => previous + 1)
-  }
+  const refresh = useCallback(
+    () => setRevision((previous) => previous + 1),
+    [setRevision],
+  )
 
   return {
     /** 全量数据集，导入弹窗的候选列表同样用它本地筛选 */

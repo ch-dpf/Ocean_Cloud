@@ -66,3 +66,15 @@ export const FILE_FORMAT_OPTIONS = [
   'obj',
   'zip',
 ] as const
+
+export const METADATA_STATUS_LABELS: Readonly<Record<string, string>> = {
+  QUEUED: '待提取',
+  RUNNING: '提取中',
+  COMPLETED: '可用',
+  FAILED: '提取失败',
+  NOT_APPLICABLE: '配套附件',
+}
+
+export const METADATA_STATUS_OPTIONS = Object.entries(
+  METADATA_STATUS_LABELS,
+).map(([value, label]) => ({ value, label }))

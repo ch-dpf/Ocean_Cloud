@@ -1,4 +1,5 @@
 import { Select, Form, Input } from 'antd'
+import type { ReactNode } from 'react'
 import type { FormInstance, TableColumnsType } from 'antd'
 import styles from './TaskListTable.module.css'
 import {
@@ -32,6 +33,7 @@ export interface TaskRow extends TaskRecord {
 }
 
 interface TaskListTableProps {
+  readonly extraActions?: ReactNode
   readonly records: readonly TaskRow[]
   readonly isLoading: boolean
   readonly error: string | null
@@ -277,6 +279,7 @@ function buildColumns(
 }
 
 export function TaskListTable({
+  extraActions,
   records,
   isLoading,
   error,
@@ -296,6 +299,8 @@ export function TaskListTable({
 }: TaskListTableProps) {
   return (
     <SearchTable<TaskRow>
+      compact
+      extraActions={extraActions}
       columns={buildColumns(
         current,
         pageSize,
@@ -320,7 +325,11 @@ export function TaskListTable({
       searchFormItems={
         <>
           <Form.Item label="任务名称" name="taskName">
-            <Input placeholder="请输入任务名称" allowClear />
+            <Input
+              placeholder="请输入任务名称"
+              allowClear
+              style={{ width: 180 }}
+            />
           </Form.Item>
           <Form.Item label="任务状态" name="taskStatus">
             <Select

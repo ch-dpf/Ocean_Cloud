@@ -1,0 +1,23 @@
+.root {
+  margin-top: 16px;
+}
+.toolbar {
+  margin-bottom: 10px;
+}
+.map {
+  width: 100%;
+  height: clamp(300px, 48vh, 520px);
+  overflow: hidden;
+  border: 1px solid #dce6ec;
+  border-radius: 8px;
+  background: #edf2f7;
+}
+.hint {
+  margin: 8px 0 0;
+  color: #576e85;
+  font-size: 12px;
+}
+.drawBox {
+  border: 2px solid #1f75f2;
+  background: rgba(31, 117, 242, 0.08);
+}

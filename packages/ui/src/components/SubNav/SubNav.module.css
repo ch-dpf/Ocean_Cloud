@@ -3,9 +3,19 @@
   width: 250px;
   height: 100%;
   flex-shrink: 0;
+  min-height: 0;
+  overflow-y: auto;
   background: #ffffff;
   border-left: 1px solid #e5e5e5;
   border-top: 1px solid #e5e5e5;
+}
+
+@media (max-width: 760px) {
+  .subNav {
+    width: 100%;
+    height: auto;
+    max-height: 240px;
+  }
 }
 
 .header {

@@ -97,6 +97,11 @@ export function FileImportDialog({
   return (
     <AppDialog title="导入GIS数据" onClose={onClose} className={styles.dialog}>
       <form className={styles.form} onSubmit={handleSubmit}>
+        <p className={styles.hint}>
+          当前支持 GeoTIFF 和 RFC 7946 GeoJSON。GeoJSON 须使用 WGS84
+          经纬度且不含旧版 crs
+          声明。文件传输完成后将继续提取空间信息，最终结果请在“导入进度”中查看。
+        </p>
         <div className={styles.field}>
           <label className={styles.label} htmlFor={datasetInputId}>
             数据集
