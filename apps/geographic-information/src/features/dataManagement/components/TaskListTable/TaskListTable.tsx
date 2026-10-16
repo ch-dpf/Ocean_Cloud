@@ -251,14 +251,6 @@ function buildColumns(
                 disabled: onView === undefined,
               },
               {
-                key: 'publish',
-                label: isPublishing ? '发布中…' : '发布',
-                onClick:
-                  onPublish === undefined ? undefined : () => onPublish(record),
-                disabled:
-                  onPublish === undefined || !isProcessable || isPublishing,
-              },
-              {
                 key: 'archive',
                 label: isArchiving ? '归档中…' : '归档',
                 onClick:
@@ -269,6 +261,14 @@ function buildColumns(
                   !isProcessable ||
                   isArchiving ||
                   hasArchive,
+              },
+              {
+                key: 'publish',
+                label: isPublishing ? '发布中…' : '发布',
+                onClick:
+                  onPublish === undefined ? undefined : () => onPublish(record),
+                disabled:
+                  onPublish === undefined || !isProcessable || isPublishing,
               },
             ]}
           />
