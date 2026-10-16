@@ -10,11 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
+    "@ant-design/icons": "^5.6.1",
     "@ocean-cloud/bridge": "*",
+    "@ocean-cloud/http": "*",
     "@ocean-cloud/ui": "*",
-    "@ocean-cloud/http": "*"
+    "antd": "^5.29.3",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",

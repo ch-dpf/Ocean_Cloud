@@ -1,0 +1,58 @@
+/* 弹窗外壳（边框/圆角/内边距）由 AppDialog 统一提供，这里只保留尺寸与布局 */
+.dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(520px, 92vw);
+  max-height: 88vh;
+}
+/* 内容区自行滚动，弹窗框与关闭按钮保持不动 */
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* 概览字段：单列排布，值过长时省略并由 title 展示全量 */
+.summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  margin: 16px 0 0;
+}
+.summaryItem {
+  display: flex;
+  min-width: 0;
+  gap: 8px;
+  font-size: 13px;
+}
+.summaryItem dt {
+  flex-shrink: 0;
+  width: 96px;
+  color: #8394a0;
+}
+.summaryItem dd {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sectionTitle {
+  margin: 20px 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+/* 描述可能很长，按原文换行完整展示 */
+.description {
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding: 10px 12px;
+  border: 1px solid #dee5ed;
+  border-radius: 6px;
+  background: #f7fafd;
+  color: #576e85;
+  font-size: 13px;
+  white-space: pre-wrap;
+}

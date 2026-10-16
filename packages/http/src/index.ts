@@ -4,6 +4,7 @@ export { RequestError } from './RequestError.ts'
 export { normalizeRequestError } from './normalizeRequestError.ts'
 export type {
   HttpClientOptions,
+  HttpResponseInfo,
   RequestErrorHandler,
   RequestErrorKind,
   RequestOptions,

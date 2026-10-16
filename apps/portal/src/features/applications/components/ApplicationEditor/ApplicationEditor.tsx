@@ -4,6 +4,7 @@ import type {
   ApplicationInput,
   MicroApplication,
 } from '../../../../types/application'
+import { AppDialog } from '@ocean-cloud/ui'
 import styles from './ApplicationEditor.module.css'
 interface ApplicationEditorProps {
   readonly application: MicroApplication | null
@@ -15,7 +16,6 @@ export function ApplicationEditor({
   onClose,
   onSave,
 }: ApplicationEditorProps) {
-  const dialog = useRef<HTMLDialogElement>(null)
   const nameInput = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState<ApplicationInput>(
     application || {
@@ -33,7 +33,6 @@ export function ApplicationEditor({
   useEffect(() => {
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    dialog.current?.showModal()
     nameInput.current?.focus()
     return () => {
       document.body.style.overflow = previousOverflow
@@ -64,29 +63,15 @@ export function ApplicationEditor({
     }
   }
   return (
-    <dialog
-      ref={dialog}
+    <AppDialog
+      title={application ? '编辑应用' : '创建应用'}
+      eyebrow="APPLICATION SETUP"
+      // 保存中不允许关闭（禁用 × 并拦掉 Esc），避免请求结果丢失
+      closable={!isSaving}
+      onClose={onClose}
       className={styles.dialog}
-      onCancel={(event) => {
-        event.preventDefault()
-        if (!isSaving) onClose()
-      }}
     >
       <form onSubmit={(event) => void handleSubmit(event)}>
-        <header>
-          <div>
-            <span className="eyebrow">APPLICATION SETUP</span>
-            <h2>{application ? '编辑应用' : '创建应用'}</h2>
-          </div>
-          <button
-            type="button"
-            aria-label="关闭应用表单"
-            disabled={isSaving}
-            onClick={onClose}
-          >
-            ×
-          </button>
-        </header>
         <div className={styles.fields}>
           <label>
             应用名称
@@ -178,6 +163,6 @@ export function ApplicationEditor({
           </button>
         </footer>
       </form>
-    </dialog>
+    </AppDialog>
   )
 }

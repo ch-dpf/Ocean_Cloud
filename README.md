@@ -58,7 +58,7 @@ npm run dev
 
 ## 配置与边界
 
-主平台 VITE_API_BASE_URL 默认 /api；Vite 代理目标通过进程环境变量 OCEAN_CONTROL_TARGET 配置，默认 http://127.0.0.1:5180。
+主平台 VITE_API_BASE_URL 默认 /api；后端地址统一在根目录 backend.config.ts 声明，各应用的 Vite 代理都引用它，换后端只改这一处。需要临时改指向时可用进程环境变量 OCEAN_CONTROL_TARGET（主平台代理）与 OCEAN_BUSINESS_TARGET（业务接口代理）覆盖，本机 Node 控制服务为 http://127.0.0.1:5180。
 子应用独立开发时，VITE_PORTAL_ORIGIN 默认为 http://localhost:5173，VITE_API_BASE_URL 默认为 /api。
 VITE_* 为构建时配置，不能保存密钥。生产静态服务需配置管理接口代理与各应用站点路由。
 

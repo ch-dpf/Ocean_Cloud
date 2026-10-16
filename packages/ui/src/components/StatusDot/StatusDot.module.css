@@ -1,0 +1,12 @@
+/* 状态小方块 + 文案：方块颜色由 props 给（取自全局调色板） */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.square {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}

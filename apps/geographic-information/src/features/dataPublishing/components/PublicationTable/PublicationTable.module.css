@@ -1,0 +1,54 @@
+/* 状态：小方块颜色区分，颜色由行内样式给出 */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.statusSquare {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 2px;
+}
+/* 服务地址：整格可点击复制，做成链接观感 */
+.serviceUrl {
+  color: #1267d6;
+  cursor: pointer;
+}
+/* 地址与小签作为一个整体居中：外层 flex 容器不吃 text-align */
+.serviceUrlCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+.serviceUrlText {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 悬停时只给地址文本加下划线，复制小签不跟着划线 */
+.serviceUrl:hover .serviceUrlText {
+  text-decoration: underline;
+}
+/* 复制结果小签：紧跟地址之后，成功绿色、失败红色 */
+.copyTag,
+.copyFailTag {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+.copyTag {
+  background: #e8f5ec;
+  color: #2fa84f;
+}
+.copyFailTag {
+  background: #fdecec;
+  color: #d64545;
+}

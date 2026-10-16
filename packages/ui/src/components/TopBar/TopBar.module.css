@@ -1,0 +1,188 @@
+/* 顶部栏：固定高 56 */
+.header {
+  height: 64px;
+  flex: 0 0 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px 0 24px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5ecef;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.headerTitle {
+  font-family: Source Han Sans CN;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 100%;
+  color: #3f5665;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+}
+
+.headerSearch {
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #d5e0e9;
+}
+
+.headerSearchInput {
+  border: none;
+  vertical-align: middle;
+  margin-right: 53px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  color: #3f5665;
+  outline: none;
+  width: 180px;
+}
+
+.headerSearchInput::placeholder {
+  color: #9aa7b2;
+}
+
+.headerSearchInput:focus {
+  border: none;
+  outline: none;
+}
+
+.headerSearchIcon {
+  width: 16px;
+  height: 16px;
+  margin: 10px;
+  vertical-align: middle;
+}
+
+.headerSchema {
+  background-color: #ffffff;
+  border: none;
+  outline: none;
+  margin-left: 20px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.headerSchemaIcon {
+  vertical-align: middle;
+  background-color: #ffffff;
+  border: none;
+  outline: none;
+  width: 16px;
+  height: 16px;
+}
+
+.headerNotification {
+  margin-left: 20px;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.headerNotificationIcon {
+  width: 16px;
+  height: 16px;
+  vertical-align: baseline;
+  transform: translateY(-1px);
+}
+
+/* 账号区：外层包住头像与菜单，负责鼠标悬浮区域 */
+.headerUser {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-left: 20px;
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #eef3f8;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarFallback {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* 悬浮菜单外层：留出透明间隙，鼠标从头像移到菜单时不会触发 mouseleave */
+.userMenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 20;
+  padding-top: 6px;
+}
+
+.userMenuList {
+  min-width: 120px;
+  padding: 4px;
+  border: 1px solid #e5ecef;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px #183f6322;
+}
+
+.userMenuItem {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #3f5665;
+  font-family: inherit;
+  font-size: 12px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.userMenuItem:hover {
+  background: #e8f1fd;
+  color: #1267d6;
+}
+
+@media (max-width: 760px) {
+  .header {
+    height: 58px;
+    padding: 0 16px;
+  }
+  .headerSearch {
+    display: none;
+  }
+  .headerSearchInput {
+    width: auto;
+  }
+}

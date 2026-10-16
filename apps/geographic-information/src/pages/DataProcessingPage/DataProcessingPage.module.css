@@ -1,0 +1,103 @@
+.page {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+/* 二级导航右侧的内容区：操作栏、页签与表格同处一张白色卡片 */
+.content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  margin: 16px;
+  padding: 16px;
+  border: 1px solid #dee5ed;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.headerActions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* 与数据管理页的「上传进度」按钮同款：白底描边，次要操作 */
+.progressButton {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid #dee5ed;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #13293d;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.progressButton:hover {
+  border-color: #1267d6;
+  color: #1267d6;
+}
+
+.createButton {
+  height: 32px;
+  flex-shrink: 0;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: #1f75f2;
+  color: #ffffff;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tabs {
+  display: flex;
+  flex-shrink: 0;
+  gap: 24px;
+  margin: 0 0 12px;
+  border-bottom: 1px solid #dee5ed;
+}
+
+@media (max-width: 760px) {
+  .page {
+    height: auto;
+    flex-direction: column;
+  }
+  .content {
+    margin: 12px;
+    padding: 16px;
+  }
+}
+
+.tab {
+  height: 38px;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #576e85;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: #1267d6;
+}
+
+.tabActive {
+  border-bottom-color: #1267d6;
+  color: #1267d6;
+  font-weight: 700;
+}

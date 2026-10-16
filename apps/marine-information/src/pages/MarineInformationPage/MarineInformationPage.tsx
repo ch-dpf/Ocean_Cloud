@@ -1,6 +1,9 @@
 import { SubsystemHome } from '@ocean-cloud/ui'
 import type { SubsystemNavigation } from '@ocean-cloud/ui'
-export function MarineInformationPage(navigation: SubsystemNavigation) {
+type MarineInformationPageProps = SubsystemNavigation & {
+  readonly showChrome?: boolean
+}
+export function MarineInformationPage(navigation: MarineInformationPageProps) {
   return (
     <SubsystemHome
       {...navigation}

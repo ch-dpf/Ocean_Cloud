@@ -1,0 +1,12 @@
+/* 日期筛选用原生 date，样式对齐 antd 输入框；只选年月日，缩小宽度让操作按钮能同行 */
+.dateInput {
+  width: 140px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #13293d;
+  font-family: inherit;
+  font-size: 14px;
+}

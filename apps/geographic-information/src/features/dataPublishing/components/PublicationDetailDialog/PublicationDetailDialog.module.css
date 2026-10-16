@@ -1,0 +1,98 @@
+/* 弹窗外壳（边框/圆角/内边距）由 AppDialog 统一提供，这里只保留尺寸与布局 */
+.dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(720px, 90vw);
+  max-height: 88vh;
+}
+/* 内容区自行滚动，弹窗框与关闭按钮保持不动 */
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.state {
+  margin: 20px 0 4px;
+  color: #81919e;
+  font-size: 13px;
+}
+
+/* 概览字段：两列排布，值过长时省略并由 title 展示全量 */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 24px;
+  margin: 0;
+}
+.summaryItem {
+  display: flex;
+  min-width: 0;
+  gap: 8px;
+  font-size: 13px;
+}
+.summaryItem dt {
+  flex-shrink: 0;
+  width: 96px;
+  color: #8394a0;
+}
+.summaryItem dd {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 链接类字段：整格可点复制。按钮只作为可点区域，外观与普通文本一致 */
+.copyButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+/* 地址文本负责省略号，小签不参与压缩，因此不会把结果提示裁掉 */
+.copyText {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 悬停只给地址加下划线，复制小签不跟着划线 */
+.copyButton:hover .copyText {
+  text-decoration: underline;
+}
+/* 复制结果小签：与服务列表同款（成功绿 / 失败红） */
+.copyTag,
+.copyFailTag {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+.copyTag {
+  background: #e8f5ec;
+  color: #2fa84f;
+}
+.copyFailTag {
+  background: #fdecec;
+  color: #d64545;
+}
+
+@media (max-width: 760px) {
+  .summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

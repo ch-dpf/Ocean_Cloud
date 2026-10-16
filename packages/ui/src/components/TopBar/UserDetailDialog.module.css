@@ -1,0 +1,64 @@
+/* 弹窗外壳（边框/圆角/内边距）由 AppDialog 统一提供，这里只保留尺寸 */
+.dialog {
+  width: min(420px, 92vw);
+}
+
+/* 头像 + 姓名：与账号字段区分开；与标题行的间距由 AppDialog 统一提供 */
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.avatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #eef3f8;
+  overflow: hidden;
+}
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.avatarFallback {
+  font-size: 26px;
+  line-height: 1;
+}
+.identityName {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 详情字段：单列排布，值过长时省略并由 title 展示全量 */
+.summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  margin: 18px 0 0;
+}
+.summaryItem {
+  display: flex;
+  min-width: 0;
+  gap: 8px;
+  font-size: 13px;
+}
+.summaryItem dt {
+  flex-shrink: 0;
+  width: 96px;
+  color: #8394a0;
+}
+.summaryItem dd {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -1,0 +1,260 @@
+/* 弹窗外壳（边框/圆角/内边距）由 AppDialog 统一提供，这里只保留尺寸 */
+.dialog {
+  width: min(620px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 文件来源页签：未接入的来源置灰 */
+.tabs {
+  display: flex;
+  gap: 20px;
+  border-bottom: 1px solid #dee5ed;
+}
+.tab {
+  height: 34px;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #576e85;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.tab:disabled {
+  color: #b4c0cb;
+  cursor: not-allowed;
+}
+.tabActive {
+  border-bottom-color: #1267d6;
+  color: #1267d6;
+  font-weight: 700;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.label {
+  color: #576e85;
+  font-size: 13px;
+}
+.input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #dee5ed;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #13293d;
+  font-family: inherit;
+  font-size: 13px;
+}
+.input:focus {
+  border-color: #1267d6;
+  outline: none;
+}
+
+/* 处理任务类型：四个选项平铺 */
+.radioRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+.radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #13293d;
+  font-size: 13px;
+  cursor: pointer;
+}
+.radio input {
+  accent-color: #1267d6;
+}
+/* 尚未开放的切片类型：置灰不可选 */
+.radioDisabled {
+  color: #b4c0cb;
+  cursor: not-allowed;
+}
+
+/* 高级选项：预处理参数两列排布 */
+.section {
+  padding: 5px 16px 14px;
+  border: 1px solid #eef3f8;
+  border-radius: 8px;
+  background: #fbfdff;
+}
+.sectionTitle {
+  margin: 0;
+  color: #13293d;
+  font-size: 13px;
+  font-weight: 700;
+}
+.subTitle {
+  margin: 4px 0 12px;
+  color: #8394a0;
+  font-size: 12px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.hint {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #8394a0;
+  font-size: 12px;
+}
+
+/* 数据管理数据：入口页锁定的那一条，只读展示 */
+.readonlyFile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid #dee5ed;
+  border-radius: 6px;
+  background: #f7fafd;
+  font-size: 13px;
+}
+.readonlyName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.readonlyMeta {
+  flex-shrink: 0;
+  color: #8394a0;
+  font-size: 12px;
+}
+
+/* 打开系统文件选择框 / 数据选择浮层的入口按钮行 */
+.pickRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+/* 主操作按钮：实底蓝，与弹窗底部「确定」同款 */
+.pickButton {
+  height: 34px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 6px;
+  background: #1f75f2;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+/* 原生文件输入视觉隐藏：保留聚焦与 onChange，外观由 .pickButton 承担。
+   不用 display: none —— 个别浏览器下那样点不动 */
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.pickCount {
+  color: #8394a0;
+  font-size: 12px;
+}
+
+/* 已选文件列表：超出高度内部滚动 */
+.pickedList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 132px;
+  margin: 0;
+  padding: 8px 10px;
+  overflow-y: auto;
+  border: 1px solid #dee5ed;
+  border-radius: 6px;
+  background: #f7fafd;
+  list-style: none;
+}
+.pickedItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+}
+.pickedName {
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pickedRemove {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #8394a0;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.pickedRemove:hover {
+  background: #e8f1fd;
+  color: #d64545;
+}
+
+.error {
+  margin: 0;
+  color: #d64545;
+  font-size: 12px;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.cancel,
+.confirm {
+  height: 34px;
+  padding: 0 18px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.cancel {
+  border: 1px solid #dee5ed;
+  background: #ffffff;
+  color: #13293d;
+}
+.confirm {
+  border: 0;
+  background: #1f75f2;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+@media (max-width: 560px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

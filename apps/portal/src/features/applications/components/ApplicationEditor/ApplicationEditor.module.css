@@ -1,35 +1,11 @@
 .dialog {
-  overflow: hidden;
-  padding: 0;
-  border: 1px solid #dce6ee;
-  border-radius: 14px;
   width: min(560px, calc(100vw - 32px));
   max-height: 88vh;
-  color: #193248;
-  box-shadow: 0 22px 90px #16364b33;
-}
-.dialog::backdrop {
-  background: #19324866;
 }
 .dialog form {
   display: flex;
   flex-direction: column;
-  max-height: calc(88vh - 2px);
-}
-.dialog header,
-.dialog footer {
-  flex-shrink: 0;
-}
-.dialog header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 22px 26px;
-  border-bottom: 1px solid #e7edf2;
-}
-.dialog header h2 {
-  font-size: 20px;
-  margin: 5px 0 0;
+  max-height: calc(88vh - 42px);
 }
 .fields {
   min-height: 0;
@@ -81,6 +57,7 @@
 }
 .dialog footer {
   display: flex;
+  flex-shrink: 0;
   justify-content: flex-end;
   gap: 10px;
   border-top: 1px solid #e7edf2;

@@ -1,0 +1,145 @@
+import { useEffect, useState } from 'react'
+import { PUBLICATION_PAGE_SIZE } from '../constants/publication'
+import { getPublicationPage } from '../services/publicationService'
+import type {
+  Publication,
+  PublicationKind,
+  PublicationProcessingType,
+  PublicationRow,
+  PublicationScope,
+} from '../types/publication'
+
+interface PublicationPageData {
+  /** 结果对应的查询条件，用于判断是否仍是当前查询的结果 */
+  readonly key: string
+  readonly records: readonly PublicationRow[]
+  readonly total: number
+  readonly current: number
+  readonly error: string | null
+}
+
+interface UsePublicationPageOptions {
+  /** 查看范围：全部（地形+影像）/ 仅地形 / 仅影像 */
+  readonly scope: PublicationScope
+  /** 服务状态；不传表示不按状态筛选 */
+  readonly status?: string
+  /** 服务编号；不传表示不按编号筛选 */
+  readonly serviceCode?: string
+  readonly size?: number
+}
+
+/** int64/可空字符串统一成展示用字符串：null/空串显示为 —（返回 ''） */
+function text(value: string | null | undefined): string {
+  return value ?? ''
+}
+
+/** int32 层级字段：后端可能给字符串，统一转成数字，无效时为 null */
+function zoom(value: number | string | null | undefined): number | null {
+  if (value === null || value === undefined || value === '') return null
+  const parsed = Number(value)
+  return Number.isInteger(parsed) ? parsed : null
+}
+
+function toProcessingType(
+  scope: PublicationScope,
+): PublicationProcessingType | undefined {
+  if (scope === 'terrain') return 'TERRAIN'
+  if (scope === 'imagery') return 'IMAGERY'
+  return undefined
+}
+
+function toKind(processingType: PublicationProcessingType): PublicationKind {
+  if (processingType === 'TERRAIN') return 'terrain'
+  if (processingType === 'IMAGERY') return 'imagery'
+  return 'vector'
+}
+
+function toRow(record: Publication): PublicationRow {
+  const kind = toKind(record.processingType)
+  return {
+    rowKey: `${kind}-${record.id}`,
+    kind,
+    id: record.id,
+    serviceCode: record.serviceCode,
+    sourceTaskId: text(record.sourceTaskId),
+    dataSetId: text(record.dataSetId),
+    status: record.status,
+    serviceUrl: record.serviceUrl,
+    descriptorUrl: text(record.descriptorUrl),
+    tileUrlTemplate: text(record.tileUrlTemplate),
+    publishTime: record.publishTime,
+    updateTime: record.updateTime,
+    targetCrs: record.targetCrs,
+    tileProfile: record.tileProfile,
+    outputFormat: record.outputFormat,
+    minZoom: zoom(record.minZoom),
+    maxZoom: zoom(record.maxZoom),
+  }
+}
+
+/**
+ * 已发布服务统一分页查询。范围 / 状态 / 编号 / 每页条数变化时回到第一页；
+ * 条件变化时取消上一次请求，并只展示当前查询对应的结果。
+ */
+export function usePublicationPage({
+  scope,
+  status,
+  serviceCode,
+  size = PUBLICATION_PAGE_SIZE,
+}: UsePublicationPageOptions) {
+  const scopeKey = `${scope}\0${status ?? ''}\0${serviceCode ?? ''}`
+  const [paging, setPaging] = useState({ scopeKey, size, current: 1 })
+  const [revision, setRevision] = useState(0)
+  const [data, setData] = useState<PublicationPageData | null>(null)
+  const current =
+    paging.scopeKey === scopeKey && paging.size === size ? paging.current : 1
+  const queryKey = `${scopeKey}:${current}:${size}:${revision}`
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const signal = controller.signal
+    getPublicationPage(
+      {
+        current,
+        size,
+        processingType: toProcessingType(scope),
+        status,
+        serviceCode,
+      },
+      signal,
+    )
+      .then((page) => {
+        setData({
+          key: queryKey,
+          records: page.records.map(toRow),
+          total: Number(page.total),
+          current: Number(page.current) || current,
+          error: null,
+        })
+      })
+      .catch(() => {
+        // 主动取消不提示；其余错误同时由 RequestErrorNotice 统一展示
+        if (signal.aborted) return
+        setData({
+          key: queryKey,
+          records: [],
+          total: 0,
+          current,
+          error: '服务列表加载失败。',
+        })
+      })
+    return () => controller.abort()
+  }, [current, queryKey, scope, serviceCode, size, status])
+
+  const ready = data !== null && data.key === queryKey
+  return {
+    records: ready ? data.records : [],
+    total: ready ? data.total : 0,
+    current: ready ? data.current : current,
+    error: ready ? data.error : null,
+    isLoading: !ready,
+    goToPage: (next: number) => setPaging({ scopeKey, size, current: next }),
+    /** 按当前条件重新查询 */
+    refresh: () => setRevision((previous) => previous + 1),
+  }
+}

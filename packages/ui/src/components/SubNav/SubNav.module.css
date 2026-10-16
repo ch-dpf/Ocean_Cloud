@@ -1,0 +1,220 @@
+/* 与数据管理页的目录导航保持一致：白底 + 上/左边框 */
+.subNav {
+  width: 250px;
+  height: 100%;
+  flex-shrink: 0;
+  min-height: 0;
+  overflow-y: auto;
+  background: #ffffff;
+  border-left: 1px solid #e5e5e5;
+  border-top: 1px solid #e5e5e5;
+}
+
+@media (max-width: 760px) {
+  .subNav {
+    width: 100%;
+    height: auto;
+    max-height: 240px;
+  }
+}
+
+.header {
+  padding: 16px 12px 8px;
+}
+.title {
+  margin: 0;
+  color: #13293d;
+  font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  font-size: 19px;
+  font-weight: 700;
+}
+.subtitle {
+  margin: 4px 0 0;
+  color: #576e85;
+  font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  font-size: 11px;
+}
+
+/* 一组导航项的容器：分层后每层各占一块，避免两层的 padding 叠加 */
+.group {
+  padding: 12px;
+}
+/* 前面已有小标题时，下层不再重复留出顶部间距 */
+.groupTight {
+  padding-top: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 上下两层之间的分隔线：与数据管理页的侧边栏分隔线同款 */
+.divider {
+  height: 1px;
+  margin: 8px 12px;
+  background: #e5e5e5;
+}
+
+/* 下层小标题：与数据管理页「数据目录」同款 */
+.sectionTitle {
+  margin: 0;
+  padding: 8px 12px 6px;
+  color: #8394a0;
+  font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  font-size: 12px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  color: #13293d;
+  font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  font-size: 13px;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+.item:hover {
+  background: #e8f1fd;
+}
+.itemActive {
+  background: #e8f1fd;
+}
+/* 带图标的项沿用上方导航的行高 */
+.itemWithIcon {
+  height: 36px;
+  color: #4e5969;
+}
+
+.text {
+  white-space: nowrap;
+}
+.textLink {
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+.item:hover .text,
+.itemActive .text,
+.item:hover .textLink,
+.itemActive .textLink {
+  color: #1267d6;
+}
+
+/* 展开箭头：旋转 90° 表示已展开 */
+.chevron {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #8394a0;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.chevron:hover {
+  background: transparent;
+}
+.chevronIcon {
+  display: inline-block;
+  font-size: 12px;
+  line-height: 1;
+  transition: transform 0.2s;
+}
+.chevronOpen {
+  transform: rotate(90deg);
+}
+.item:hover .chevron,
+.itemActive .chevron {
+  color: #1267d6;
+}
+
+/* 展开后的占位区域：数据接入前先占位 */
+.drawer {
+  height: 64px;
+  margin: 4px 0 8px;
+  border-radius: 6px;
+  background: #f7fafd;
+}
+
+.icon {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+.icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.iconDefault {
+  transition: opacity 0.2s;
+}
+.iconActive {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.item:hover .iconDefault,
+.itemActive .iconDefault {
+  opacity: 0;
+}
+.item:hover .iconActive,
+.itemActive .iconActive {
+  opacity: 1;
+}
+
+/*
+ * 未接入的项：整体置灰不可点。
+ * 放在文件末尾，靠同级特异性下的「后定义者胜出」覆盖上方 .item 的 hover / active 规则。
+ */
+.itemDisabled {
+  color: #b4c0cb;
+  cursor: not-allowed;
+}
+.itemDisabled:hover,
+.itemDisabled.itemActive {
+  background: transparent;
+}
+.itemDisabled .text,
+.itemDisabled .textLink,
+.itemDisabled:hover .text,
+.itemDisabled:hover .textLink {
+  color: inherit;
+}
+/* hover 时图标不参与切换，保持默认态 */
+.itemDisabled:hover .iconDefault {
+  opacity: 1;
+}
+/* 禁用项的图标是写死蓝色的 SVG，去色并压暗，与禁用文字同一档灰度 */
+.itemDisabled .icon img {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+.chevronDisabled {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  color: #b4c0cb;
+}

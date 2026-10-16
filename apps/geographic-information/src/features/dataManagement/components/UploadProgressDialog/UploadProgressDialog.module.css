@@ -1,0 +1,127 @@
+.dialog {
+  width: min(560px, 90vw);
+  padding: 24px 28px;
+  border: 1px solid #dce6ec;
+  border-radius: 14px;
+  color: #13293d;
+  font-family: 'Noto Sans SC', sans-serif;
+  box-shadow: 0 25px 80px #183f6322;
+}
+.dialog::backdrop {
+  background: #17384d55;
+}
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.title {
+  flex: 1;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.clear {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid #dee5ed;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #576e85;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.clear:hover {
+  border-color: #1267d6;
+  color: #1267d6;
+}
+.close {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #8394a0;
+  font-family: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.close:hover {
+  background: #f2f7fa;
+  color: #13293d;
+}
+.empty {
+  margin: 20px 0 4px;
+  color: #81919e;
+  font-size: 13px;
+}
+.list {
+  max-height: 380px;
+  margin: 16px 0 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+.task {
+  padding: 14px 0;
+  border-top: 1px solid #eef3f8;
+}
+.taskName {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+.taskNo {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  color: #8394a0;
+  font-size: 12px;
+}
+/* 处理任务的阶段行：条上方的「分析中 2/4」，上传任务不渲染这一行 */
+.stage {
+  margin: 10px 0 0;
+  color: #576e85;
+  font-size: 12px;
+}
+.track {
+  height: 8px;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #eef3f8;
+}
+.bar {
+  height: 100%;
+  border-radius: 4px;
+  background: #1f75f2;
+  transition: width 0.2s;
+}
+/* 还没收到进度帧时的流动条：一道光带循环扫过，表示正在上传而不是卡住 */
+.barPending {
+  width: 40%;
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(31, 117, 242, 0.25),
+    #1f75f2,
+    rgba(31, 117, 242, 0.25)
+  );
+  animation: pendingSweep 1.4s ease-in-out infinite;
+}
+@keyframes pendingSweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+.meta {
+  margin: 8px 0 0;
+  color: #576e85;
+  font-size: 12px;
+}

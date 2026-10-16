@@ -1,0 +1,175 @@
+.root {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid #e8eef7;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+}
+
+/* 筛选区占满小窗口时，整张卡片滚动，表体恢复自然高度，避免嵌套滚动。 */
+.rootFlow {
+  overflow: auto;
+}
+
+.rootFlow .tableArea {
+  flex: none;
+}
+
+.searchBar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 18px 20px 0;
+  padding: 16px 16px 8px;
+  border: 1px solid #edf2f7;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fbfdff 0%, #ffffff 100%);
+}
+
+/* 表单占满整行，按钮组再靠 margin-left: auto 顶到行尾 */
+.searchForm {
+  flex: 1;
+  min-width: 0;
+  row-gap: 12px;
+}
+
+/* 搜索 / 重置推到筛选条件的另一侧，两者分居一行左右 */
+.searchActions {
+  margin-left: auto;
+  margin-bottom: 8px;
+}
+
+.extraActions {
+  flex-shrink: 0;
+}
+
+/* 已有页面卡片时去掉内层套框，给数据列表留出更多空间。 */
+.compact {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.compact .searchBar {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.compact .searchForm {
+  flex: 1 1 640px;
+  gap: 8px 12px;
+}
+
+.compact .searchForm :global(.ant-form-item) {
+  margin-inline-end: 0;
+  margin-bottom: 0;
+}
+
+.compact .searchForm .searchActions {
+  margin-left: auto;
+}
+
+.compact .extraActions {
+  margin-left: auto;
+}
+
+.compact .tableArea {
+  margin-top: 12px;
+  padding: 0;
+}
+
+.compact .tableArea:first-child {
+  margin-top: 0;
+}
+
+/* 列宽拖拽：手柄贴在表头单元格右边缘，被包裹的 th 由 react-resizable 加上这个类 */
+.root :global(.ant-table-thead th.react-resizable) {
+  position: relative;
+}
+
+/* 表头与单元格内容统一居中。选择器带 .ant-table-wrapper 是为了压过 antd 在表头上
+   声明的 textAlign: start（权重 (0,2,2)）；表体没有这条竞争规则，直接声明即可 */
+.root :global(.ant-table-wrapper .ant-table-thead > tr > th),
+.root :global(.ant-table-wrapper .ant-table-tbody > tr > td) {
+  text-align: center;
+}
+
+/* 表格统一用思源黑体。antd 会给 .ant-table 重置字体（resetComponent 里带了
+   fontFamily），所以表格内容不会继承页面字体，这里覆盖一次；表头不加字重，
+   保持 antd 自带的加粗 */
+.root :global(.ant-table) {
+  font-family: 'Noto Sans SC', sans-serif;
+}
+.resizeHandle {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  z-index: 2;
+  width: 9px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+}
+.resizeHandle:hover {
+  background: rgba(31, 117, 242, 0.16);
+}
+
+.tableArea {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  margin-top: 14px;
+  padding: 0 20px 18px;
+}
+
+@media (max-width: 760px) {
+  .root {
+    flex: auto;
+    overflow: visible;
+  }
+
+  .tableArea {
+    flex: none;
+  }
+}
+
+/* 分页「跳转到 __ 页 确定」里的确定按钮：antd 未提供该按钮样式（只写了容器与输入框），
+   这里补齐成与旁边文字同高的小号按钮，浅灰底 */
+.tableArea :global(.ant-pagination-options-quick-jumper-button) {
+  height: 24px;
+  margin-inline-start: 6px;
+  padding: 0 6px;
+  border: 1px solid #e5e9f0;
+  border-radius: 4px;
+  background: #f5f6f8;
+  color: #576e85;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.tableArea :global(.ant-pagination-options-quick-jumper-button:hover) {
+  border-color: #ccd6e3;
+  background: #eceef2;
+}
+.tableArea :global(.ant-pagination-options-quick-jumper-button:disabled) {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
