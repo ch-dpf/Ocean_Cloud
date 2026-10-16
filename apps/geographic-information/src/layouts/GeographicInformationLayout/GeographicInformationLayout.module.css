@@ -1,6 +1,7 @@
 .shell {
   display: flex;
-  min-height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .mainLayout {
@@ -9,7 +10,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 0;
 }
 
 .mainLayoutCollapsed {
@@ -17,10 +18,11 @@
 }
 
 .main {
+  display: flex;
   flex: 1;
+  min-height: 0;
   width: 100%;
-  /* 内容区按一屏高排布：保住现有高度不被页脚压缩，页脚排在下方，向下滚动即可看到 */
-  min-height: calc(100vh - 64px);
+  overflow: hidden;
 }
 
 .footer {
@@ -33,22 +35,20 @@
   color: #a5b2bb;
 }
 
-@media (max-width: 1050px) {
-  .main {
-    padding: 26px 22px;
-  }
-}
-
 @media (max-width: 760px) {
   .shell {
     display: block;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
   }
   .mainLayout,
   .mainLayoutCollapsed {
     margin-left: 0;
   }
   .main {
-    padding: 24px 16px;
+    display: block;
+    overflow: visible;
   }
   .footer {
     padding: 12px 16px;

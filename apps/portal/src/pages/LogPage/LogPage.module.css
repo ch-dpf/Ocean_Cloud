@@ -27,12 +27,17 @@
 }
 
 @media (max-width: 760px) {
+  .page {
+    height: auto;
+    flex-direction: column;
+  }
   .content {
     padding: 24px 16px;
   }
 }
 
 .contentHeader {
+  flex-shrink: 0;
   margin-bottom: 16px;
   padding-left: 12px;
   border-left: 3px solid #1267d6;

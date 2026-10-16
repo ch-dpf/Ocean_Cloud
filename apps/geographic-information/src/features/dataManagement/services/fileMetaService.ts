@@ -15,16 +15,7 @@ export async function getFileMetaPage(
   const result = await httpClient.get<ApiResult<FileMetaPage>>(
     '/filemeta/page',
     {
-      params: {
-        current: query.current,
-        size: query.size,
-        ...(query.dataSetId ? { dataSetId: query.dataSetId } : {}),
-        ...(query.categoryId !== undefined
-          ? { categoryId: query.categoryId }
-          : {}),
-        ...(query.originalName ? { originalName: query.originalName } : {}),
-        ...(query.extension ? { extension: query.extension } : {}),
-      },
+      params: toQueryParams(query),
       signal,
     },
   )
@@ -32,7 +23,7 @@ export async function getFileMetaPage(
 }
 
 /** 整选分类或数据集时逐页拉全量的每页条数：取大一些以减少请求次数 */
-const BULK_PAGE_SIZE = 200
+const BULK_PAGE_SIZE = 100
 
 /**
  * 拉取某个范围下的全部数据文件，供「整选整个分类 / 某个数据集」使用。
@@ -60,12 +51,12 @@ export async function getAllFileMeta(
 
 /** 分页查询回收站（已删除）的数据文件 */
 export async function getDeletedFileMetaPage(
-  query: { readonly current: number; readonly size: number },
+  query: FileMetaPageQuery,
   signal?: AbortSignal,
 ): Promise<FileMetaPage> {
   const result = await httpClient.get<ApiResult<FileMetaPage>>(
     '/filemeta/deleted/page',
-    { params: { current: query.current, size: query.size }, signal },
+    { params: toQueryParams(query), signal },
   )
   return result.data
 }
@@ -98,4 +89,31 @@ export async function deleteFileMeta(id: string): Promise<void> {
  */
 export function buildFileDownloadUrl(id: string): string {
   return `${apiBaseUrl}/filemeta/${encodeURIComponent(id)}/download`
+}
+
+function toQueryParams(query: FileMetaPageQuery) {
+  return Object.fromEntries(
+    Object.entries(query).filter(
+      ([, value]) => value !== undefined && value !== '',
+    ),
+  )
+}
+
+/** 查询当前文件与各图层的完整空间信息。 */
+export async function getFileMetaDetail(
+  id: string,
+  signal?: AbortSignal,
+): Promise<FileMeta> {
+  const result = await httpClient.get<ApiResult<FileMeta>>(
+    '/filemeta/' + encodeURIComponent(id),
+    { signal },
+  )
+  return result.data
+}
+
+/** 重新提取期间旧空间信息退出检索，由详情接口跟踪最终状态。 */
+export async function retryFileMetadata(id: string): Promise<void> {
+  await httpClient.post<ApiResult<unknown>>(
+    '/filemeta/' + encodeURIComponent(id) + '/metadata/retry',
+  )
 }

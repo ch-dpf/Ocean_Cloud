@@ -275,6 +275,7 @@ export function PublicationTable({
 
   return (
     <SearchTable<PublicationRow>
+      compact
       columns={buildColumns(
         scope,
         current,
@@ -301,7 +302,11 @@ export function PublicationTable({
       searchFormItems={
         <>
           <Form.Item label="服务编号" name="serviceCode">
-            <Input placeholder="请输入服务编号" allowClear />
+            <Input
+              placeholder="请输入服务编号"
+              allowClear
+              style={{ width: 180 }}
+            />
           </Form.Item>
           <Form.Item label="服务状态" name="status">
             <Select

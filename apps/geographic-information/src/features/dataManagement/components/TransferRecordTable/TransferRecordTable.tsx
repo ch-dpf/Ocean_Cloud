@@ -12,6 +12,7 @@ import {
   OPERATION_TYPE_OPTIONS,
   toOperationTypeLabel,
   toTaskStatusLabel,
+  toImportStageLabel,
 } from '../../constants/task'
 import type { TransferFilters, TransferRecord } from '../../types/fileTransfer'
 
@@ -89,7 +90,12 @@ function buildColumns(
       render: (_, record) => (
         <StatusDot
           tone={STATUS_TONES[record.recordStatus] ?? 'pending'}
-          label={toTaskStatusLabel(record.recordStatus)}
+          label={
+            record.recordStatus === 'RUNNING' &&
+            record.operationType === 'IMPORT'
+              ? toImportStageLabel(record.currentStage)
+              : toTaskStatusLabel(record.recordStatus)
+          }
         />
       ),
     },
@@ -97,7 +103,11 @@ function buildColumns(
       title: '进度',
       key: 'progress',
       width: 90,
-      render: (_, record) => `${record.progress}%`,
+      render: (_, record) =>
+        record.recordStatus === 'RUNNING' &&
+        record.currentStage === 'EXTRACTING_METADATA'
+          ? '提取中'
+          : `${record.progress}%`,
     },
     {
       title: '已完成 / 总数',
@@ -186,6 +196,7 @@ export function TransferRecordTable({
 }: TransferRecordTableProps) {
   return (
     <SearchTable<TransferRecord>
+      compact
       columns={buildColumns(current, pageSize, onDetail)}
       dataSource={records}
       rowKey="id"

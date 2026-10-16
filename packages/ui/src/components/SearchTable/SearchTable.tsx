@@ -28,10 +28,8 @@ const SEARCH_TABLE_LOCALE = {
   },
 }
 
-/** 表体最小高度，避免容器过矮时表格不可用 */
-const MIN_SCROLL_Y = 220
-/** 表体之外（分页条、内边距）预留的高度 */
-const TABLE_EXTRA_HEIGHT = 92
+/** 可用表体小于此高度时，改为卡片整体滚动。 */
+const MIN_SCROLL_Y = 160
 
 /** 列宽覆盖用的键：优先 key，其次 dataIndex，最后退回列序号 */
 function columnKeyOf<T>(
@@ -70,6 +68,8 @@ export interface SearchTableProps<T> {
   readonly onReset?: () => void
   /** 搜索栏右侧的额外操作 */
   readonly extraActions?: ReactNode
+  /** 紧凑布局：用于已有外层卡片的页面，筛选与功能按钮共用工具栏。 */
+  readonly compact?: boolean
   readonly pageSizeOptions?: readonly string[]
   /** 表格横向滚动宽度；列宽合计即表格最小宽度，配合列 ellipsis 才能截断长文本 */
   readonly scrollX?: number | string
@@ -80,7 +80,8 @@ export interface SearchTableProps<T> {
 
 /**
  * 通用搜索表格：搜索栏 + antd Table + antd 分页（每页条数选择、跳页、共 N 条）。
- * 表格区域高度固定，超出部分在表体内部滚动，因此每页 20 条与 10 条占用同样的高度。
+ * 正常窗口固定表体高度，筛选区与分页始终可见；空间不足时改为卡片整体滚动。
+ * 移动端恢复自然高度，由页面统一滚动。
  * 数据由调用方传入（受控），便于与页面其它区域复用同一份查询结果。
  */
 export function SearchTable<T extends object>({
@@ -99,6 +100,7 @@ export function SearchTable<T extends object>({
   onSearch,
   onReset,
   extraActions,
+  compact = false,
   pageSizeOptions = ['10', '20', '50', '100'],
   scrollX = 'max-content',
   emptyText = '暂无数据',
@@ -107,23 +109,58 @@ export function SearchTable<T extends object>({
 }: SearchTableProps<T>) {
   const [internalForm] = Form.useForm()
   const form = externalForm ?? internalForm
+  const rootRef = useRef<HTMLDivElement>(null)
   const tableAreaRef = useRef<HTMLDivElement>(null)
-  const [scrollY, setScrollY] = useState(MIN_SCROLL_Y)
+  const [scrollY, setScrollY] = useState<number>()
 
   // 按可用高度算表体高度：ResizeObserver 回调异步触发，不会在渲染期间同步 setState
   useEffect(() => {
-    const element = tableAreaRef.current
-    if (element === null) return
-    const observer = new ResizeObserver(() => {
-      setScrollY(
-        Math.max(MIN_SCROLL_Y, element.clientHeight - TABLE_EXTRA_HEIGHT),
+    const root = rootRef.current
+    const area = tableAreaRef.current
+    if (root === null || area === null) return
+    const mobile = window.matchMedia('(max-width: 760px)')
+    const measure = () => {
+      const areaStyle = getComputedStyle(area)
+      const rootStyle = getComputedStyle(root)
+      const header = area.querySelector('thead')
+      const pagination = area.querySelector<HTMLElement>('.ant-pagination')
+      const paginationStyle = pagination ? getComputedStyle(pagination) : null
+      const paginationHeight =
+        pagination && paginationStyle
+          ? pagination.offsetHeight +
+            parseFloat(paginationStyle.marginTop) +
+            parseFloat(paginationStyle.marginBottom)
+          : 0
+      // 以卡片可视底边计算；整体滚动模式下也不依赖表格自身高度，避免反馈循环。
+      const available = Math.floor(
+        root.getBoundingClientRect().top +
+          root.clientTop +
+          root.clientHeight -
+          parseFloat(rootStyle.paddingBottom) -
+          (area.getBoundingClientRect().top + root.scrollTop) -
+          parseFloat(areaStyle.paddingTop) -
+          parseFloat(areaStyle.paddingBottom) -
+          (header?.getBoundingClientRect().height ?? 0) -
+          paginationHeight,
       )
-    })
-    observer.observe(element)
+      setScrollY(
+        mobile.matches || available < MIN_SCROLL_Y ? undefined : available,
+      )
+    }
+    const observer = new ResizeObserver(measure)
+    observer.observe(root)
+    observer.observe(area)
+    const searchBar = root.querySelector(`.${styles.searchBar}`)
+    if (searchBar) observer.observe(searchBar)
+    const table = area.querySelector('.ant-table-wrapper')
+    if (table) observer.observe(table)
+    mobile.addEventListener('change', measure)
+    measure()
     return () => {
       observer.disconnect()
+      mobile.removeEventListener('change', measure)
     }
-  }, [])
+  }, [total, pageSize])
 
   // 拖拽后的列宽覆盖：未拖过的列沿用调用方声明的宽度
   const [columnWidths, setColumnWidths] = useState<
@@ -183,7 +220,15 @@ export function SearchTable<T extends object>({
       theme={{ token: { colorPrimary: '#1f75f2' } }}
     >
       <div
-        className={[styles.root, className].filter(Boolean).join(' ')}
+        ref={rootRef}
+        className={[
+          styles.root,
+          compact && styles.compact,
+          scrollY === undefined && styles.rootFlow,
+          className,
+        ]
+          .filter(Boolean)
+          .join(' ')}
         style={style}
       >
         {searchFormItems !== undefined && (

@@ -99,12 +99,6 @@ export function DataProcessingExportPage({
         sectionTitle="任务类型"
       />
       <div className={styles.content}>
-        <div className={styles.contentHeader}>
-          <div>
-            <h2>数据处理成果导出</h2>
-            <p>归档后的静态瓦片集成果包，可下载与重试。</p>
-          </div>
-        </div>
         <ArchiveTable
           records={rows}
           isLoading={isLoading}

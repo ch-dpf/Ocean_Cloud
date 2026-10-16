@@ -96,17 +96,6 @@ export function DataPublishingPage({ activePath }: DataPublishingPageProps) {
         subtitle="按服务类型筛选"
       />
       <div className={styles.content}>
-        <div className={styles.contentHeader}>
-          <div>
-            <h2>全部服务</h2>
-            <p>
-              {section.pending === true
-                ? `${section.label}接口待接入，暂展示全部服务`
-                : '统一管理已发布服务、访问地址、协议和运行状态'}
-            </p>
-          </div>
-        </div>
-
         <PublicationTable
           scope={scope}
           records={records}

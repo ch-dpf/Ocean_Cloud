@@ -17,12 +17,15 @@ export interface UploadChunkResult {
   readonly nextOffset: number | string
   /** 该分片后端此前已收下（重试撞上已存分片时的正常情况） */
   readonly duplicate: boolean
+  /** 仅表示字节传输结束，导入是否完成由任务状态决定。 */
   readonly fileCompleted: boolean
+  readonly importCompleted: boolean
+  readonly currentStage: string
   /** 后端已把该文件登记为失败：跳过它继续传下一个 */
   readonly fileFailed: boolean
   readonly taskCompleted: boolean
-  readonly completedCount: number
-  readonly failedCount: number
+  readonly completedCount: number | string
+  readonly failedCount: number | string
   readonly status: string
 }
 
@@ -31,6 +34,7 @@ interface UploadGisFilesOptions {
   readonly files: readonly File[]
   /** 第一块上传成功、后端建好任务后回调，调用方据此插「上传中」占位 */
   readonly onTaskCreated?: (taskId: string) => void
+  readonly onChunkResult?: (result: UploadChunkResult) => void
 }
 
 /** 分片大小：超大文件用更大的片，减少往返次数 */
@@ -103,7 +107,7 @@ async function sendChunk(
 export async function uploadGisFiles(
   options: UploadGisFilesOptions,
 ): Promise<void> {
-  const { dataSetId, files, onTaskCreated } = options
+  const { dataSetId, files, onTaskCreated, onChunkResult } = options
   const requestId = createRequestId()
   const totalSize = files.reduce((sum, file) => sum + file.size, 0)
   let taskId: string | null = null
@@ -137,6 +141,8 @@ export async function uploadGisFiles(
         taskId = result.taskId
         onTaskCreated?.(result.taskId)
       }
+
+      onChunkResult?.(result)
 
       // 后端已登记该文件失败：跳到下一个文件，不再纠结偏移
       if (result.fileFailed) break

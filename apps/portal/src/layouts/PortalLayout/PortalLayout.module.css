@@ -2,6 +2,14 @@
   display: flex;
   min-height: 100vh;
 }
+.shellContained {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.shellContained .mainLayout {
+  min-height: 0;
+}
 .mainLayout {
   margin-left: 216px;
   flex: 1;
@@ -22,12 +30,14 @@
 }
 /* 左侧有二级导航的页面：内边距交给页面自己控制，导航才能贴住上/左 */
 .mainFlush {
+  display: flex;
+  min-height: 0;
   padding: 0;
-  /* 日志页这类内容区按一屏高排布：保住现有高度不被页脚压缩，页脚排在下方，向下滚动即可看到 */
-  min-height: calc(100vh - 64px);
+  overflow: hidden;
 }
 .footer {
   height: 46px;
+  flex: 0 0 auto;
   display: flex;
   justify-content: space-between;
   padding: 13px 38px;
@@ -44,10 +54,18 @@
   .main {
     padding: 26px 22px;
   }
+  .mainFlush {
+    padding: 0;
+  }
 }
 @media (max-width: 760px) {
   .shell {
     display: block;
+  }
+  .shellContained {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
   }
   .mainLayout,
   .mainLayoutCollapsed {
@@ -55,6 +73,11 @@
   }
   .main {
     padding: 24px 16px;
+  }
+  .mainFlush {
+    display: block;
+    padding: 0;
+    overflow: visible;
   }
   .footer {
     padding: 12px 16px;

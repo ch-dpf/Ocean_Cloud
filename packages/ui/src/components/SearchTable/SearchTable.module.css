@@ -1,13 +1,23 @@
 .root {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
   flex-direction: column;
+  min-width: 0;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   border: 1px solid #e8eef7;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+}
+
+/* 筛选区占满小窗口时，整张卡片滚动，表体恢复自然高度，避免嵌套滚动。 */
+.rootFlow {
+  overflow: auto;
+}
+
+.rootFlow .tableArea {
+  flex: none;
 }
 
 .searchBar {
@@ -38,6 +48,52 @@
 
 .extraActions {
   flex-shrink: 0;
+}
+
+/* 已有页面卡片时去掉内层套框，给数据列表留出更多空间。 */
+.compact {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.compact .searchBar {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.compact .searchForm {
+  flex: 1 1 640px;
+  gap: 8px 12px;
+}
+
+.compact .searchForm :global(.ant-form-item) {
+  margin-inline-end: 0;
+  margin-bottom: 0;
+}
+
+.compact .searchForm .searchActions {
+  margin-left: auto;
+}
+
+.compact .extraActions {
+  margin-left: auto;
+}
+
+.compact .tableArea {
+  margin-top: 12px;
+  padding: 0;
+}
+
+.compact .tableArea:first-child {
+  margin-top: 0;
 }
 
 /* 列宽拖拽：手柄贴在表头单元格右边缘，被包裹的 th 由 react-resizable 加上这个类 */
@@ -75,11 +131,22 @@
 
 .tableArea {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
   flex-direction: column;
   min-height: 0;
   margin-top: 14px;
   padding: 0 20px 18px;
+}
+
+@media (max-width: 760px) {
+  .root {
+    flex: auto;
+    overflow: visible;
+  }
+
+  .tableArea {
+    flex: none;
+  }
 }
 
 /* 分页「跳转到 __ 页 确定」里的确定按钮：antd 未提供该按钮样式（只写了容器与输入框），
