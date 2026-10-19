@@ -1,7 +1,9 @@
 import { httpClient } from '../../../services/httpClient'
 import type { ApiResult } from '../../../services/apiResult'
+import { FOOTPRINT_SIMPLIFY_TOLERANCE } from '../constants/dataset'
 import type {
   DatasetCreateInput,
+  DatasetFootprints,
   DatasetPageQuery,
   DatasetUpdateInput,
   GeoDataset,
@@ -23,8 +25,9 @@ export async function getAllDatasets(
 }
 
 /**
- * 分页查询数据集：供侧边栏按名称搜索使用，dataSetName 为空时不提交该参数。
- * 分类统计与筛选仍在前端完成，登录头由 httpClient 拦截器统一注入。
+ * 分页查询数据集：dataSetName 为名称模糊匹配关键字，为空时不提交该参数。
+ * 轮廓由 /dataSet/{id}/footprints 按需单独取，这里不预取；
+ * 登录头由 httpClient 拦截器统一注入。
  */
 export async function getDatasetPage(
   query: DatasetPageQuery,
@@ -47,6 +50,24 @@ export async function getDatasetPage(
     },
   )
   return result.data
+}
+
+/**
+ * 按需取某个数据集的轮廓：GET /dataSet/{id}/footprints，
+ * 响应体的 data 是一条完整的数据集记录，轮廓在它的 footprints 字段里（GeoJSON FeatureCollection）。
+ * simplifyTolerance 按后端要求传 0：详情要看完整范围，不做简化；未返回轮廓时返回 null。
+ */
+export async function fetchDatasetFootprints(
+  dataSetId: string,
+  signal?: AbortSignal,
+): Promise<DatasetFootprints | null> {
+  const result = await httpClient.get<
+    ApiResult<GeoDataset & { readonly footprints?: DatasetFootprints | null }>
+  >(`/dataSet/${encodeURIComponent(dataSetId)}/footprints`, {
+    params: { simplifyTolerance: FOOTPRINT_SIMPLIFY_TOLERANCE },
+    signal,
+  })
+  return result.data.footprints ?? null
 }
 
 /** 新增数据集，记录 id 由后端生成，因此请求体不传 id */

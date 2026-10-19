@@ -200,22 +200,13 @@ export function ProcessingCreateDialog({
 
   /**
    * 本地上传选文件：在已有选择上追加，同名同大小视为同一个文件不再重复加入。
-   * 影像切片一次只处理一个数据，已选一个后再选会被拒绝并提示，不替换原来那条。
+   * 影像与地形都允许多选，已选文件可在下方列表里逐个移除。
    */
   function handleLocalFilesChange(event: ChangeEvent<HTMLInputElement>) {
     const picked = event.target.files ? Array.from(event.target.files) : []
     // 清空 value，便于再次选中同一个文件
     event.target.value = ''
     if (picked.length === 0) return
-    if (isImagery) {
-      if (files.length > 0) {
-        setValidationError('影像切片一次仅支持一个文件。')
-        return
-      }
-      setValidationError(null)
-      setFiles([picked[0]])
-      return
-    }
     setFiles((previous) => {
       const next = [...previous]
       for (const file of picked) {
@@ -479,8 +470,8 @@ export function ProcessingCreateDialog({
                 ref={fileInputRef}
                 className={styles.fileInput}
                 type="file"
-                // 影像切片一次只处理一个数据，地形可多选
-                multiple={!isImagery}
+                // 影像与地形都支持多选，选中的文件在下方列表里逐个展示
+                multiple
                 onChange={handleLocalFilesChange}
               />
               <button
@@ -491,9 +482,6 @@ export function ProcessingCreateDialog({
                 选择文件
               </button>
             </div>
-            {isImagery && (
-              <p className={styles.hint}>影像切片一次仅支持上传一个文件。</p>
-            )}
             {files.length > 0 && (
               <ul className={styles.pickedList}>
                 {files.map((item) => (

@@ -1,0 +1,160 @@
+/* 展示区整体撑满面板高度：中间内容可滚动，分页固定在最底部 */
+.wall {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  gap: 14px;
+}
+
+/* 工具栏：搜索 + 两个下拉 + 刷新，右侧是卡片 / 列表切换 */
+.toolbar {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.search {
+  width: 240px;
+}
+.select {
+  width: 132px;
+}
+.refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid #dce6ec;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #3f5665;
+  cursor: pointer;
+  font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  font-size: 12px;
+}
+.refresh:hover {
+  border-color: #1267d6;
+  color: #1267d6;
+}
+.refreshIcon {
+  width: 14px;
+  height: 14px;
+}
+.viewSwitch {
+  margin-left: auto;
+}
+
+/* 卡片墙：按可用宽度自动排布，卡片边长约 300-400px（宽屏一行 4 个左右），
+   网格项用 aspect-ratio 保持正方形（新增卡片同样占一格）。
+   内层 min(300px, 100%) 是窄容器下的兜底，避免卡片比容器还宽而溢出 */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  justify-content: center; /* 剩余空间居中，避免右边留白难看 */
+  gap: 16px;
+}
+.grid > * {
+  aspect-ratio: 1 / 1;
+}
+
+/* 新增入口卡片：与普通卡片同尺寸，虚线灰底，悬停才转蓝 */
+.addCard {
+  display: flex;
+  border: 1px dashed #d5dfe8;
+  border-radius: 12px;
+  background: #fafcfe;
+}
+.addButton {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #a9b6c2;
+  cursor: pointer;
+}
+.addButton:hover {
+  color: #1267d6;
+}
+.addIcon {
+  font-size: 30px;
+  line-height: 1;
+}
+.addLabel {
+  font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* 列表视图顶部的新增入口：一行虚线按钮 */
+.addBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px dashed #d5dfe8;
+  border-radius: 8px;
+  background: #fafcfe;
+  color: #a9b6c2;
+  cursor: pointer;
+  font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+}
+.addBar:hover {
+  color: #1267d6;
+}
+
+/* 列表操作列：操作按钮组 + 「···」 */
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.more {
+  flex-shrink: 0;
+  height: 24px;
+  margin-left: auto;
+  padding: 0 8px;
+  border: 1px solid #dce6ec;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #8394a0;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+}
+.more:hover {
+  border-color: #1267d6;
+  color: #1267d6;
+}
+
+/* 卡片与表格的滚动区：占满剩余高度，让分页始终落在展示区底部 */
+.scrollArea {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* 空态与加载提示：卡片墙没有表格的 locale 空态，用一段说明文字代替 */
+.hint {
+  margin: 8px 0;
+  color: #8394a0;
+  font-size: 13px;
+  text-align: center;
+}
+/* 分页固定在展示区底部，不参与滚动，条目变少时也不上浮 */
+.pagination {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: center;
+}

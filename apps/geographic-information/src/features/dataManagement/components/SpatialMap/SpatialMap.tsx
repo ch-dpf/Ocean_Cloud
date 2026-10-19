@@ -3,7 +3,9 @@ import { Alert, Button, Space } from 'antd'
 import OlMap from 'ol/Map.js'
 import View from 'ol/View.js'
 import WKT from 'ol/format/WKT.js'
+import GeoJSON from 'ol/format/GeoJSON.js'
 import DragBox from 'ol/interaction/DragBox.js'
+import { defaults as defaultInteractions } from 'ol/interaction/defaults.js'
 import { always } from 'ol/events/condition.js'
 import TileLayer from 'ol/layer/Tile.js'
 import VectorLayer from 'ol/layer/Vector.js'
@@ -12,6 +14,7 @@ import VectorSource from 'ol/source/Vector.js'
 import Feature from 'ol/Feature.js'
 import type Geometry from 'ol/geom/Geometry.js'
 import { fromExtent } from 'ol/geom/Polygon.js'
+import Point from 'ol/geom/Point.js'
 import Style from 'ol/style/Style.js'
 import Fill from 'ol/style/Fill.js'
 import Stroke from 'ol/style/Stroke.js'
@@ -20,10 +23,33 @@ import type { GeographicBounds } from '../../types/fileMeta'
 import 'ol/ol.css'
 import styles from './SpatialMap.module.css'
 
+/**
+ * 覆盖范围的 GeoJSON 顶层结构：FeatureCollection / Feature / 裸几何都行，
+ * 具体层级交给 ol 的 GeoJSON 解析器，这里不做逐层建模
+ */
+export interface SpatialGeoJson {
+  readonly type: string
+  readonly features?: readonly unknown[]
+  readonly coordinates?: unknown
+  readonly geometry?: unknown
+}
+
+/** 一个经纬度点：数据集内的文件中心点用它直接画在地图上 */
+export interface SpatialPoint {
+  readonly longitude: number
+  readonly latitude: number
+}
+
 interface SpatialMapProps {
   readonly geometries?: readonly string[]
+  /** 覆盖范围的 GeoJSON；与 geometries 一起绘制（数据集轮廓就是这种形态） */
+  readonly geojson?: SpatialGeoJson | null
+  /** 文件中心点；同一份红色样式里画成小圆点 */
+  readonly points?: readonly SpatialPoint[]
   readonly bounds?: GeographicBounds | null
   readonly onBoundsChange?: (bounds: GeographicBounds | null) => void
+  /** 嵌入卡片预览等小容器：地图占满容器，不渲染工具栏、说明与告警条 */
+  readonly embedded?: boolean
 }
 
 interface MapState {
@@ -61,8 +87,11 @@ function boundsFromExtent(extent: readonly number[]): GeographicBounds | null {
 
 export function SpatialMap({
   geometries = [],
+  geojson = null,
+  points = [],
   bounds = null,
   onBoundsChange,
+  embedded = false,
 }: SpatialMapProps) {
   const target = useRef<HTMLDivElement>(null)
   const state = useRef<MapState | null>(null)
@@ -71,6 +100,9 @@ export function SpatialMap({
   const [baseMapFailed, setBaseMapFailed] = useState(false)
   const editable = onBoundsChange !== undefined
   const geometryKey = JSON.stringify(geometries)
+  // GeoJSON 与点只在变化时重新解析，键与 boundsKey 同为序列化结果
+  const geojsonKey = geojson === null ? null : JSON.stringify(geojson)
+  const pointsKey = JSON.stringify(points)
   const boundsKey = JSON.stringify(bounds)
 
   useEffect(() => {
@@ -80,19 +112,37 @@ export function SpatialMap({
   const coverage = useMemo(() => {
     try {
       const format = new WKT()
-      return {
-        features: (JSON.parse(geometryKey) as string[]).flatMap((wkt) =>
-          format.readFeatures(wkt, {
+      const features = (JSON.parse(geometryKey) as string[]).flatMap((wkt) =>
+        format.readFeatures(wkt, {
+          dataProjection: 'EPSG:4326',
+          featureProjection: 'EPSG:4326',
+        }),
+      )
+      if (geojsonKey !== null) {
+        // ol 的 GeoJSON 解析器直接吃 JSON 文本，省去一层对象类型约束
+        features.push(
+          ...new GeoJSON().readFeatures(geojsonKey, {
             dataProjection: 'EPSG:4326',
             featureProjection: 'EPSG:4326',
           }),
-        ),
-        error: null,
+        )
       }
+      // 中心点与面共用一份样式：Style 的 image 分支负责画点，fill / stroke 负责画面
+      features.push(
+        ...(JSON.parse(pointsKey) as SpatialPoint[]).flatMap((point) => {
+          // 后端的数字字段可能是字符串，统一转成数字再校验，避免点被静默丢掉
+          const longitude = Number(point.longitude)
+          const latitude = Number(point.latitude)
+          if (!Number.isFinite(longitude) || !Number.isFinite(latitude))
+            return []
+          return [new Feature(new Point([longitude, latitude]))]
+        }),
+      )
+      return { features, error: null }
     } catch {
       return { features: [], error: '文件范围几何无法显示，请检查空间元数据。' }
     }
-  }, [geometryKey])
+  }, [geometryKey, geojsonKey, pointsKey])
 
   useEffect(() => {
     if (target.current === null) return
@@ -107,6 +157,11 @@ export function SpatialMap({
     dragBox.setActive(false)
     const map = new OlMap({
       target: target.current,
+      // 嵌在卡片里时关掉滚轮缩放：否则光标停在卡片上就滚不动卡片墙，
+      // 拖动平移不受影响
+      interactions: embedded
+        ? defaultInteractions({ mouseWheelZoom: false, pinchRotate: false })
+        : undefined,
       layers: [
         new TileLayer({ source: osm }),
         new VectorLayer({
@@ -160,7 +215,7 @@ export function SpatialMap({
       map.setTarget(undefined)
       map.dispose()
     }
-  }, [editable])
+  }, [editable, embedded])
 
   useEffect(() => {
     const current = state.current
@@ -214,7 +269,11 @@ export function SpatialMap({
   }
 
   return (
-    <div className={styles.root}>
+    <div
+      className={[styles.root, embedded && styles.embedded]
+        .filter(Boolean)
+        .join(' ')}
+    >
       {editable && (
         <Space wrap className={styles.toolbar}>
           <Button
@@ -241,10 +300,11 @@ export function SpatialMap({
           </span>
         </Space>
       )}
-      {coverage.error !== null && (
+      {/* 嵌入卡片预览时不叠告警条：小尺寸会把范围轮廓整个盖住 */}
+      {!embedded && coverage.error !== null && (
         <Alert type="error" showIcon message={coverage.error} />
       )}
-      {baseMapFailed && (
+      {!embedded && baseMapFailed && (
         <Alert
           type="warning"
           showIcon
@@ -257,7 +317,7 @@ export function SpatialMap({
         role="region"
         aria-label={editable ? '文件范围筛选地图' : '文件覆盖范围地图'}
       />
-      {!editable && (
+      {!editable && !embedded && (
         <p className={styles.hint}>
           红色半透明区域表示文件登记的覆盖范围；矢量数据展示包围范围。
         </p>

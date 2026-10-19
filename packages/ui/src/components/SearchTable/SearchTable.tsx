@@ -264,7 +264,17 @@ export function SearchTable<T extends object>({
             )}
           </div>
         )}
-        <div ref={tableAreaRef} className={styles.tableArea}>
+        <div
+          ref={tableAreaRef}
+          className={styles.tableArea}
+          // 把算出的表体高度交给 CSS（见 .ant-table-body 的 min-height）：
+          // antd 的 scroll.y 只作用于 max-height，数据少时表体会塌缩，分页就会往上跑
+          style={
+            {
+              '--scroll-y': scrollY === undefined ? 'auto' : `${scrollY}px`,
+            } as CSSProperties
+          }
+        >
           <Table<T>
             rowKey={rowKey}
             columns={resizableColumns}

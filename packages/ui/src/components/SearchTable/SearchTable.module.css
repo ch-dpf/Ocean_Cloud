@@ -149,6 +149,12 @@
   }
 }
 
+/* 表体高度按可用高度撑满：数据条数少时表体不塌缩，分页始终贴在卡片底部，
+   不会随行数减少而往上跑（变量由 SearchTable 内联 style 给出，未测出高度时为 auto） */
+.tableArea :global(.ant-table-body) {
+  min-height: var(--scroll-y, auto);
+}
+
 /* 分页「跳转到 __ 页 确定」里的确定按钮：antd 未提供该按钮样式（只写了容器与输入框），
    这里补齐成与旁边文字同高的小号按钮，浅灰底 */
 .tableArea :global(.ant-pagination-options-quick-jumper-button) {

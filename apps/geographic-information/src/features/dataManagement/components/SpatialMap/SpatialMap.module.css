@@ -17,6 +17,22 @@
   color: #576e85;
   font-size: 12px;
 }
+/* 嵌入卡片预览：作为外层 flex 容器的子项撑满高度，去掉自身外边距与地图的圆角边框 */
+.embedded {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  margin-top: 0;
+}
+.embedded .map {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+}
+
 .drawBox {
   border: 2px solid #1f75f2;
   background: rgba(31, 117, 242, 0.08);
