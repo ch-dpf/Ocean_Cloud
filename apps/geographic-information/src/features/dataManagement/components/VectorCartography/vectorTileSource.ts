@@ -1,0 +1,363 @@
+import type { FeatureLike } from 'ol/Feature.js'
+import { RequestError } from '@ocean-cloud/http'
+import View from 'ol/View.js'
+import GeoJSON from 'ol/format/GeoJSON.js'
+import { createXYZ } from 'ol/tilegrid.js'
+import { fromLonLat, transformExtent } from 'ol/proj.js'
+import VectorLayer from 'ol/layer/Vector.js'
+import type VectorSource from 'ol/source/Vector.js'
+import type Feature from 'ol/Feature.js'
+import type Geometry from 'ol/geom/Geometry.js'
+import OlMap from 'ol/Map.js'
+import TileState from 'ol/TileState.js'
+import type Tile from 'ol/VectorTile.js'
+import type { Extent } from 'ol/extent.js'
+import { intersects, extend, buffer } from 'ol/extent.js'
+import MVT from 'ol/format/MVT.js'
+import VectorTileLayer from 'ol/layer/VectorTile.js'
+import type RenderFeature from 'ol/render/Feature.js'
+import VectorTileSource from 'ol/source/VectorTile.js'
+import { getVectorTile } from '../../services/vectorService'
+import type {
+  VectorRenderContext,
+  VectorFeature,
+  VectorTileHit,
+} from '../../types/vector'
+import {
+  createVectorStyleFunction,
+  readVectorTileHit,
+  createVectorTileStyleFunction,
+  type VectorRenderSettings,
+} from './vectorMapStyle'
+
+export interface VectorTileChannel {
+  readonly layer: VectorTileLayer
+  cancelOutside: (extent: Extent) => void
+  dispose: () => void
+}
+/** 每个上下文独立 source；请求走统一 HTTP；离开视窗及卸载取消订阅，由调度器管理实际在途请求。 */
+export function createVectorTileChannel(
+  map: OlMap,
+  context: VectorRenderContext,
+  settings: { current: VectorRenderSettings },
+  onPending: (delta: number) => void,
+  onError: (cause: unknown) => void,
+  extentGeometry: unknown,
+): VectorTileChannel {
+  const format = new MVT()
+  const grid = createXYZ({ tileSize: 256, maxZoom: context.maxZoom })
+  const geographic = extentGeometry
+    ? (new GeoJSON().readGeometry(extentGeometry)?.getExtent() ?? null)
+    : null
+  const clampLatitude = (latitude: number) =>
+    Math.max(-85.0511287798066, Math.min(85.0511287798066, latitude))
+  const coverage = geographic
+    ? transformExtent(
+        [
+          geographic[0],
+          clampLatitude(geographic[1]),
+          geographic[2],
+          clampLatitude(geographic[3]),
+        ],
+        'EPSG:4326',
+        'EPSG:3857',
+      )
+    : null
+  const pending = new Map<
+    AbortController,
+    { extent: Extent; tile: Tile<RenderFeature> }
+  >()
+  let requestEpoch = 0
+  let disposed = false
+  const reportedErrors = new Set<string>()
+  let cancelledExtent: Extent | undefined
+  const source = new VectorTileSource({
+    format,
+    tileGrid: grid,
+    maxZoom: context.maxZoom,
+    wrapX: false,
+    transition: 0,
+    tileUrlFunction: (coord) => {
+      if (!coord || !coverage) return undefined
+      if (coord[0] <= context.overviewMaxZoom && !context.overviewAvailable)
+        return undefined
+      const extent = buffer(
+        grid.getTileCoordExtent(coord),
+        context.bufferPixels * grid.getResolution(coord[0]),
+      )
+      return intersects(extent, coverage)
+        ? context.contextId + '/' + requestEpoch + '/' + coord.join('/')
+        : undefined
+    },
+    tileLoadFunction: (baseTile) => {
+      const tile = baseTile as Tile<RenderFeature>
+      tile.setLoader((extent, _resolution, projection) => {
+        if (disposed) {
+          tile.setState(TileState.ERROR)
+          return
+        }
+        const controller = new AbortController()
+        pending.set(controller, { extent, tile })
+        onPending(1)
+        const [z, x, y] = tile.tileCoord
+        void getVectorTile(context, z, x, y, controller.signal)
+          .then((data) => {
+            if (!controller.signal.aborted)
+              tile.setFeatures(
+                data.byteLength
+                  ? format.readFeatures(data, {
+                      extent,
+                      featureProjection: projection,
+                    })
+                  : [],
+              )
+          })
+          .catch((cause: unknown) => {
+            if (controller.signal.aborted) return
+            tile.setState(TileState.ERROR)
+            const errorKey =
+              cause instanceof RequestError ? String(cause.status) : 'decode'
+            if (!reportedErrors.has(errorKey)) {
+              reportedErrors.add(errorKey)
+              onError(cause)
+            }
+          })
+          .finally(() => {
+            if (pending.delete(controller)) onPending(-1)
+          })
+      })
+    },
+  })
+  const layer = new VectorTileLayer({
+    source,
+    renderMode: 'hybrid',
+    renderBuffer: context.bufferPixels,
+    style: createVectorTileStyleFunction(
+      map.getView(),
+      settings,
+      context.layerId,
+    ),
+  })
+  layer.set('__vectorContext', context)
+  const abort = (controller: AbortController, tile: Tile<RenderFeature>) => {
+    controller.abort()
+    tile.setState(TileState.ERROR)
+    if (pending.delete(controller)) onPending(-1)
+  }
+  return {
+    layer,
+    cancelOutside: (extent) => {
+      // 返回取消过的区域时刷新source，让渲染缓存中的ERROR瓦片重新进入加载队列。
+      if (cancelledExtent && intersects(extent, cancelledExtent)) {
+        cancelledExtent = undefined
+        for (const [controller, item] of pending) abort(controller, item.tile)
+        requestEpoch++
+        source.setTileUrlFunction(
+          source.getTileUrlFunction(),
+          context.contextId + ':' + requestEpoch,
+        )
+        source.refresh()
+      }
+      for (const [controller, item] of pending)
+        if (!intersects(extent, item.extent)) {
+          cancelledExtent = cancelledExtent
+            ? extend(cancelledExtent, item.extent)
+            : [...item.extent]
+          abort(controller, item.tile)
+        }
+    },
+    dispose: () => {
+      disposed = true
+      for (const [controller, item] of pending) abort(controller, item.tile)
+      source.clear()
+      layer.dispose()
+    },
+  }
+}
+
+/** XYZ 顶点可拖动；新增顶点需要显式输入高程，避免 OL 自动补零。 */
+export function geometryHasZ(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false
+  const geometry = value as { coordinates?: unknown; geometries?: unknown[] }
+  const visit = (coordinates: unknown): boolean =>
+    Array.isArray(coordinates) &&
+    (typeof coordinates[0] === 'number'
+      ? coordinates.length > 2
+      : coordinates.some(visit))
+  return (
+    visit(geometry.coordinates) ||
+    (geometry.geometries?.some(geometryHasZ) ?? false)
+  )
+}
+export function sourceRecord(feature: FeatureLike) {
+  return feature.get('__vectorRecord') as
+    import('../../types/vector').VectorFeature | undefined
+}
+
+interface MapCallbacks {
+  readonly draft: VectorFeature | null
+  readonly onSelect: (hit: VectorTileHit | null) => void
+  readonly onZoomChange: (zoom: number) => void
+}
+export function createVectorMapSession(
+  target: HTMLDivElement,
+  source: VectorSource<Feature<Geometry>>,
+  settings: { current: VectorRenderSettings },
+  callbacks: { current: MapCallbacks },
+  channels: { current: VectorTileChannel[] },
+  updateZoom: (zoom: number) => void,
+) {
+  const view = new View({
+    center: fromLonLat([105, 35]),
+    zoom: 4,
+    minZoom: 0,
+    maxZoom: 22,
+  })
+  const overlay = new VectorLayer({
+    source,
+    zIndex: 1000,
+    style: createVectorStyleFunction(view, settings),
+  })
+  const map = new OlMap({
+    target,
+    layers: [overlay],
+    controls: [],
+    view,
+    maxTilesLoading: 4,
+  })
+  map.on('singleclick', (event) => {
+    if (callbacks.current.draft) return
+    const hits: { hit: VectorTileHit; priority: number }[] = []
+    map.forEachFeatureAtPixel(
+      event.pixel,
+      (feature, layer) => {
+        const record = sourceRecord(feature)
+        if (record) {
+          hits.push({
+            hit: {
+              kind: 'feature',
+              layerId: record.layerId,
+              featureId: record.id,
+            },
+            priority: 4,
+          })
+          return
+        }
+        const context = layer?.get('__vectorContext') as
+          VectorRenderContext | undefined
+        const hit =
+          context && readVectorTileHit(feature, context, event.coordinate)
+        if (hit)
+          hits.push({
+            hit,
+            priority:
+              feature.get('_vector_category') === 'POINT'
+                ? 3
+                : feature.get('_vector_category') === 'LINE'
+                  ? 2
+                  : 1,
+          })
+      },
+      { hitTolerance: 5 },
+    )
+    callbacks.current.onSelect(
+      hits.sort((a, b) => b.priority - a.priority)[0]?.hit ?? null,
+    )
+  })
+  map.on('moveend', () => {
+    const extent = view.calculateExtent(map.getSize())
+    channels.current.forEach((channel) => channel.cancelOutside(extent))
+  })
+  const changedZoom = () => {
+    const value = view.getZoom() ?? 0
+    updateZoom(value)
+    callbacks.current.onZoomChange(value)
+  }
+  view.on('change:resolution', changedZoom)
+  changedZoom()
+  return {
+    map,
+    overlay,
+    dispose: () => {
+      view.un('change:resolution', changedZoom)
+      map.setTarget(undefined)
+      map.dispose()
+    },
+  }
+}
+
+/** 在原始几何进入地图编辑源之前验证结构，非法草稿只保留在文本输入中。 */
+export function validateVectorGeometry(
+  value: unknown,
+): asserts value is import('../../types/vector').VectorGeometry {
+  const fail = () => {
+    throw new Error(
+      '几何结构无效：使用非空 GeoJSON 几何、有效经纬度和 XY/XYZ 坐标；面环必须闭合。',
+    )
+  }
+  const array = (items: unknown, min: number): unknown[] => {
+    if (!Array.isArray(items) || items.length < min) return fail()
+    return items
+  }
+  const point = (value: unknown) => {
+    const coordinates = array(value, 2)
+    if (
+      coordinates.length > 3 ||
+      !coordinates.every(
+        (item) => typeof item === 'number' && Number.isFinite(item),
+      )
+    )
+      fail()
+    if (
+      Math.abs(coordinates[0] as number) > 180 ||
+      Math.abs(coordinates[1] as number) > 90
+    )
+      fail()
+  }
+  const line = (value: unknown, min = 2) => {
+    array(value, min).forEach(point)
+  }
+  const polygon = (value: unknown) => {
+    for (const ring of array(value, 1)) {
+      line(ring, 4)
+      const positions = ring as number[][]
+      if (JSON.stringify(positions[0]) !== JSON.stringify(positions.at(-1)))
+        fail()
+    }
+  }
+  const visit = (geometry: unknown) => {
+    if (!geometry || typeof geometry !== 'object' || Array.isArray(geometry))
+      return fail()
+    const item = geometry as {
+      type?: string
+      coordinates?: unknown
+      geometries?: unknown
+    }
+    switch (item.type) {
+      case 'Point':
+        point(item.coordinates)
+        break
+      case 'MultiPoint':
+        array(item.coordinates, 1).forEach(point)
+        break
+      case 'LineString':
+        line(item.coordinates)
+        break
+      case 'MultiLineString':
+        array(item.coordinates, 1).forEach((child) => line(child))
+        break
+      case 'Polygon':
+        polygon(item.coordinates)
+        break
+      case 'MultiPolygon':
+        array(item.coordinates, 1).forEach(polygon)
+        break
+      case 'GeometryCollection':
+        array(item.geometries, 1).forEach(visit)
+        break
+      default:
+        fail()
+    }
+  }
+  visit(value)
+}
