@@ -4,6 +4,7 @@ import { RequestError } from './RequestError.ts'
 import { normalizeRequestError } from './normalizeRequestError.ts'
 import type {
   HttpClientOptions,
+  HttpResponse,
   RequestErrorHandler,
   RequestOptions,
 } from './types.ts'
@@ -55,8 +56,8 @@ export function createHttpClient(options: HttpClientOptions = {}) {
     url: string,
     data: unknown,
     requestOptions: RequestOptions = {},
-  ): Promise<T> {
-    const { silentError = false, ...config } = requestOptions
+  ): Promise<AxiosResponse<T>> {
+    const { silentError = false, retry = true, ...config } = requestOptions
     const startedAt = Date.now()
     // 调试回调不允许影响请求本身
     function report(status: number) {
@@ -73,7 +74,7 @@ export function createHttpClient(options: HttpClientOptions = {}) {
     }
     // 只有读请求自动重试：写请求不重试（见 docs/http-client.md），避免重复提交。
     // 重试期间不广播错误，只有最终失败才广播一次，因此「上传进度」那类提示不会被中间失败打扰。
-    const maxAttempts = method === 'GET' ? READ_RETRY_ATTEMPTS : 1
+    const maxAttempts = method === 'GET' && retry ? READ_RETRY_ATTEMPTS : 1
     for (let attempt = 1; ; attempt += 1) {
       try {
         const response = await instance.request<T, AxiosResponse<T>>({
@@ -84,7 +85,7 @@ export function createHttpClient(options: HttpClientOptions = {}) {
           validateStatus: (status) => status >= 200 && status < 300,
         })
         report(response.status)
-        return response.data
+        return response
       } catch (cause) {
         const error = normalizeRequestError(cause)
         if (
@@ -108,6 +109,13 @@ export function createHttpClient(options: HttpClientOptions = {}) {
       }
     }
   }
+  function withResponse<T>(response: AxiosResponse<T>): HttpResponse<T> {
+    const headers = new Headers()
+    for (const [name, value] of Object.entries(response.headers)) {
+      if (value != null) headers.set(name, String(value))
+    }
+    return { data: response.data, status: response.status, headers }
+  }
   function onError(handler: RequestErrorHandler) {
     listeners.add(handler)
     return () => {
@@ -116,15 +124,31 @@ export function createHttpClient(options: HttpClientOptions = {}) {
   }
   return {
     get: <T>(url: string, config?: RequestOptions) =>
-      request<T>('GET', url, undefined, config),
+      request<T>('GET', url, undefined, config).then(
+        (response) => response.data,
+      ),
     post: <T>(url: string, data?: unknown, config?: RequestOptions) =>
-      request<T>('POST', url, data, config),
+      request<T>('POST', url, data, config).then((response) => response.data),
     put: <T>(url: string, data?: unknown, config?: RequestOptions) =>
-      request<T>('PUT', url, data, config),
+      request<T>('PUT', url, data, config).then((response) => response.data),
     patch: <T>(url: string, data?: unknown, config?: RequestOptions) =>
-      request<T>('PATCH', url, data, config),
+      request<T>('PATCH', url, data, config).then((response) => response.data),
     delete: <T>(url: string, config?: RequestOptions) =>
-      request<T>('DELETE', url, undefined, config),
+      request<T>('DELETE', url, undefined, config).then(
+        (response) => response.data,
+      ),
+    getWithResponse: <T>(url: string, config?: RequestOptions) =>
+      request<T>('GET', url, undefined, config).then(withResponse),
+    postWithResponse: <T>(
+      url: string,
+      data?: unknown,
+      config?: RequestOptions,
+    ) => request<T>('POST', url, data, config).then(withResponse),
+    putWithResponse: <T>(
+      url: string,
+      data?: unknown,
+      config?: RequestOptions,
+    ) => request<T>('PUT', url, data, config).then(withResponse),
     onError,
     onStatus(status: number, handler: RequestErrorHandler) {
       return onError((error) => {

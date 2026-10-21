@@ -1,15 +1,27 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { RequestError } from '@ocean-cloud/http'
-import { getVectorFeatures, getVectorLayers } from '../services/vectorService'
-import type { VectorBbox, VectorFeature, VectorLayer } from '../types/vector'
+import {
+  getVectorLayers,
+  getVectorFeature,
+  updateVectorFeature,
+  deleteVectorFeature,
+} from '../services/vectorService'
+import type {
+  VectorFeature,
+  VectorLayer,
+  VersionedVectorFeature,
+  VectorTileHit,
+  VectorClusterHit,
+  VectorGeometry,
+} from '../types/vector'
 
-const MAX_FEATURES = 2000
+import { parseLayerGeometryKinds } from '../components/VectorCartography/geometryTypes'
 
-function errorText(error: unknown): string {
-  if (error instanceof Error) return error.message
-  return '请求失败，请稍后重试'
+function errorText(cause: unknown): string {
+  if (cause instanceof RequestError && cause.status === 412)
+    return '要素已被其他人修改，草稿已保留，请重新加载后编辑。'
+  return cause instanceof Error ? cause.message : '请求失败，请稍后重试'
 }
-
 async function loadAllLayers(
   dataSetId: string,
   signal: AbortSignal,
@@ -23,19 +35,22 @@ async function loadAllLayers(
   }
 }
 
-/** 图层目录与视窗要素的加载、可见图层切换和几何类型汇总。 */
+/** 图层目录与原始要素编辑；地图展示交给独立瓦片通道。 */
 export function useVectorWorkspace(dataSetId: string) {
   const [layers, setLayers] = useState<readonly VectorLayer[]>([])
   const [visibleIds, setVisibleIds] = useState<readonly string[]>([])
   const [activeLayerId, setActiveLayerId] = useState<string | null>(null)
-  const [features, setFeatures] = useState<readonly VectorFeature[]>([])
-  const [bbox, setBbox] = useState<VectorBbox | null>(null)
   const [loadingLayers, setLoadingLayers] = useState(false)
-  const [loadingFeatures, setLoadingFeatures] = useState(false)
-  const [truncated, setTruncated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [layerRevision, setLayerRevision] = useState(0)
-
+  const [selected, setSelected] = useState<VersionedVectorFeature | null>(null)
+  const [loadingFeature, setLoadingFeature] = useState(false)
+  const [savingFeature, setSavingFeature] = useState(false)
+  const [draft, setDraft] = useState<VectorFeature | null>(null)
+  const [cluster, setCluster] = useState<VectorClusterHit | null>(null)
+  const [zoomTarget, setZoomTarget] = useState<VectorClusterHit | null>(null)
+  const selectionRequest = useRef<AbortController | null>(null)
+  const editRequest = useRef<AbortController | null>(null)
   useEffect(() => {
     const controller = new AbortController()
     void (async () => {
@@ -74,84 +89,13 @@ export function useVectorWorkspace(dataSetId: string) {
     return () => controller.abort()
   }, [dataSetId, layerRevision])
 
-  const visibleReady = useMemo(
-    () =>
-      layers.filter(
-        (item) => item.status === 'READY' && visibleIds.includes(item.layerId),
-      ),
-    [layers, visibleIds],
+  useEffect(
+    () => () => {
+      selectionRequest.current?.abort()
+      editRequest.current?.abort()
+    },
+    [],
   )
-  const visibleKey = visibleReady
-    .map((item) => `${item.layerId}:${item.dataVersion}`)
-    .join(',')
-
-  useEffect(() => {
-    if (!bbox || visibleReady.length === 0) {
-      setFeatures([])
-      setTruncated(false)
-      return
-    }
-    const controller = new AbortController()
-    void (async () => {
-      setLoadingFeatures(true)
-      try {
-        let loaded: VectorFeature[] = []
-        let limited = false
-        // 游标在并发写入后可能过期（409）；从第一页重查一次即可。
-        for (let attempt = 0; attempt < 2; attempt += 1) {
-          loaded = []
-          limited = false
-          try {
-            for (const [index, layer] of visibleReady.entries()) {
-              let cursor: string | undefined
-              for (;;) {
-                const page = await getVectorFeatures(
-                  layer.layerId,
-                  bbox,
-                  cursor,
-                  controller.signal,
-                )
-                loaded.push(...page.features)
-                if (loaded.length >= MAX_FEATURES) {
-                  limited =
-                    page.hasMore ||
-                    index < visibleReady.length - 1 ||
-                    loaded.length > MAX_FEATURES
-                  break
-                }
-                if (!page.hasMore || !page.nextCursor) break
-                cursor = page.nextCursor
-              }
-              if (loaded.length >= MAX_FEATURES) break
-            }
-            break
-          } catch (cause) {
-            if (
-              !(cause instanceof RequestError) ||
-              cause.status !== 409 ||
-              attempt === 1
-            )
-              throw cause
-          }
-        }
-        if (controller.signal.aborted) return
-        setFeatures(loaded.slice(0, MAX_FEATURES))
-        setTruncated(limited)
-        setError(null)
-      } catch (cause) {
-        if (!controller.signal.aborted) {
-          setFeatures([])
-          setError(errorText(cause))
-        }
-      } finally {
-        if (!controller.signal.aborted) setLoadingFeatures(false)
-      }
-    })()
-    return () => controller.abort()
-    // visibleKey represents the layer/version set. The array itself is derived from the same state.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bbox, visibleKey])
-
   const toggleVisible = useCallback((layerId: string, visible: boolean) => {
     setVisibleIds((previous) =>
       visible
@@ -167,19 +111,142 @@ export function useVectorWorkspace(dataSetId: string) {
   )
   const clearError = useCallback(() => setError(null), [])
 
+  const selectFeature = useCallback(
+    async (layerId: string, featureId: string) => {
+      selectionRequest.current?.abort()
+      const controller = new AbortController()
+      selectionRequest.current = controller
+      setLoadingFeature(true)
+      setSelected(null)
+      setError(null)
+      try {
+        const value = await getVectorFeature(
+          layerId,
+          featureId,
+          controller.signal,
+        )
+        if (!controller.signal.aborted) setSelected(value)
+      } catch (cause) {
+        if (!controller.signal.aborted) setError(errorText(cause))
+      } finally {
+        if (!controller.signal.aborted) setLoadingFeature(false)
+      }
+    },
+    [],
+  )
+  const clearSelection = useCallback(() => {
+    selectionRequest.current?.abort()
+    setSelected(null)
+    setLoadingFeature(false)
+  }, [])
+  const saveFeature = async (draft: VectorFeature): Promise<boolean> => {
+    if (!selected) return false
+    const controller = new AbortController()
+    editRequest.current = controller
+    setSavingFeature(true)
+    setError(null)
+    try {
+      const updated = await updateVectorFeature(
+        selected,
+        draft,
+        controller.signal,
+      )
+      if (controller.signal.aborted) return false
+      setSelected(updated)
+      refreshLayers()
+      return true
+    } catch (cause) {
+      if (!controller.signal.aborted) setError(errorText(cause))
+      return false
+    } finally {
+      if (!controller.signal.aborted) setSavingFeature(false)
+    }
+  }
+  const removeFeature = async (): Promise<boolean> => {
+    if (!selected) return false
+    const controller = new AbortController()
+    editRequest.current = controller
+    setSavingFeature(true)
+    setError(null)
+    try {
+      await deleteVectorFeature(selected, controller.signal)
+      if (controller.signal.aborted) return false
+      setSelected(null)
+      refreshLayers()
+      return true
+    } catch (cause) {
+      if (!controller.signal.aborted) setError(errorText(cause))
+      return false
+    } finally {
+      if (!controller.signal.aborted) setSavingFeature(false)
+    }
+  }
+  const visibleLayers = useMemo(
+    () =>
+      layers.filter(
+        (layer) =>
+          layer.status === 'READY' && visibleIds.includes(layer.layerId),
+      ),
+    [layers, visibleIds],
+  )
+  const layerKinds = useMemo(
+    () =>
+      Object.fromEntries(
+        layers.map((layer) => [
+          layer.layerId,
+          parseLayerGeometryKinds(layer.geometryTypes),
+        ]),
+      ),
+    [layers],
+  )
+  const handleSelect = (hit: VectorTileHit | null) => {
+    if (draft) return
+    if (hit && hit.kind !== 'feature') {
+      setCluster(hit)
+      clearSelection()
+    } else {
+      setCluster(null)
+      if (hit) void selectFeature(hit.layerId, hit.featureId)
+      else clearSelection()
+    }
+  }
+  const selectClusterMember = (layerId: string, featureId: string) => {
+    setCluster(null)
+    void selectFeature(layerId, featureId)
+  }
+  const zoomCluster = () => {
+    if (cluster) setZoomTarget({ ...cluster })
+    setCluster(null)
+  }
+  const changeGeometry = (geometry: VectorGeometry) =>
+    setDraft((value) => (value ? { ...value, geometry } : null))
   return {
+    draft,
+    setDraft,
+    cluster,
+    setCluster,
+    zoomTarget,
+    handleSelect,
+    selectClusterMember,
+    zoomCluster,
+    changeGeometry,
+    visibleLayers,
+    layerKinds,
     layers,
     visibleIds,
     activeLayerId,
     setActiveLayerId,
-    features,
     loadingLayers,
-    loadingFeatures,
-    truncated,
     error,
     clearError,
-    setBbox,
     toggleVisible,
     refreshLayers,
+    selected,
+    loadingFeature,
+    savingFeature,
+    selectFeature,
+    clearSelection,
+    saveFeature,
+    removeFeature,
   }
 }
