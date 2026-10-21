@@ -8,6 +8,7 @@ import {
 } from '@ocean-cloud/ui'
 import {
   DATASET_CARD_PAGE_SIZE,
+  DATASET_CATEGORY_IDS,
   DATASET_CATEGORY_LABELS,
   DATASET_CATEGORY_ORDER,
   DATASET_PAGE_SIZE,
@@ -161,7 +162,7 @@ export function DatasetWall({
             actions={[
               {
                 key: 'view',
-                label: '查看数据',
+                label: Number(record.categoryId) === DATASET_CATEGORY_IDS.vector ? '进入制图' : '查看数据',
                 onClick: () => onViewData(record),
               },
               {

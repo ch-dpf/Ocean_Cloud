@@ -2,7 +2,7 @@ import { Suspense, lazy } from 'react'
 import { Dropdown } from 'antd'
 import type { MenuProps } from 'antd'
 import { cellText, formatFileSize } from '@ocean-cloud/ui'
-import { DATASET_CATEGORY_LABELS } from '../../constants/dataset'
+import { DATASET_CATEGORY_IDS, DATASET_CATEGORY_LABELS } from '../../constants/dataset'
 import styles from './DatasetCard.module.css'
 import type { GeoDataset } from '../../types/dataset'
 
@@ -86,7 +86,7 @@ export function DatasetCard({
           className={styles.action}
           onClick={() => onViewData(dataset)}
         >
-          查看数据
+          {categoryId === DATASET_CATEGORY_IDS.vector ? '进入制图' : '查看数据'}
         </button>
         <button
           type="button"

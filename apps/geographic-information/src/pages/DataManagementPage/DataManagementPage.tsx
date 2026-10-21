@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { ConfirmDialog } from '@ocean-cloud/ui'
 import styles from './DataManagementPage.module.css'
 import { DATA_MANAGEMENT_SECTIONS } from '../../config/navigation'
@@ -17,6 +17,7 @@ import { UploadProgressDialog } from '../../features/dataManagement/components/U
 import DocumentFolderIcon from '../../assets/icons/DocumentFolder.svg'
 import {
   DATASET_CARD_PAGE_SIZE,
+  DATASET_CATEGORY_IDS,
   DATASET_CATEGORY_LABELS,
   DATASET_CATEGORY_ORDER,
   DATASET_PAGE_SIZE,
@@ -51,6 +52,12 @@ import type {
   FileMetaFilters,
   FileScope,
 } from '../../features/dataManagement/types/fileMeta'
+
+const VectorCartography = lazy(() =>
+  import('../../features/dataManagement/components/VectorCartography/VectorCartography').then(
+    (module) => ({ default: module.VectorCartography }),
+  ),
+)
 
 interface DataManagementPageProps {
   readonly activePath: string
@@ -92,6 +99,7 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     DATA_MANAGEMENT_SECTIONS.find((item) => item.path === activePath) ??
     DATA_MANAGEMENT_SECTIONS[0]
   const [selection, setSelection] = useState<DatasetSelection | null>(null)
+  const [vectorView, setVectorView] = useState<'map' | 'files'>('map')
   // 数据集卡片墙：搜索框原值、去抖后真正发给接口的关键字与展示方式（卡片 / 列表）；
   // 当前页由 useDatasetPage 持有，筛选条件或每页条数变化时它自己回到第 1 页
   const [datasetKeyword, setDatasetKeyword] = useState('')
@@ -185,6 +193,8 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     if (activeSelection === null) return { kind: 'all' }
     if (activeSelection.kind === 'category')
       return { kind: 'category', categoryId: activeSelection.categoryId }
+    if (activeSelection.categoryId === DATASET_CATEGORY_IDS.vector && vectorView === 'map')
+      return null
     return { kind: 'dataset', dataSetId: activeSelection.dataSetId }
   }
 
@@ -342,6 +352,7 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
   /** 卡片「查看数据」：进入该数据集内部（不在「全部数据」栏目时一并切回） */
   function handleViewDataset(dataset: GeoDataset) {
     wallPage.goToPage(1)
+    setVectorView('map')
     handleSelectEntry({
       kind: 'dataset',
       categoryId: Number(dataset.categoryId),
@@ -742,7 +753,7 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
           </div>
         ) : (
           <div className={styles.contentPanel}>
-            {/* 从卡片墙进入的数据集：主区就地切换成该数据集的文件列表 */}
+            {/* 矢量数据集默认进入制图；其他数据集继续显示原有文件列表。 */}
             <div className={styles.datasetFileHeader}>
               <button
                 type="button"
@@ -755,6 +766,50 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                 {selectedDataset.dataSetName}
               </span>
             </div>
+            {selectedDataset.categoryId === DATASET_CATEGORY_IDS.vector && (
+              <div className={styles.vectorActions}>
+                <button
+                  type="button"
+                  className={vectorView === 'map' ? styles.vectorTabActive : styles.vectorTab}
+                  onClick={() => setVectorView('map')}
+                >
+                  制图工作区
+                </button>
+                <button
+                  type="button"
+                  className={vectorView === 'files' ? styles.vectorTabActive : styles.vectorTab}
+                  onClick={() => setVectorView('files')}
+                >
+                  源文件管理
+                </button>
+                {vectorView === 'map' && (
+                  <div className={styles.vectorToolbarActions}>
+                    <button
+                      type="button"
+                      className={styles.progressButton}
+                      onClick={() => setIsProgressOpen(true)}
+                    >
+                      导入进度{runningCount > 0 ? ` (${runningCount})` : ''}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.importButton}
+                      onClick={() => setIsImportOpen(true)}
+                    >
+                      导入GIS数据
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            {selectedDataset.categoryId === DATASET_CATEGORY_IDS.vector && vectorView === 'map' ? (
+              <Suspense fallback={<div>制图工作区加载中…</div>}>
+                <VectorCartography
+                  key={selectedDataset.dataSetId}
+                  dataSetId={selectedDataset.dataSetId}
+                />
+              </Suspense>
+            ) : (
             <FileMetaTable
               extraActions={
                 <div className={styles.headerActions}>
@@ -816,6 +871,7 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                 },
               ]}
             />
+            )}
           </div>
         )}
       </div>
