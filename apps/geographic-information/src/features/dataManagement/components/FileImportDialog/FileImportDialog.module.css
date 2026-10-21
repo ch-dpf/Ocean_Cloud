@@ -37,6 +37,54 @@
   color: #8394a0;
   font-size: 12px;
 }
+.fileSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fileList {
+  display: grid;
+  gap: 4px;
+  max-height: 140px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+.fileItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid #e7eaf0;
+  border-radius: 6px;
+  background: #f9fbfd;
+}
+.fileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #3f5665;
+  font-size: 12px;
+}
+.fileRemove {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #8394a0;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.fileRemove:hover {
+  background: #e8eef5;
+  color: #d64545;
+}
 .options {
   max-height: 220px;
   margin: 0;

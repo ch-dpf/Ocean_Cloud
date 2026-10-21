@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Alert, Spin } from 'antd'
+import { ConfirmDialog } from '@ocean-cloud/ui'
 import { useVectorWorkspace } from '../../hooks/useVectorWorkspace'
-import type { VectorFeature } from '../../types/vector'
+import type { VectorFeature, VectorLayer } from '../../types/vector'
 import {
   collectGeometryKinds,
   parseLayerGeometryKinds,
@@ -38,8 +39,10 @@ export function VectorCartography({ dataSetId }: VectorCartographyProps) {
     setBbox,
     toggleVisible,
     refreshLayers,
+    removeLayer,
   } = useVectorWorkspace(dataSetId)
   const [selected, setSelected] = useState<VectorFeature | null>(null)
+  const [deletingLayer, setDeletingLayer] = useState<VectorLayer | null>(null)
   const [featureStyles, setFeatureStyles] = useState<
     Readonly<Record<string, FeatureStyleSetting>>
   >({})
@@ -94,6 +97,18 @@ export function VectorCartography({ dataSetId }: VectorCartographyProps) {
     })
   }, [selected])
 
+  async function handleDeleteLayer(layer: VectorLayer) {
+    await removeLayer(layer.layerId)
+    if (selected?.layerId === layer.layerId) setSelected(null)
+    setFeatureStyles((previous) => {
+      const next = { ...previous }
+      for (const key of Object.keys(next)) {
+        if (key.startsWith(`${layer.layerId}:`)) delete next[key]
+      }
+      return next
+    })
+  }
+
   return (
     <div className={styles.workspace}>
       <aside className={styles.sidebar}>
@@ -105,6 +120,7 @@ export function VectorCartography({ dataSetId }: VectorCartographyProps) {
           layerKinds={layerKinds}
           onToggleVisible={toggleVisible}
           onActivate={setActiveLayerId}
+          onDelete={setDeletingLayer}
           onRefresh={refreshLayers}
         />
         <div className={styles.panelTitle}>要素</div>
@@ -152,6 +168,16 @@ export function VectorCartography({ dataSetId }: VectorCartographyProps) {
           onSelect={setSelected}
         />
       </section>
+      {deletingLayer !== null && (
+        <ConfirmDialog
+          title="删除图层"
+          message={`确定删除图层「${deletingLayer.layerName}」吗？该图层下的要素会一并删除，源文件不受影响。`}
+          confirmLabel="删除"
+          danger
+          onConfirm={() => handleDeleteLayer(deletingLayer)}
+          onClose={() => setDeletingLayer(null)}
+        />
+      )}
     </div>
   )
 }

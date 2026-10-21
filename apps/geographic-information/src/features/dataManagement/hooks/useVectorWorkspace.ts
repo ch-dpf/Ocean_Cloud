@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { RequestError } from '@ocean-cloud/http'
-import { getVectorFeatures, getVectorLayers } from '../services/vectorService'
+import {
+  getVectorFeatures,
+  getVectorLayer,
+  getVectorLayers,
+  deleteVectorLayer,
+} from '../services/vectorService'
 import type { VectorBbox, VectorFeature, VectorLayer } from '../types/vector'
 
 const MAX_FEATURES = 2000
@@ -166,6 +171,19 @@ export function useVectorWorkspace(dataSetId: string) {
     [],
   )
   const clearError = useCallback(() => setError(null), [])
+  /** 删除图层：先取最新版本号再删，成功后立即从当前列表和要素中移除。 */
+  const removeLayer = useCallback(async (layerId: string) => {
+    const latest = await getVectorLayer(layerId)
+    await deleteVectorLayer(latest.layerId, latest.dataVersion)
+    setLayers((previous) => previous.filter((item) => item.layerId !== layerId))
+    setVisibleIds((previous) => previous.filter((id) => id !== layerId))
+    setActiveLayerId((previous) => (previous === layerId ? null : previous))
+    setFeatures((previous) =>
+      previous.filter((feature) => feature.layerId !== layerId),
+    )
+    setLayerRevision((value) => value + 1)
+    setError(null)
+  }, [])
 
   return {
     layers,
@@ -181,5 +199,6 @@ export function useVectorWorkspace(dataSetId: string) {
     setBbox,
     toggleVisible,
     refreshLayers,
+    removeLayer,
   }
 }

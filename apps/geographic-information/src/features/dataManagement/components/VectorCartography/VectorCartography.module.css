@@ -95,6 +95,19 @@
   color: #d97706;
   background: #fdf3e2;
 }
+.layerDelete {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #8394a0;
+  font-size: 12px;
+  line-height: 18px;
+  cursor: pointer;
+}
+.layerDelete:hover {
+  color: #d64545;
+}
 .featureDetail {
   display: grid;
   gap: 10px;
