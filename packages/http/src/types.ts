@@ -19,6 +19,8 @@ export interface RequestOptions extends Omit<
   'url' | 'method' | 'data' | 'validateStatus'
 > {
   readonly silentError?: boolean
+  /** 某些已自行调度的读请求可以关闭自动重试。 */
+  readonly retry?: boolean
 }
 export type RequestErrorHandler = (error: RequestError) => void
 export interface BusinessError {
@@ -43,4 +45,11 @@ export interface HttpClientOptions {
   readonly parseBusinessError?: (data: unknown) => BusinessError | null
   /** 成功与失败都会回调，用于开发期打印请求耗时 */
   readonly onResponse?: (info: HttpResponseInfo) => void
+}
+
+/** 需要 ETag 等响应头的编辑接口使用；普通请求仍只返回 data。 */
+export interface HttpResponse<T> {
+  readonly data: T
+  readonly status: number
+  readonly headers: Headers
 }

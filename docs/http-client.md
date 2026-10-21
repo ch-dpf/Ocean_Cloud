@@ -113,3 +113,24 @@ API 404 走请求事件，页面 404 走路由，两者分开。
 
 请求层变更可使用实际存在的本地测试脚本验证请求参数、JSON、Token、HTTP 状态、业务错误、超时、网络失败、取消及退订；当前根 package.json 没有 npm test 命令。测试文件不随仓库分发，npm run check 不依赖这些文件。
 实现参考 [Axios 官方文档](https://axios-http.com/docs/interceptors) 与 [错误处理](https://axios-http.com/docs/handling_errors)。
+
+## 带响应头的编辑请求
+
+getWithResponse、postWithResponse、putWithResponse 返回 HttpResponse<T>，包含 data、status 和标准 Headers 对象；原 get/post/put/patch/delete 仍只返回响应体。
+
+```typescript
+const response = await httpClient.getWithResponse<ApiResult<VectorStyle>>(path)
+const etag = response.headers.get('ETag')
+// 业务 Service 校验 etag 非空后保存；更新时原样传回，不自行拼接版本。
+await httpClient.putWithResponse(path, body, {
+  headers: { 'If-Match': etag },
+  signal,
+  silentError: true,
+})
+```
+
+样式接口使用这些方法读取 ETag，并解包业务 data。缺少响应头时拒绝继续编辑；HTTP 412 保留草稿，由用户选择重新加载或另存。写操作仍不自动重试。部署代理必须保留 ETag，跨域访问需暴露 ETag 响应头。
+
+### 自行调度的读请求
+
+RequestOptions 支持 `retry:false`，仅关闭当前请求的通用GET自动重试。矢量瓦片已在业务服务内合并及排队，使用此选项避免503再次放大负载；其他GET与所有写接口原有策略保持不变。该选项在HTTP封装内消费，不作为Axios配置或请求头发送。
