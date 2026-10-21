@@ -1,17 +1,20 @@
-/* 弹窗外壳（边框/圆角/内边距）由 AppDialog 统一提供，这里只保留尺寸与布局 */
+/* 弹窗外壳（边框/圆角/内边距）由 AppDialog 统一提供，这里只保留尺寸与布局。
+   宽度比原先宽一些：下半部分要放一张能看清覆盖范围的地图 */
 .dialog {
   display: flex;
   flex-direction: column;
-  width: min(520px, 92vw);
+  width: min(680px, 92vw);
   max-height: 88vh;
 }
-/* 内容区自行滚动，弹窗框与关闭按钮保持不动 */
+/* 内容区自行滚动，弹窗框与关闭按钮保持不动；
+   overscroll-behavior: contain 让滚到顶/底后不再把滚动传给页面 */
 .body {
   display: flex;
   flex: 1;
   flex-direction: column;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* 概览字段：单列排布，值过长时省略并由 title 展示全量 */
@@ -44,6 +47,23 @@
   font-size: 13px;
   font-weight: 700;
 }
+/* 地图槽位：最小高度让轮廓还在请求时也占住位置，弹窗不会先矮后高跳一下。
+   flex-shrink 必须为 0 —— 内容区是高度受限的 flex 列，默认可压缩会让这里被压到
+   min-height，而地图自身不缩，多出来的高度就盖到下面的概览字段上了 */
+.mapSlot {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 300px;
+}
+/* 覆盖范围地图未就绪时的提示（加载中 / 无轮廓 / 失败） */
+.mapHint {
+  margin: 0;
+  color: #8394a0;
+  font-size: 13px;
+}
+
 /* 描述可能很长，按原文换行完整展示 */
 .description {
   margin: 0;

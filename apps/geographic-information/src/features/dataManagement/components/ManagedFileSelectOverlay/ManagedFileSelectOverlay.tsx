@@ -8,10 +8,7 @@ import {
   DATASET_CATEGORY_LABELS,
   FILE_PAGE_SIZE,
 } from '../../constants/dataset'
-import {
-  PROCESSING_TYPE_IMAGERY,
-  toCategoryOfProcessingType,
-} from '../../constants/task'
+import { toCategoryOfProcessingType } from '../../constants/task'
 import { useDatasetCatalog } from '../../hooks/useDatasetCatalog'
 import { useFileMetaPage } from '../../hooks/useFileMetaPage'
 import { getAllFileMeta } from '../../services/fileMetaService'
@@ -20,7 +17,7 @@ import type { FileMeta, FileScope } from '../../types/fileMeta'
 interface ManagedFileSelectOverlayProps {
   /** 当前处理类型：决定列哪个分类的数据，也决定能否勾选 */
   readonly processingType: string
-  /** 打开时已选中的文件，来自任务弹窗当前的已选列表；影像只取第一条 */
+  /** 打开时已选中的文件，来自任务弹窗当前的已选列表 */
   readonly initialSelected: readonly FileMeta[]
   /** 退出选择：不改动弹窗里原有的已选列表 */
   readonly onCancel: () => void
@@ -61,8 +58,8 @@ function scopeIdOf(scope: FileScope): string {
 
 /**
  * 数据管理数据的选择浮层：左侧切换「整个分类 / 某个数据集」，右侧是文件列表。
- * 影像切片一次只处理一个数据，列表为单选；地形可多选，且左侧分类与数据集行上
- * 带整选勾选框，勾选后把该范围下全部文件批量加入已选。
+ * 影像与地形都支持多选；左侧分类与数据集行上带整选勾选框，
+ * 勾选后把该范围下全部文件批量加入已选。
  * 右下角「确定」把所选文件交回任务弹窗，「退出选择」则保留原选择不变。
  */
 export function ManagedFileSelectOverlay({
@@ -91,8 +88,6 @@ export function ManagedFileSelectOverlay({
   const categoryId = toCategoryOfProcessingType(processingType)
   // 影像与地形都支持已管理数据的切片；分类映射里没有的类型暂不开放
   const canSelect = categoryId !== undefined
-  // 影像一次只处理一个数据，地形可多选并用整选勾选框
-  const isSingle = processingType === PROCESSING_TYPE_IMAGERY
 
   const { catalog } = useDatasetCatalog()
   const datasets =
@@ -111,19 +106,11 @@ export function ManagedFileSelectOverlay({
       FILE_PAGE_SIZE,
     )
 
-  /** 行勾选变化：影像只保留最新勾选的那一条，地形与已选合并；取消勾选即移除 */
+  /** 行勾选变化：与已选合并（跨页选择因此保留）；取消勾选即移除 */
   function handleSelectChange(
     _keys: readonly Key[],
     rows: readonly FileMeta[],
   ) {
-    if (isSingle) {
-      const added = rows.find((row) => !selection.files.has(row.id))
-      setSelection({
-        files: added === undefined ? new Map() : new Map([[added.id, added]]),
-        scopes: new Map(),
-      })
-      return
-    }
     const pageIds = new Set(records.map((record) => record.id))
     setSelection((previous) => {
       const files = new Map(previous.files)
@@ -194,18 +181,16 @@ export function ManagedFileSelectOverlay({
           <ul className={styles.tree}>
             <li>
               <div className={styles.nodeRow}>
-                {/* 整选勾选框：影像一次只处理一个数据，只在多选模式（地形）下给出 */}
-                {!isSingle && (
-                  <Checkbox
-                    className={styles.nodeCheck}
-                    checked={selection.scopes.has(`category:${categoryId}`)}
-                    disabled={bulkLoadingIds.has(`category:${categoryId}`)}
-                    onChange={() =>
-                      handleScopeToggle({ kind: 'category', categoryId })
-                    }
-                    aria-label={`选择${DATASET_CATEGORY_LABELS[categoryId]}全部数据`}
-                  />
-                )}
+                {/* 整选勾选框：勾选后把该分类下全部文件批量加入已选 */}
+                <Checkbox
+                  className={styles.nodeCheck}
+                  checked={selection.scopes.has(`category:${categoryId}`)}
+                  disabled={bulkLoadingIds.has(`category:${categoryId}`)}
+                  onChange={() =>
+                    handleScopeToggle({ kind: 'category', categoryId })
+                  }
+                  aria-label={`选择${DATASET_CATEGORY_LABELS[categoryId]}全部数据`}
+                />
                 <button
                   type="button"
                   className={`${styles.nodeLabel}${
@@ -223,20 +208,18 @@ export function ManagedFileSelectOverlay({
                   return (
                     <li key={dataset.id}>
                       <div className={styles.nodeRow}>
-                        {!isSingle && (
-                          <Checkbox
-                            className={styles.nodeCheck}
-                            checked={selection.scopes.has(scopeId)}
-                            disabled={bulkLoadingIds.has(scopeId)}
-                            onChange={() =>
-                              handleScopeToggle({
-                                kind: 'dataset',
-                                dataSetId: dataset.id,
-                              })
-                            }
-                            aria-label={`选择数据集${dataset.dataSetName}全部数据`}
-                          />
-                        )}
+                        <Checkbox
+                          className={styles.nodeCheck}
+                          checked={selection.scopes.has(scopeId)}
+                          disabled={bulkLoadingIds.has(scopeId)}
+                          onChange={() =>
+                            handleScopeToggle({
+                              kind: 'dataset',
+                              dataSetId: dataset.id,
+                            })
+                          }
+                          aria-label={`选择数据集${dataset.dataSetName}全部数据`}
+                        />
                         <button
                           type="button"
                           className={`${styles.nodeLabel}${
@@ -272,12 +255,6 @@ export function ManagedFileSelectOverlay({
               该处理类型暂不支持已管理数据，请改用本地上传。
             </p>
           )}
-          {isSingle && (
-            <p className={styles.noticeInfo}>
-              影像切片一次仅支持选择一个数据。
-            </p>
-          )}
-
           <div className={styles.toolbar}>
             <Input.Search
               className={styles.search}

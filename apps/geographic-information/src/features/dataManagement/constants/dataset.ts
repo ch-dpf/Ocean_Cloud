@@ -29,6 +29,15 @@ export const DATASET_CATEGORY_ORDER = [
 export const DATASET_PAGE_SIZE = 10
 
 /**
+ * 卡片墙每页条数：11 条数据集 + 首个固定的「新增」卡片 = 12 格，
+ * 一行 4 个时正好铺满 3 行，翻页不会出现半行
+ */
+export const DATASET_CARD_PAGE_SIZE = 11
+
+/** 取数据集轮廓时的简化容差：详情弹窗要看完整范围，按后端要求传 0（不简化） */
+export const FOOTPRINT_SIMPLIFY_TOLERANCE = 0
+
+/**
  * 处理类型名称：由分类名推出（影像数据 → 影像处理、倾斜模型 → 倾斜模型处理）。
  * 从同一份分类映射推导，避免再维护第二份键值对。
  */

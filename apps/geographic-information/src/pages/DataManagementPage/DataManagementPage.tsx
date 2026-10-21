@@ -1,13 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
-import { Dropdown } from 'antd'
-import type { MenuProps } from 'antd'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { ConfirmDialog } from '@ocean-cloud/ui'
 import styles from './DataManagementPage.module.css'
 import { DATA_MANAGEMENT_SECTIONS } from '../../config/navigation'
 import { DatasetCreateDialog } from '../../features/dataManagement/components/DatasetCreateDialog/DatasetCreateDialog'
 import { DatasetDetailDialog } from '../../features/dataManagement/components/DatasetDetailDialog/DatasetDetailDialog'
 import { DatasetEditDialog } from '../../features/dataManagement/components/DatasetEditDialog/DatasetEditDialog'
-import { DatasetSearch } from '../../features/dataManagement/components/DatasetSearch/DatasetSearch'
+import { DatasetWall } from '../../features/dataManagement/components/DatasetWall/DatasetWall'
+import type { DatasetView } from '../../features/dataManagement/components/DatasetWall/DatasetWall'
 import { FileImportDialog } from '../../features/dataManagement/components/FileImportDialog/FileImportDialog'
 import { FileMetaTable } from '../../features/dataManagement/components/FileMetaTable/FileMetaTable'
 import { ProcessingCreateDialog } from '../../features/dataManagement/components/ProcessingCreateDialog/ProcessingCreateDialog'
@@ -17,8 +16,11 @@ import { TransferRecordTable } from '../../features/dataManagement/components/Tr
 import { UploadProgressDialog } from '../../features/dataManagement/components/UploadProgressDialog/UploadProgressDialog'
 import DocumentFolderIcon from '../../assets/icons/DocumentFolder.svg'
 import {
+  DATASET_CARD_PAGE_SIZE,
+  DATASET_CATEGORY_IDS,
   DATASET_CATEGORY_LABELS,
   DATASET_CATEGORY_ORDER,
+  DATASET_PAGE_SIZE,
   FILE_PAGE_SIZE,
   TRANSFER_PAGE_SIZE,
 } from '../../features/dataManagement/constants/dataset'
@@ -27,6 +29,7 @@ import {
   UPLOAD_TASK_KINDS,
 } from '../../features/dataManagement/constants/task'
 import { useDatasetCatalog } from '../../features/dataManagement/hooks/useDatasetCatalog'
+import { useDatasetPage } from '../../features/dataManagement/hooks/useDatasetPage'
 import { useFileMetaPage } from '../../features/dataManagement/hooks/useFileMetaPage'
 import { useSidebarCounts } from '../../features/dataManagement/hooks/useSidebarCounts'
 import { useTransferPage } from '../../features/dataManagement/hooks/useTransferPage'
@@ -50,6 +53,12 @@ import type {
   FileScope,
 } from '../../features/dataManagement/types/fileMeta'
 
+const VectorCartography = lazy(() =>
+  import('../../features/dataManagement/components/VectorCartography/VectorCartography').then(
+    (module) => ({ default: module.VectorCartography }),
+  ),
+)
+
 interface DataManagementPageProps {
   readonly activePath: string
 }
@@ -66,12 +75,13 @@ const TRANSFERS_PATH = '/data-management/transfers'
 /** 回收站的路径 */
 const RECYCLE_BIN_PATH = '/data-management/recycle-bin'
 
-/** 数据集右键菜单：查看详情、重命名与删除 */
-const DATASET_MENU_ITEMS: MenuProps['items'] = [
-  { key: 'detail', label: '详情' },
-  { key: 'rename', label: '重命名' },
-  { key: 'delete', label: '删除', danger: true },
-]
+/**
+ * 切回「全部数据」栏目的哈希跳转。写在组件外：在组件内直接改写 location
+ * 会被 react-compiler 的 immutability 规则拦下（修改组件外部定义的值）
+ */
+function goToWorkspace() {
+  location.hash = `#${WORKSPACE_PATH}`
+}
 
 /** 数据目录的选择：某个分类，或某个分类下的数据集；为空表示「全部数据」 */
 type DatasetSelection =
@@ -89,13 +99,20 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     DATA_MANAGEMENT_SECTIONS.find((item) => item.path === activePath) ??
     DATA_MANAGEMENT_SECTIONS[0]
   const [selection, setSelection] = useState<DatasetSelection | null>(null)
-  const [expandedTypes, setExpandedTypes] = useState<Set<number>>(
-    () => new Set(),
-  )
+  const [vectorView, setVectorView] = useState<'map' | 'files'>('map')
+  // 数据集卡片墙：搜索框原值、去抖后真正发给接口的关键字与展示方式（卡片 / 列表）；
+  // 当前页由 useDatasetPage 持有，筛选条件或每页条数变化时它自己回到第 1 页
+  const [datasetKeyword, setDatasetKeyword] = useState('')
+  const [datasetKeywordQuery, setDatasetKeywordQuery] = useState('')
+  const [datasetView, setDatasetView] = useState<DatasetView>('card')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isImportOpen, setIsImportOpen] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [processingId, setProcessingId] = useState<string | null>(null)
+  // 数据集卡片「处理」打开的处理任务弹窗：按分类锁定处理类型，文件在弹窗里选
+  const [processingDatasetType, setProcessingDatasetType] = useState<
+    string | null
+  >(null)
   const [isProgressOpen, setIsProgressOpen] = useState(false)
   // 数据集右键菜单触发的弹窗：详情、重命名与删除
   const [detailDataset, setDetailDataset] = useState<GeoDataset | null>(null)
@@ -139,6 +156,36 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     refresh: refreshCatalog,
   } = useDatasetCatalog()
 
+  // 导入弹窗的初始上下文：全部数据为空、分类为分类名、数据集为数据集名
+  const selectedDataset =
+    activeSelection !== null && activeSelection.kind === 'dataset'
+      ? activeSelection
+      : null
+  // 分类筛选与侧边栏的分类选择、工具栏的「全部类型」共用同一份状态
+  const wallCategoryId =
+    activeSelection !== null && activeSelection.kind === 'category'
+      ? activeSelection.categoryId
+      : null
+  // 卡片墙的数据集按服务端分页拉取（顺带带回各数据集的轮廓，供卡片预览画范围）；
+  // 已经进到某个数据集内部时主区不是卡片墙，停掉这次查询
+  const wallPage = useDatasetPage(
+    {
+      categoryId: wallCategoryId ?? undefined,
+      dataSetName: datasetKeywordQuery,
+    },
+    datasetView === 'card' ? DATASET_CARD_PAGE_SIZE : DATASET_PAGE_SIZE,
+    isWorkspace && selectedDataset === null,
+  )
+
+  // 搜索框逐字输入会把请求打得太碎，停顿 300ms 后再把关键字交给查询
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => setDatasetKeywordQuery(datasetKeyword.trim()),
+      300,
+    )
+    return () => window.clearTimeout(timer)
+  }, [datasetKeyword])
+
   function resolveFileScope(): FileScope | null {
     // 回收站展示的是已删除的元数据，与数据工作区的范围互不干扰
     if (isRecycleBin) return { kind: 'recycleBin' }
@@ -146,6 +193,8 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     if (activeSelection === null) return { kind: 'all' }
     if (activeSelection.kind === 'category')
       return { kind: 'category', categoryId: activeSelection.categoryId }
+    if (activeSelection.categoryId === DATASET_CATEGORY_IDS.vector && vectorView === 'map')
+      return null
     return { kind: 'dataset', dataSetId: activeSelection.dataSetId }
   }
 
@@ -281,10 +330,6 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
   }
 
   // 导入弹窗的初始上下文：全部数据为空、分类为分类名、数据集为数据集名
-  const selectedDataset =
-    activeSelection !== null && activeSelection.kind === 'dataset'
-      ? activeSelection
-      : null
   const importKeyword =
     activeSelection === null
       ? ''
@@ -294,17 +339,20 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
   /** 选中数据目录项：同时回到「全部数据」页面，保证内容区展示对应数据 */
   function handleSelectEntry(next: DatasetSelection) {
     setSelection(next)
-    if (!isWorkspace) location.hash = `#${WORKSPACE_PATH}`
+    if (!isWorkspace) goToWorkspace()
   }
 
-  // 新增成功后切到所属分类，并刷新侧边栏目录
+  // 新增成功后切到所属分类并回到第 1 页，并刷新侧边栏目录
   function handleCreated(categoryId: number) {
+    wallPage.goToPage(1)
     handleSelectEntry({ kind: 'category', categoryId })
     refreshCatalog()
   }
 
-  /** 搜索结果中选中数据集：进入该数据集内部（不在全部数据时一并切回） */
-  function handleSearchSelect(dataset: GeoDataset) {
+  /** 卡片「查看数据」：进入该数据集内部（不在「全部数据」栏目时一并切回） */
+  function handleViewDataset(dataset: GeoDataset) {
+    wallPage.goToPage(1)
+    setVectorView('map')
     handleSelectEntry({
       kind: 'dataset',
       categoryId: Number(dataset.categoryId),
@@ -313,10 +361,47 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     })
   }
 
-  /** 搜索栏刷新：回到「全部数据」并重新拉一次目录 */
-  function handleSearchReset() {
-    setSelection(null)
-    if (!isWorkspace) location.hash = `#${WORKSPACE_PATH}`
+  /** 文件列表返回：退回该数据集所属分类的卡片墙 */
+  function handleBackToDatasets() {
+    if (activeSelection === null) return
+    setSelection({ kind: 'category', categoryId: activeSelection.categoryId })
+  }
+
+  /** 卡片「处理」：按分类锁定处理类型打开处理任务弹窗，数据在弹窗里选 */
+  function handleProcessDataset(dataset: GeoDataset) {
+    const type = CATEGORY_PROCESSING_TYPES[Number(dataset.categoryId)]
+    if (type === undefined) return
+    setProcessingDatasetType(type)
+  }
+
+  /** 卡片「···」菜单：与原数据集右键菜单一致（详情 / 重命名 / 删除） */
+  function handleDatasetMenu(key: string, dataset: GeoDataset) {
+    if (key === 'detail') setDetailDataset(dataset)
+    else if (key === 'rename') setRenamingDataset(dataset)
+    else setDeletingDataset(dataset)
+  }
+
+  /** 分类未映射到处理类型（倾斜模型、电子海图）的数据集不能发起处理 */
+  function canProcessDataset(dataset: GeoDataset): boolean {
+    return CATEGORY_PROCESSING_TYPES[Number(dataset.categoryId)] !== undefined
+  }
+
+  /** 工具栏搜索：只改输入框原值，去抖后再落到查询上（页码由查询条件变化自动回到第 1 页） */
+  function handleDatasetKeywordChange(value: string) {
+    setDatasetKeyword(value)
+  }
+
+  /** 工具栏「全部类型」：与侧边栏的分类选择共用同一个 selection */
+  function handleDatasetCategoryChange(categoryId: number | null) {
+    wallPage.goToPage(1)
+    if (categoryId === null) setSelection(null)
+    else handleSelectEntry({ kind: 'category', categoryId })
+  }
+
+  /** 工具栏刷新：回到第 1 页重新拉取卡片墙，同时刷新侧边栏目录的计数 */
+  function handleDatasetRefresh() {
+    wallPage.goToPage(1)
+    wallPage.refresh()
     refreshCatalog()
   }
 
@@ -435,15 +520,6 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     )
   }
 
-  function toggleType(type: number) {
-    setExpandedTypes((prev) => {
-      const next = new Set(prev)
-      if (next.has(type)) next.delete(type)
-      else next.add(type)
-      return next
-    })
-  }
-
   /** 每页条数变化时由 hook 回到第 1 页 */
   function handleFilePageChange(page: number, size: number) {
     setFilePageSize(size)
@@ -499,13 +575,6 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
   return (
     <section className={styles.page}>
       <div className={styles.geoSideBar}>
-        <div className={styles.geoSideBarTitle}>
-          <DatasetSearch
-            onSelect={handleSearchSelect}
-            onReset={handleSearchReset}
-            onCreate={() => setIsCreateOpen(true)}
-          />
-        </div>
         <nav className={styles.geoSideBarDirectory}>
           {DATA_MANAGEMENT_SECTIONS.map((item) => {
             // 上方导航与数据目录互斥：选中了分类或数据集时，这里不再高亮
@@ -576,7 +645,6 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
             {DATASET_CATEGORY_ORDER.map((categoryId) => {
               const label = DATASET_CATEGORY_LABELS[categoryId]
               const entry = catalog[categoryId]
-              const isOpen = expandedTypes.has(categoryId)
               const isSelected =
                 activeSelection !== null &&
                 activeSelection.categoryId === categoryId
@@ -589,26 +657,12 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                   >
                     <button
                       type="button"
-                      className={styles.dataDirectoryChevron}
-                      onClick={() => toggleType(categoryId)}
-                      aria-expanded={isOpen}
-                      aria-label={isOpen ? `收起${label}` : `展开${label}`}
-                    >
-                      <span
-                        className={`${styles.dataDirectoryChevronIcon}${
-                          isOpen ? ` ${styles.dataDirectoryChevronOpen}` : ''
-                        }`}
-                        aria-hidden="true"
-                      >
-                        &gt;
-                      </span>
-                    </button>
-                    <button
-                      type="button"
                       className={styles.dataDirectoryItemLabel}
-                      onClick={() =>
+                      onClick={() => {
+                        // 分类只做筛选：回到第 1 页，让卡片墙只展示该分类的数据集
+                        wallPage.goToPage(1)
                         handleSelectEntry({ kind: 'category', categoryId })
-                      }
+                      }}
                       aria-pressed={isSelected}
                     >
                       <span className={styles.dataDirectoryItemName}>
@@ -621,63 +675,6 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                       )}
                     </button>
                   </div>
-                  {isOpen && (
-                    <ul className={styles.dataDirectoryDataSetList}>
-                      {isCatalogLoading ? (
-                        <li className={styles.dataDirectoryDataSetHint}>
-                          正在加载数据集…
-                        </li>
-                      ) : entry === undefined ? (
-                        <li className={styles.dataDirectoryDataSetHint}>
-                          该分类下暂无数据集
-                        </li>
-                      ) : (
-                        entry.datasets.map((dataset) => {
-                          const isDataSetSelected =
-                            activeSelection !== null &&
-                            activeSelection.kind === 'dataset' &&
-                            activeSelection.dataSetId === dataset.id
-                          return (
-                            <li key={dataset.id}>
-                              <Dropdown
-                                trigger={['contextMenu']}
-                                menu={{
-                                  items: DATASET_MENU_ITEMS,
-                                  onClick: ({ key }) => {
-                                    if (key === 'detail')
-                                      setDetailDataset(dataset)
-                                    else if (key === 'rename')
-                                      setRenamingDataset(dataset)
-                                    else setDeletingDataset(dataset)
-                                  },
-                                }}
-                              >
-                                <button
-                                  type="button"
-                                  className={`${styles.dataDirectoryDataSetItem}${
-                                    isDataSetSelected
-                                      ? ` ${styles.dataDirectoryDataSetItemActive}`
-                                      : ''
-                                  }`}
-                                  onClick={() =>
-                                    handleSelectEntry({
-                                      kind: 'dataset',
-                                      categoryId,
-                                      dataSetId: dataset.id,
-                                      dataSetName: dataset.dataSetName,
-                                    })
-                                  }
-                                  aria-pressed={isDataSetSelected}
-                                >
-                                  {dataset.dataSetName}
-                                </button>
-                              </Dropdown>
-                            </li>
-                          )
-                        })
-                      )}
-                    </ul>
-                  )}
                 </li>
               )
             })}
@@ -729,8 +726,90 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
               onDetail={(record) => setDetailRecordNo(record.recordNo)}
             />
           </div>
+        ) : selectedDataset === null ? (
+          // 未进入具体数据集：展示数据集卡片墙（分类筛选与侧边栏共用同一份状态）
+          <div className={styles.contentPanel}>
+            <DatasetWall
+              datasets={wallPage.records}
+              total={wallPage.total}
+              isLoading={wallPage.isLoading}
+              error={wallPage.error}
+              keyword={datasetKeyword}
+              categoryId={wallCategoryId}
+              view={datasetView}
+              current={wallPage.current}
+              onKeywordChange={handleDatasetKeywordChange}
+              onCategoryChange={handleDatasetCategoryChange}
+              onViewChange={setDatasetView}
+              onRefresh={handleDatasetRefresh}
+              onPageChange={wallPage.goToPage}
+              onCreateDataset={() => setIsCreateOpen(true)}
+              onAddData={() => setIsImportOpen(true)}
+              onViewData={handleViewDataset}
+              onProcess={handleProcessDataset}
+              onMenuAction={handleDatasetMenu}
+              canProcess={canProcessDataset}
+            />
+          </div>
         ) : (
           <div className={styles.contentPanel}>
+            {/* 矢量数据集默认进入制图；其他数据集继续显示原有文件列表。 */}
+            <div className={styles.datasetFileHeader}>
+              <button
+                type="button"
+                className={styles.backButton}
+                onClick={handleBackToDatasets}
+              >
+                ← 返回数据集
+              </button>
+              <span className={styles.datasetFileTitle}>
+                {selectedDataset.dataSetName}
+              </span>
+            </div>
+            {selectedDataset.categoryId === DATASET_CATEGORY_IDS.vector && (
+              <div className={styles.vectorActions}>
+                <button
+                  type="button"
+                  className={vectorView === 'map' ? styles.vectorTabActive : styles.vectorTab}
+                  onClick={() => setVectorView('map')}
+                >
+                  制图工作区
+                </button>
+                <button
+                  type="button"
+                  className={vectorView === 'files' ? styles.vectorTabActive : styles.vectorTab}
+                  onClick={() => setVectorView('files')}
+                >
+                  源文件管理
+                </button>
+                {vectorView === 'map' && (
+                  <div className={styles.vectorToolbarActions}>
+                    <button
+                      type="button"
+                      className={styles.progressButton}
+                      onClick={() => setIsProgressOpen(true)}
+                    >
+                      导入进度{runningCount > 0 ? ` (${runningCount})` : ''}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.importButton}
+                      onClick={() => setIsImportOpen(true)}
+                    >
+                      导入GIS数据
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            {selectedDataset.categoryId === DATASET_CATEGORY_IDS.vector && vectorView === 'map' ? (
+              <Suspense fallback={<div>制图工作区加载中…</div>}>
+                <VectorCartography
+                  key={selectedDataset.dataSetId}
+                  dataSetId={selectedDataset.dataSetId}
+                />
+              </Suspense>
+            ) : (
             <FileMetaTable
               extraActions={
                 <div className={styles.headerActions}>
@@ -792,6 +871,7 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                 },
               ]}
             />
+            )}
           </div>
         )}
       </div>
@@ -868,6 +948,13 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
             CATEGORY_PROCESSING_TYPES[Number(processingFile.categoryId)]
           }
           onClose={() => setProcessingFile(null)}
+          onSubmitManaged={handleManagedProcess}
+        />
+      )}
+      {processingDatasetType !== null && (
+        <ProcessingCreateDialog
+          lockedProcessingType={processingDatasetType}
+          onClose={() => setProcessingDatasetType(null)}
           onSubmitManaged={handleManagedProcess}
         />
       )}

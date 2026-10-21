@@ -15,10 +15,6 @@
   border-left: 1px solid #e5e5e5;
   border-top: 1px solid #e5e5e5;
 }
-.geoSideBarTitle {
-  height: 50px;
-  display: flex;
-}
 .geoSideBarDirectory {
   display: flex;
   flex-direction: column;
@@ -137,36 +133,8 @@
 .dataDirectoryItemActive {
   background: #e8f1fd;
 }
-.dataDirectoryChevron {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 12px;
-  flex-shrink: 0;
-  padding: 0;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  color: #8394a0;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-.dataDirectoryChevron:hover,
 .dataDirectoryItemLabel:hover {
   background: transparent;
-}
-.dataDirectoryItem:hover .dataDirectoryChevron,
-.dataDirectoryItemActive .dataDirectoryChevron {
-  color: #1267d6;
-}
-.dataDirectoryChevronIcon {
-  display: inline-block;
-  font-size: 12px;
-  line-height: 1;
-  transition: transform 0.2s;
-}
-.dataDirectoryChevronOpen {
-  transform: rotate(90deg);
 }
 .dataDirectoryItemLabel {
   display: flex;
@@ -202,42 +170,6 @@
 .dataDirectoryItemActive .dataDirectoryItemLabel {
   color: #1267d6;
 }
-.dataDirectoryDataSetList {
-  margin: 2px 0 6px;
-  padding: 0;
-  list-style: none;
-}
-.dataDirectoryDataSetItem {
-  display: block;
-  width: 100%;
-  height: 28px;
-  padding: 0 12px 0 32px;
-  overflow: hidden;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: #13293d;
-  font-family: 'Noto Sans SC', sans-serif;
-  font-size: 12px;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.dataDirectoryDataSetItem:hover {
-  background: #e8f1fd;
-  color: #1267d6;
-}
-.dataDirectoryDataSetItemActive {
-  background: #e8f1fd;
-  color: #1267d6;
-}
-.dataDirectoryDataSetHint {
-  padding: 0 12px 0 32px;
-  color: #8394a0;
-  font-size: 12px;
-  line-height: 28px;
-}
 .geoContent {
   flex: 1;
   min-width: 0;
@@ -247,6 +179,63 @@
   overflow: hidden;
   padding: 16px;
 }
+/* 数据集文件列表：顶部返回卡片墙的入口与数据集名 */
+.datasetFileHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.backButton {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid #dce6ec;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #1267d6;
+  cursor: pointer;
+  font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  font-size: 12px;
+}
+.backButton:hover {
+  border-color: #1267d6;
+  background: #f2f7ff;
+}
+.datasetFileTitle {
+  overflow: hidden;
+  color: #13293d;
+  font-size: 14px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vectorActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.vectorTab, .vectorTabActive {
+  padding: 6px 12px;
+  border: 1px solid #dce6ec;
+  border-radius: 6px;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+}
+.vectorTabActive {
+  border-color: #1677ff;
+  background: #eaf3ff;
+  color: #1267d6;
+  font-weight: 600;
+}
+.vectorToolbarActions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
 /* 操作栏与表格同处一张白色卡片：全部数据、传输记录、回收站三种视图共用 */
 .contentPanel {
   display: flex;

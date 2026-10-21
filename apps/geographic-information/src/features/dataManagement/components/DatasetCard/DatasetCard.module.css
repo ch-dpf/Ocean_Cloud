@@ -1,0 +1,149 @@
+/* 卡片自身撑满网格项（正方形由网格的 aspect-ratio 决定），内部按「预览 / 信息 / 操作」三层排布 */
+.card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid #e5ecf3;
+  border-radius: 12px;
+  background: #ffffff;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.card:hover {
+  border-color: #bcd3ee;
+  box-shadow: 0 6px 16px rgb(19 41 61 / 8%);
+}
+
+/* 地图预览：常驻一张 OpenLayers 地图，把该数据集的文件中心点画在图上。
+   下方每一行文字都是定高的单行，因此这里 flex:1 拿到的高度只由卡片尺寸决定，
+   不会因为数据集名或描述变长而伸缩 */
+.preview {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 96px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #eff5fc 0%, #dfebf8 100%);
+}
+/* 地图 chunk 还在下载时的占位文案 */
+.previewLoading {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  color: #6b8398;
+  font-size: 12px;
+}
+
+.info {
+  padding: 12px 14px 0;
+}
+/* 数据集名固定一行，超出省略：行高写死，保证下半部分高度恒定 */
+.name {
+  margin: 0;
+  overflow: hidden;
+  color: #13293d;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 22px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 描述固定一行，超出省略 */
+.description {
+  margin: 3px 0 0;
+  overflow: hidden;
+  color: #576e85;
+  font-size: 13px;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 类型 / 文件数 / 大小：固定一行三列，值过长省略并由 title 展示全量 */
+.meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 10px;
+  margin: 10px 0 0;
+}
+.metaItem {
+  display: flex;
+  min-width: 0;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 20px;
+}
+.metaItem dt {
+  flex-shrink: 0;
+  color: #8394a0;
+}
+.metaItem dd {
+  margin: 0;
+  overflow: hidden;
+  color: #3f5665;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 操作区固定一行：三个按钮等分剩余宽度，「···」贴在最右侧 */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 14px 14px;
+}
+.action {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid #dce6ec;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+.action:first-child {
+  background: #1267d6;
+  color: #ffffff;
+}
+.action:nth-child(2) {
+  background: #f2f7ff;
+  color: #1267d6;
+}
+.action:hover:not(:disabled) {
+  border-color: #f2f7ff;
+  background: #1267d6;
+}
+.action:nth-child(2):hover:not(:disabled) {
+  background: #f2f7ff;
+  color: black;
+}
+.action:disabled {
+  color: #a9b6c2;
+  cursor: not-allowed;
+}
+/* 「···」：不参与等分，固定宽度贴在最右侧 */
+.more {
+  flex: 0 0 auto;
+  height: 28px;
+  padding: 0 9px;
+  border: 1px solid #dce6ec;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #8394a0;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+.more:hover {
+  border-color: #1267d6;
+  color: #1267d6;
+}

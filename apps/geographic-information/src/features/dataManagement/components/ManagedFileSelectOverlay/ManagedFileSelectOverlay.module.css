@@ -117,23 +117,15 @@
   white-space: nowrap;
 }
 
-/* 说明性提示条：正常约束用中性色，能力受限用警示色 */
-.noticeInfo,
+/* 说明性提示条：不支持已管理数据时用警示色 */
 .notice {
   margin: 0 0 12px;
   padding: 8px 12px;
   border-radius: 6px;
-  font-size: 12px;
-}
-.noticeInfo {
-  border: 1px solid #d6e4f5;
-  background: #f4f9ff;
-  color: #3f5665;
-}
-.notice {
   border: 1px solid #ffe0b2;
   background: #fff8e6;
   color: #a86b00;
+  font-size: 12px;
 }
 
 .toolbar {
