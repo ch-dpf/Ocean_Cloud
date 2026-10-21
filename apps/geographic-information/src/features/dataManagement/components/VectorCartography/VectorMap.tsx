@@ -1,101 +1,118 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Feature from 'ol/Feature.js'
-import Map from 'ol/Map.js'
+import type { FeatureLike } from 'ol/Feature.js'
+import OlMap from 'ol/Map.js'
 import View from 'ol/View.js'
 import GeoJSON from 'ol/format/GeoJSON.js'
-import Draw from 'ol/interaction/Draw.js'
-import TileLayer from 'ol/layer/Tile.js'
 import VectorLayer from 'ol/layer/Vector.js'
 import { fromLonLat, transformExtent } from 'ol/proj.js'
-import OSM from 'ol/source/OSM.js'
 import VectorSource from 'ol/source/Vector.js'
 import CircleStyle from 'ol/style/Circle.js'
 import Fill from 'ol/style/Fill.js'
 import Stroke from 'ol/style/Stroke.js'
 import Style from 'ol/style/Style.js'
 import type Geometry from 'ol/geom/Geometry.js'
-import type { VectorFeature, VectorFeatureDraft } from '../../types/vector'
+import type { VectorBbox, VectorFeature } from '../../types/vector'
+import {
+  DEFAULT_FEATURE_STYLE,
+  featureStyleKey,
+  withAlpha,
+  type FeatureStyleSetting,
+} from './vectorStyle'
 import 'ol/ol.css'
 import styles from './VectorCartography.module.css'
-
-export type DrawGeometry = 'Point' | 'LineString' | 'Polygon' | null
-export type VectorBbox = readonly [number, number, number, number]
 
 interface VectorMapProps {
   readonly features: readonly VectorFeature[]
   readonly focusGeometry: unknown
-  readonly selectedFeatureId: string | null
-  readonly drawGeometry: DrawGeometry
+  readonly selectedFeatureKey: string | null
+  readonly featureStyles: Readonly<Record<string, FeatureStyleSetting>>
   readonly onBboxChange: (bbox: VectorBbox) => void
   readonly onSelect: (feature: VectorFeature | null) => void
-  readonly onDraw: (feature: VectorFeatureDraft) => void
 }
 
 const format = new GeoJSON()
-const normalStyle = new Style({
-  stroke: new Stroke({ color: '#1677ff', width: 2 }),
-  fill: new Fill({ color: 'rgba(22,119,255,.22)' }),
-  image: new CircleStyle({
-    radius: 6,
-    fill: new Fill({ color: '#1677ff' }),
-    stroke: new Stroke({ color: '#fff', width: 2 }),
-  }),
-})
-const selectedStyle = new Style({
-  stroke: new Stroke({ color: '#f59e0b', width: 4 }),
-  fill: new Fill({ color: 'rgba(245,158,11,.28)' }),
-  image: new CircleStyle({
-    radius: 8,
-    fill: new Fill({ color: '#f59e0b' }),
-    stroke: new Stroke({ color: '#fff', width: 2 }),
-  }),
-})
+const POINT_STROKE = '#ffffff'
+const styleCache = new Map<string, Style>()
+
+/** 按颜色和选中状态缓存样式，避免同一要素每帧重复创建。 */
+function getFeatureStyle(color: string, selected: boolean): Style {
+  const key = `${color}|${selected ? 1 : 0}`
+  const cached = styleCache.get(key)
+  if (cached) return cached
+  const style = new Style({
+    stroke: new Stroke({ color, width: selected ? 4 : 2 }),
+    fill: new Fill({ color: withAlpha(color, selected ? 0.42 : 0.22) }),
+    image: new CircleStyle({
+      radius: selected ? 8 : 6,
+      fill: new Fill({ color }),
+      stroke: new Stroke({ color: POINT_STROKE, width: 2 }),
+    }),
+  })
+  styleCache.set(key, style)
+  return style
+}
 
 export function VectorMap({
   features,
   focusGeometry,
-  selectedFeatureId,
-  drawGeometry,
+  selectedFeatureKey,
+  featureStyles,
   onBboxChange,
   onSelect,
-  onDraw,
 }: VectorMapProps) {
   const target = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<Map | null>(null)
+  const mapRef = useRef<OlMap | null>(null)
+  const layerRef = useRef<VectorLayer | null>(null)
   const sourceRef = useRef(new VectorSource<Feature<Geometry>>())
-  const callbackRef = useRef({ onBboxChange, onSelect, onDraw })
+  const callbackRef = useRef({ onBboxChange, onSelect })
   const featureRef = useRef(features)
-  const drawingRef = useRef(drawGeometry)
-  const selectedRef = useRef(selectedFeatureId)
+  const styleRef = useRef(featureStyles)
+  const selectedRef = useRef(selectedFeatureKey)
+  const [zoom, setZoom] = useState(4)
 
   useEffect(() => {
-    callbackRef.current = { onBboxChange, onSelect, onDraw }
+    callbackRef.current = { onBboxChange, onSelect }
     featureRef.current = features
-    drawingRef.current = drawGeometry
-    selectedRef.current = selectedFeatureId
-  }, [onBboxChange, onSelect, onDraw, features, drawGeometry, selectedFeatureId])
+    styleRef.current = featureStyles
+    selectedRef.current = selectedFeatureKey
+  }, [onBboxChange, onSelect, features, featureStyles, selectedFeatureKey])
 
   useEffect(() => {
     if (!target.current) return
     const source = sourceRef.current
-    const map = new Map({
+    // 不加载底图瓦片，仅渲染矢量数据。
+    const view = new View({
+      center: fromLonLat([105, 35]),
+      zoom: 4,
+      minZoom: 1,
+      maxZoom: 22,
+    })
+    const vectorLayer = new VectorLayer({
+      source,
+      style: (feature: FeatureLike, resolution: number) => {
+        const layerId = String(feature.get('layerId') ?? '')
+        const key = featureStyleKey(layerId, String(feature.getId() ?? ''))
+        const setting = styleRef.current[key] ?? DEFAULT_FEATURE_STYLE
+        const currentZoom = view.getZoomForResolution(resolution) ?? 0
+        if (currentZoom < setting.minZoom) return undefined
+        return getFeatureStyle(setting.color, key === selectedRef.current)
+      },
+    })
+    const map = new OlMap({
       target: target.current,
-      layers: [
-        new TileLayer({ source: new OSM() }),
-        new VectorLayer({
-          source,
-          style: (feature) =>
-            feature.getId() === selectedRef.current ? selectedStyle : normalStyle,
-        }),
-      ],
-      view: new View({ center: fromLonLat([105, 35]), zoom: 4, minZoom: 1 }),
+      layers: [vectorLayer],
+      view,
     })
     mapRef.current = map
+    layerRef.current = vectorLayer
     const updateBbox = () => {
       const size = map.getSize()
       if (!size) return
       const extent = transformExtent(
-        map.getView().calculateExtent(size), 'EPSG:3857', 'EPSG:4326',
+        map.getView().calculateExtent(size),
+        'EPSG:3857',
+        'EPSG:4326',
       )
       const west = Math.max(-180, Math.min(180, extent[0]))
       const south = Math.max(-90, Math.min(90, extent[1]))
@@ -106,19 +123,28 @@ export function VectorMap({
     }
     map.on('moveend', updateBbox)
     map.on('singleclick', (event) => {
-      if (drawingRef.current) return
       const hit = map.forEachFeatureAtPixel(event.pixel, (item) => item)
-      const id = hit?.getId()
+      if (!hit) {
+        callbackRef.current.onSelect(null)
+        return
+      }
+      const id = hit.getId() === undefined ? '' : String(hit.getId())
+      const layerId = String(hit.get('layerId') ?? '')
       callbackRef.current.onSelect(
-        id === undefined
-          ? null
-          : featureRef.current.find((item) => item.id === String(id)) ?? null,
+        featureRef.current.find(
+          (item) => item.id === id && item.layerId === layerId,
+        ) ?? null,
       )
     })
+    const updateZoom = () => setZoom(view.getZoom() ?? 0)
+    view.on('change:resolution', updateZoom)
+    updateZoom()
     updateBbox()
     return () => {
+      view.un('change:resolution', updateZoom)
       map.setTarget(undefined)
       mapRef.current = null
+      layerRef.current = null
     }
   }, [])
 
@@ -133,6 +159,7 @@ export function VectorMap({
         })
         for (const olFeature of olFeatures) {
           olFeature.setId(item.id)
+          olFeature.set('layerId', item.layerId)
           source.addFeature(olFeature)
         }
       } catch {
@@ -142,8 +169,8 @@ export function VectorMap({
   }, [features])
 
   useEffect(() => {
-    mapRef.current?.getLayers().item(1)?.changed()
-  }, [selectedFeatureId])
+    layerRef.current?.changed()
+  }, [selectedFeatureKey, featureStyles])
 
   useEffect(() => {
     if (!mapRef.current || !focusGeometry) return
@@ -163,27 +190,25 @@ export function VectorMap({
     }
   }, [focusGeometry])
 
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map || !drawGeometry) return
-    const drawSource = new VectorSource<Feature<Geometry>>()
-    const interaction = new Draw({ source: drawSource, type: drawGeometry })
-    map.addInteraction(interaction)
-    interaction.on('drawend', (event) => {
-      const json = format.writeFeatureObject(event.feature, {
-        dataProjection: 'EPSG:4326',
-        featureProjection: 'EPSG:3857',
-      })
-      callbackRef.current.onDraw({
-        type: 'Feature',
-        geometry: json.geometry as VectorFeatureDraft['geometry'],
-        properties: {},
-      })
-    })
-    return () => {
-      map.removeInteraction(interaction)
-    }
-  }, [drawGeometry])
+  const zoomBy = (delta: number) => {
+    const view = mapRef.current?.getView()
+    if (!view) return
+    view.animate({ zoom: (view.getZoom() ?? 0) + delta, duration: 180 })
+  }
+  const zoomText = Number.isInteger(zoom) ? String(zoom) : zoom.toFixed(1)
 
-  return <div ref={target} className={styles.map} aria-label="矢量制图地图" />
+  return (
+    <div className={styles.mapShell}>
+      <div ref={target} className={styles.map} aria-label="矢量制图地图" />
+      <div className={styles.zoomBadge}>当前层级 Z{zoomText}</div>
+      <div className={styles.zoomControls}>
+        <button type="button" onClick={() => zoomBy(1)} aria-label="放大地图">
+          +
+        </button>
+        <button type="button" onClick={() => zoomBy(-1)} aria-label="缩小地图">
+          −
+        </button>
+      </div>
+    </div>
+  )
 }

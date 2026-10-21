@@ -1,4 +1,6 @@
 /** 后端矢量图层及 GeoJSON 要素的接口契约，ID 保持字符串以避免精度丢失。 */
+export type VectorBbox = readonly [number, number, number, number]
+
 export interface VectorLayer {
   readonly layerId: string
   readonly dataSetId: string
@@ -32,12 +34,6 @@ export interface VectorFeature {
   readonly geometry: VectorGeometry
   readonly properties: Record<string, unknown> | null
   readonly version: string | number
-}
-
-export interface VectorFeatureDraft {
-  readonly type: 'Feature'
-  readonly geometry: VectorGeometry
-  readonly properties: Record<string, unknown> | null
 }
 
 export interface VectorFeatureCollection {
