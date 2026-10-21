@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import type { FormEvent, UIEvent } from 'react'
+import type { ChangeEvent, FormEvent, UIEvent } from 'react'
 import { AppDialog } from '@ocean-cloud/ui'
 import { DATASET_CATEGORY_LABELS } from '../../constants/dataset'
 import { useDatasetOptions } from '../../hooks/useDatasetOptions'
@@ -8,6 +8,26 @@ import styles from './FileImportDialog.module.css'
 
 /** 单批次文件数上限（后端分片上传的限制） */
 const MAX_IMPORT_FILES = 100
+
+/** 同名、同大小、同修改时间视为同一文件，避免重复选择后重复上传。 */
+function fileKey(file: File): string {
+  return `${file.name}\u0000${file.size}\u0000${file.lastModified}`
+}
+
+function appendFiles(
+  previous: readonly File[],
+  picked: readonly File[],
+): readonly File[] {
+  const keys = new Set(previous.map(fileKey))
+  const next = [...previous]
+  for (const file of picked) {
+    const key = fileKey(file)
+    if (keys.has(key)) continue
+    keys.add(key)
+    next.push(file)
+  }
+  return next
+}
 
 interface FileImportDialogProps {
   readonly onClose: () => void
@@ -74,6 +94,25 @@ export function FileImportDialog({
   function handlePick(id: string, name: string) {
     setSelected({ id, name })
     setKeyword(name)
+  }
+
+  /** 多次选择累加文件，而不是用新一批覆盖之前的选择。 */
+  function handleFilesChange(event: ChangeEvent<HTMLInputElement>) {
+    const picked = event.target.files ? Array.from(event.target.files) : []
+    // 清空原生选择值，保证再次选择同一文件时也能触发 change。
+    event.target.value = ''
+    if (picked.length === 0) return
+    setFiles((previous) => appendFiles(previous, picked))
+    setValidationError(null)
+  }
+
+  /** 仅从待上传列表中移除，不会影响服务器上已有的数据。 */
+  function handleRemoveFile(target: File) {
+    const targetKey = fileKey(target)
+    setFiles((previous) =>
+      previous.filter((file) => fileKey(file) !== targetKey),
+    )
+    setValidationError(null)
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -169,15 +208,29 @@ export function FileImportDialog({
             className={styles.input}
             type="file"
             multiple
-            onChange={(event) =>
-              setFiles(event.target.files ? Array.from(event.target.files) : [])
-            }
+            onChange={handleFilesChange}
           />
           {files.length > 0 && (
-            <p className={styles.hint}>
-              已选择 {files.length} 个文件：
-              {files.map((item) => item.name).join('、')}
-            </p>
+            <div className={styles.fileSummary}>
+              <p className={styles.hint}>已选择 {files.length} 个文件：</p>
+              <ul className={styles.fileList}>
+                {files.map((file) => (
+                  <li className={styles.fileItem} key={fileKey(file)}>
+                    <span className={styles.fileName} title={file.name}>
+                      {file.name}
+                    </span>
+                    <button
+                      type="button"
+                      className={styles.fileRemove}
+                      aria-label={`移除 ${file.name}`}
+                      onClick={() => handleRemoveFile(file)}
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
 

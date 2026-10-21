@@ -15,6 +15,7 @@ interface VectorLayerListProps {
   readonly layerKinds: Readonly<Record<string, readonly GeometryKind[]>>
   readonly onToggleVisible: (layerId: string, visible: boolean) => void
   readonly onActivate: (layerId: string) => void
+  readonly onDelete: (layer: VectorLayer) => void
   readonly onRefresh: () => void
 }
 
@@ -32,6 +33,7 @@ export function VectorLayerList({
   layerKinds,
   onToggleVisible,
   onActivate,
+  onDelete,
   onRefresh,
 }: VectorLayerListProps) {
   return (
@@ -90,6 +92,14 @@ export function VectorLayerList({
                     )}
                   </span>
                 )}
+                <button
+                  type="button"
+                  className={styles.layerDelete}
+                  aria-label={`删除图层 ${layer.layerName}`}
+                  onClick={() => onDelete(layer)}
+                >
+                  删除
+                </button>
               </div>
             </div>
           )

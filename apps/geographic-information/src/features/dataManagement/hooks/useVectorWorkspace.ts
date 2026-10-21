@@ -3,8 +3,10 @@ import { RequestError } from '@ocean-cloud/http'
 import {
   getVectorLayers,
   getVectorFeature,
+  getVectorLayer,
   updateVectorFeature,
   deleteVectorFeature,
+  deleteVectorLayer,
 } from '../services/vectorService'
 import type {
   VectorFeature,
@@ -110,6 +112,21 @@ export function useVectorWorkspace(dataSetId: string) {
     [],
   )
   const clearError = useCallback(() => setError(null), [])
+  /** 删除图层：先取最新版本号再删，成功后立即清掉该图层的选择与草稿。 */
+  const removeLayer = useCallback(async (layerId: string) => {
+    const latest = await getVectorLayer(layerId)
+    await deleteVectorLayer(latest.layerId, latest.dataVersion)
+    setLayers((previous) => previous.filter((item) => item.layerId !== layerId))
+    setVisibleIds((previous) => previous.filter((id) => id !== layerId))
+    setActiveLayerId((previous) => (previous === layerId ? null : previous))
+    setSelected((previous) =>
+      previous?.feature.layerId === layerId ? null : previous,
+    )
+    setDraft((previous) => (previous?.layerId === layerId ? null : previous))
+    setCluster((previous) => (previous?.layerId === layerId ? null : previous))
+    setLayerRevision((value) => value + 1)
+    setError(null)
+  }, [])
 
   const selectFeature = useCallback(
     async (layerId: string, featureId: string) => {
@@ -241,6 +258,7 @@ export function useVectorWorkspace(dataSetId: string) {
     clearError,
     toggleVisible,
     refreshLayers,
+    removeLayer,
     selected,
     loadingFeature,
     savingFeature,

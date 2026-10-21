@@ -22,19 +22,18 @@ export function useVectorGeneralization(
   const [error, setError] = useState<string | null>(null)
   const [revision, setRevision] = useState(0)
   const notify = useRef(onChange)
-  notify.current = onChange
   const currentLayer = useRef(layerId)
-  currentLayer.current = layerId
+  useEffect(() => {
+    notify.current = onChange
+  }, [onChange])
+  useEffect(() => {
+    currentLayer.current = layerId
+  }, [layerId])
   useEffect(() => {
     const controller = new AbortController()
     let timer: ReturnType<typeof setTimeout> | undefined
     let published: string | null | undefined
     let first = true
-    setBusy(false)
-    setState(null)
-    setEtag('')
-    setDraft('')
-    setError(null)
     const load = async () => {
       if (!layerId) {
         setState(null)
@@ -59,7 +58,16 @@ export function useVectorGeneralization(
           setError(cause instanceof Error ? cause.message : '概览状态加载失败')
       }
     }
-    void load()
+    void (async () => {
+      await Promise.resolve()
+      if (controller.signal.aborted) return
+      setBusy(false)
+      setState(null)
+      setEtag('')
+      setDraft('')
+      setError(null)
+      void load()
+    })()
     return () => {
       controller.abort()
       clearTimeout(timer)
@@ -109,7 +117,7 @@ export function useVectorGeneralization(
               100,
           ),
         )
-  const progressStatus =
+  const progressStatus: 'exception' | 'success' | 'active' =
     build?.status === 'FAILED'
       ? 'exception'
       : build?.status === 'READY'

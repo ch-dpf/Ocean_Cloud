@@ -16,6 +16,7 @@ import type {
   VectorStyleMatch,
   VersionedVectorStyle,
   VectorFeatureCollection,
+  VectorLayer,
   VectorLayerPage,
 } from '../types/vector'
 
@@ -52,6 +53,23 @@ export async function getVectorFeatures(
       signal,
     },
   )
+}
+
+export async function getVectorLayer(layerId: string): Promise<VectorLayer> {
+  const result = await httpClient.get<ApiResult<VectorLayer>>(
+    layerPath(layerId),
+  )
+  return result.data
+}
+
+/** 删除图层；要素由服务端一并删除，源文件保持不变。 */
+export async function deleteVectorLayer(
+  layerId: string,
+  version: string | number,
+): Promise<void> {
+  await httpClient.delete(layerPath(layerId), {
+    headers: { 'If-Match': `"layer-${layerId}-v${version}"` },
+  })
 }
 
 const stylePath = (layerId: string, styleId?: string) =>
