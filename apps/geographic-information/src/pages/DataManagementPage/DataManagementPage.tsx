@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { Spin } from 'antd'
 import { ConfirmDialog } from '@ocean-cloud/ui'
 import styles from './DataManagementPage.module.css'
+import { useSetPageHeading } from '../../hooks/usePageHeading'
 import { DATA_MANAGEMENT_SECTIONS } from '../../config/navigation'
 import { DatasetCreateDialog } from '../../features/dataManagement/components/DatasetCreateDialog/DatasetCreateDialog'
 import { DatasetDetailDialog } from '../../features/dataManagement/components/DatasetDetailDialog/DatasetDetailDialog'
@@ -161,6 +163,16 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     activeSelection !== null && activeSelection.kind === 'dataset'
       ? activeSelection
       : null
+  const setPageHeading = useSetPageHeading()
+  // 进入数据集后顶栏追加数据集名；分类筛选仍保持「数据管理 / 全部数据」
+  useEffect(() => {
+    if (!isWorkspace || selectedDataset === null) {
+      setPageHeading(null)
+      return
+    }
+    setPageHeading(`数据管理 / 全部数据 / ${selectedDataset.dataSetName}`)
+    return () => setPageHeading(null)
+  }, [isWorkspace, selectedDataset, setPageHeading])
   // 分类筛选与侧边栏的分类选择、工具栏的「全部类型」共用同一份状态
   const wallCategoryId =
     activeSelection !== null && activeSelection.kind === 'category'
@@ -176,6 +188,8 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     datasetView === 'card' ? DATASET_CARD_PAGE_SIZE : DATASET_PAGE_SIZE,
     isWorkspace && selectedDataset === null,
   )
+  // 单独取出稳定的 refresh，避免 effect 依赖整个 wallPage 对象导致重复请求
+  const refreshWall = wallPage.refresh
 
   // 搜索框逐字输入会把请求打得太碎，停顿 300ms 后再把关键字交给查询
   useEffect(() => {
@@ -193,7 +207,10 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     if (activeSelection === null) return { kind: 'all' }
     if (activeSelection.kind === 'category')
       return { kind: 'category', categoryId: activeSelection.categoryId }
-    if (activeSelection.categoryId === DATASET_CATEGORY_IDS.vector && vectorView === 'map')
+    if (
+      activeSelection.categoryId === DATASET_CATEGORY_IDS.vector &&
+      vectorView === 'map'
+    )
       return null
     return { kind: 'dataset', dataSetId: activeSelection.dataSetId }
   }
@@ -256,12 +273,15 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     refreshSidebarCounts()
     refreshTransfer()
     refreshCatalog()
+    // 数据集卡片上的文件数与更新时间可能随导入变化
+    refreshWall()
   }, [
     tasks,
     refreshFiles,
     refreshSidebarCounts,
     refreshTransfer,
     refreshCatalog,
+    refreshWall,
   ])
 
   // 活动导入和重新提取期间持续刷新，单个文件就绪即可进入可用列表。
@@ -315,6 +335,18 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     refreshCatalog,
   ])
 
+  /**
+   * 数据增删改成功后统一刷新：卡片墙、文件列表、目录计数与传输记录。
+   * 刷新函数自身会在当前页面不可见时跳过请求，可以安全地一起调用。
+   */
+  function refreshData() {
+    wallPage.refresh()
+    refreshFiles()
+    refreshSidebarCounts()
+    refreshCatalog()
+    refreshTransfer()
+  }
+
   async function handleRetryMetadata(record: FileMeta) {
     setRetryingMetadataId(record.id)
     try {
@@ -322,8 +354,7 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
       setMetadataRetryIds((previous) =>
         previous.includes(record.id) ? previous : [...previous, record.id],
       )
-      refreshFiles()
-      refreshSidebarCounts()
+      refreshData()
     } finally {
       setRetryingMetadataId(null)
     }
@@ -342,11 +373,11 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     if (!isWorkspace) goToWorkspace()
   }
 
-  // 新增成功后切到所属分类并回到第 1 页，并刷新侧边栏目录
+  // 新增成功后切到所属分类并回到第 1 页，再统一刷新各列表
   function handleCreated(categoryId: number) {
     wallPage.goToPage(1)
     handleSelectEntry({ kind: 'category', categoryId })
-    refreshCatalog()
+    refreshData()
   }
 
   /** 卡片「查看数据」：进入该数据集内部（不在「全部数据」栏目时一并切回） */
@@ -436,14 +467,12 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     }
   }
 
-  /** 删除数据文件：不再二次确认，成功刷新当前列表与侧边栏计数（数据进回收站） */
+  /** 删除数据文件：成功后统一刷新列表、目录计数与传输记录（数据进回收站） */
   async function handleDeleteFile(record: FileMeta) {
     setDeletingId(record.id)
     try {
       await deleteFileMeta(record.id)
-      refreshFiles()
-      // 删除后「全部数据」与「回收站」的条数都变了
-      refreshSidebarCounts()
+      refreshData()
     } catch {
       // 失败提示由 RequestErrorNotice 统一展示
     } finally {
@@ -451,13 +480,12 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     }
   }
 
-  /** 恢复回收站里的数据文件：直接执行，成功刷新列表与侧边栏计数 */
+  /** 恢复回收站里的数据文件：直接执行，成功后统一刷新各列表 */
   async function handleRestoreFile(record: FileMeta) {
     setRestoringId(record.id)
     try {
       await restoreDeletedFileMeta(record.id)
-      refreshFiles()
-      refreshSidebarCounts()
+      refreshData()
     } catch {
       // 失败提示由 RequestErrorNotice 统一展示
     } finally {
@@ -471,8 +499,7 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     setPurgingId(purgingFile.id)
     try {
       await purgeDeletedFileMeta(purgingFile.id)
-      refreshFiles()
-      refreshSidebarCounts()
+      refreshData()
     } finally {
       setPurgingId(null)
     }
@@ -496,11 +523,11 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     }
   }
 
-  /** 删除数据集：成功后刷新目录；若正选中该数据集则回到「全部数据」 */
+  /** 删除数据集：成功后统一刷新各列表；若正选中该数据集则回到「全部数据」 */
   async function confirmDeleteDataset() {
     if (deletingDataset === null) return
     await deleteDataset(deletingDataset.id)
-    refreshCatalog()
+    refreshData()
     if (
       selection !== null &&
       selection.kind === 'dataset' &&
@@ -510,9 +537,9 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     }
   }
 
-  /** 重命名数据集成功：刷新目录，并同步选中项里的名称 */
+  /** 重命名数据集成功：统一刷新各列表，并同步选中项里的名称 */
   function handleDatasetUpdated(updated: GeoDataset) {
-    refreshCatalog()
+    refreshData()
     setSelection((prev) =>
       prev !== null && prev.kind === 'dataset' && prev.dataSetId === updated.id
         ? { ...prev, dataSetName: updated.dataSetName }
@@ -770,14 +797,22 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
               <div className={styles.vectorActions}>
                 <button
                   type="button"
-                  className={vectorView === 'map' ? styles.vectorTabActive : styles.vectorTab}
+                  className={
+                    vectorView === 'map'
+                      ? styles.vectorTabActive
+                      : styles.vectorTab
+                  }
                   onClick={() => setVectorView('map')}
                 >
                   制图工作区
                 </button>
                 <button
                   type="button"
-                  className={vectorView === 'files' ? styles.vectorTabActive : styles.vectorTab}
+                  className={
+                    vectorView === 'files'
+                      ? styles.vectorTabActive
+                      : styles.vectorTab
+                  }
                   onClick={() => setVectorView('files')}
                 >
                   源文件管理
@@ -802,75 +837,83 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                 )}
               </div>
             )}
-            {selectedDataset.categoryId === DATASET_CATEGORY_IDS.vector && vectorView === 'map' ? (
-              <Suspense fallback={<div>制图工作区加载中…</div>}>
+            {selectedDataset.categoryId === DATASET_CATEGORY_IDS.vector &&
+            vectorView === 'map' ? (
+              <Suspense
+                fallback={
+                  <div className={styles.vectorLoading}>
+                    <Spin />
+                    <span>制图工作区加载中…</span>
+                  </div>
+                }
+              >
                 <VectorCartography
                   key={selectedDataset.dataSetId}
                   dataSetId={selectedDataset.dataSetId}
                 />
               </Suspense>
             ) : (
-            <FileMetaTable
-              extraActions={
-                <div className={styles.headerActions}>
-                  <button
-                    type="button"
-                    className={styles.progressButton}
-                    onClick={() => setIsProgressOpen(true)}
-                  >
-                    导入进度{runningCount > 0 ? ` (${runningCount})` : ''}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.importButton}
-                    onClick={() => setIsImportOpen(true)}
-                  >
-                    导入GIS数据
-                  </button>
-                </div>
-              }
-              records={records}
-              isLoading={isLoading}
-              error={error}
-              current={current}
-              total={total}
-              pageSize={filePageSize}
-              onPageChange={handleFilePageChange}
-              onSearch={handleFileSearch}
-              onReset={handleFileReset}
-              onRetryMetadata={handleRetryMetadata}
-              retryingMetadataId={retryingMetadataId}
-              actions={[
-                {
-                  label: '处理',
-                  onClick: (record) => setProcessingFile(record),
-                  pendingId: processingId,
-                  // 目前开放在地形与影像数据上发起处理，其余分类按钮置灰
-                  disabled: (record) =>
-                    record.metadataStatus !== 'COMPLETED' ||
-                    CATEGORY_PROCESSING_TYPES[Number(record.categoryId)] ===
-                      undefined,
-                },
-                {
-                  // 下载走 <a> 原生导航：整份文件流式落盘，不进内存、不经过 axios。
-                  // 代价是带不上 Authorization 头，也没有「下载中…」状态与失败提示
-                  label: '下载',
-                  link: (record) => ({
-                    href: buildFileDownloadUrl(record.id),
-                    download: record.originalName,
-                  }),
-                },
-                {
-                  label: '删除',
-                  onClick: (record) => void handleDeleteFile(record),
-                  pendingId: deletingId,
-                  disabled: (record) =>
-                    record.metadataStatus === 'QUEUED' ||
-                    record.metadataStatus === 'RUNNING',
-                  tone: 'danger',
-                },
-              ]}
-            />
+              <FileMetaTable
+                extraActions={
+                  <div className={styles.headerActions}>
+                    <button
+                      type="button"
+                      className={styles.progressButton}
+                      onClick={() => setIsProgressOpen(true)}
+                    >
+                      导入进度{runningCount > 0 ? ` (${runningCount})` : ''}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.importButton}
+                      onClick={() => setIsImportOpen(true)}
+                    >
+                      导入GIS数据
+                    </button>
+                  </div>
+                }
+                records={records}
+                isLoading={isLoading}
+                error={error}
+                current={current}
+                total={total}
+                pageSize={filePageSize}
+                onPageChange={handleFilePageChange}
+                onSearch={handleFileSearch}
+                onReset={handleFileReset}
+                onRetryMetadata={handleRetryMetadata}
+                retryingMetadataId={retryingMetadataId}
+                actions={[
+                  {
+                    label: '处理',
+                    onClick: (record) => setProcessingFile(record),
+                    pendingId: processingId,
+                    // 目前开放在地形与影像数据上发起处理，其余分类按钮置灰
+                    disabled: (record) =>
+                      record.metadataStatus !== 'COMPLETED' ||
+                      CATEGORY_PROCESSING_TYPES[Number(record.categoryId)] ===
+                        undefined,
+                  },
+                  {
+                    // 下载走 <a> 原生导航：整份文件流式落盘，不进内存、不经过 axios。
+                    // 代价是带不上 Authorization 头，也没有「下载中…」状态与失败提示
+                    label: '下载',
+                    link: (record) => ({
+                      href: buildFileDownloadUrl(record.id),
+                      download: record.originalName,
+                    }),
+                  },
+                  {
+                    label: '删除',
+                    onClick: (record) => void handleDeleteFile(record),
+                    pendingId: deletingId,
+                    disabled: (record) =>
+                      record.metadataStatus === 'QUEUED' ||
+                      record.metadataStatus === 'RUNNING',
+                    tone: 'danger',
+                  },
+                ]}
+              />
             )}
           </div>
         )}

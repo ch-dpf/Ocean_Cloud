@@ -324,11 +324,6 @@ export function LoginPage() {
             忘记密码？请联系管理员
           </p>
         </div>
-
-        <footer className={styles.footer}>
-          © {new Date().getFullYear()} Ocean Cloud · 云海平台
-          <span>连接海洋，探索无限。</span>
-        </footer>
       </div>
     </div>
   )
