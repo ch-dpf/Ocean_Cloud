@@ -63,6 +63,13 @@
   color: #8394a0;
   font-size: 13px;
 }
+/* 覆盖范围与地图 chunk 加载时使用与表格一致的转圈动画 */
+.mapLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
 
 /* 描述可能很长，按原文换行完整展示 */
 .description {

@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
+import { Spin } from 'antd'
 import { AppDialog, formatTime } from '@ocean-cloud/ui'
 import { DATASET_CATEGORY_LABELS } from '../../constants/dataset'
 import { fetchDatasetFootprints } from '../../services/datasetService'
@@ -69,11 +70,23 @@ export function DatasetDetailDialog({
         <p className={styles.sectionTitle}>文件覆盖范围</p>
         <div className={styles.mapSlot}>
           {isLoading ? (
-            <p className={styles.mapHint}>正在加载文件覆盖范围…</p>
+            <div className={styles.mapLoading} role="status" aria-live="polite">
+              <Spin />
+            </div>
           ) : error !== null ? (
             <p className={styles.mapHint}>{error}</p>
           ) : hasFootprints ? (
-            <Suspense fallback={<p className={styles.mapHint}>地图加载中…</p>}>
+            <Suspense
+              fallback={
+                <div
+                  className={styles.mapLoading}
+                  role="status"
+                  aria-live="polite"
+                >
+                  <Spin />
+                </div>
+              }
+            >
               <SpatialMap geojson={footprints} />
             </Suspense>
           ) : (

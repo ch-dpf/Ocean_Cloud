@@ -164,15 +164,21 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
       ? activeSelection
       : null
   const setPageHeading = useSetPageHeading()
-  // 进入数据集后顶栏追加数据集名；分类筛选仍保持「数据管理 / 全部数据」
+  // 分类与数据集都按当前选择生成面包屑；未选择时回到路由的「全部数据」
   useEffect(() => {
-    if (!isWorkspace || selectedDataset === null) {
+    if (!isWorkspace || activeSelection === null) {
       setPageHeading(null)
       return
     }
-    setPageHeading(`数据管理 / 全部数据 / ${selectedDataset.dataSetName}`)
+    const categoryLabel =
+      DATASET_CATEGORY_LABELS[activeSelection.categoryId] ?? ''
+    setPageHeading(
+      activeSelection.kind === 'category'
+        ? `数据管理 / ${categoryLabel}`
+        : `数据管理 / ${categoryLabel} / ${activeSelection.dataSetName}`,
+    )
     return () => setPageHeading(null)
-  }, [isWorkspace, selectedDataset, setPageHeading])
+  }, [isWorkspace, activeSelection, setPageHeading])
   // 分类筛选与侧边栏的分类选择、工具栏的「全部类型」共用同一份状态
   const wallCategoryId =
     activeSelection !== null && activeSelection.kind === 'category'
