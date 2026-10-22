@@ -90,11 +90,6 @@ export function SubsystemHome({
           </aside>
         </div>
       </main>
-      {showChrome && (
-        <footer className={styles.footer}>
-          © {new Date().getFullYear()} Ocean Cloud · {title}
-        </footer>
-      )}
     </div>
   )
 }

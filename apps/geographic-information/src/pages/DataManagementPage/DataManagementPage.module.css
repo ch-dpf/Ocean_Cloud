@@ -305,3 +305,12 @@
   font-weight: 700;
   cursor: pointer;
 }
+.vectorLoading {
+  display: flex;
+  min-height: 480px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #7d8797;
+  font-size: 13px;
+}

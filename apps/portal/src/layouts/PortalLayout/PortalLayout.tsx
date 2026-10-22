@@ -55,10 +55,6 @@ export function PortalLayout({
         >
           {children}
         </main>
-        <footer className={styles.footer}>
-          © {new Date().getFullYear()} Ocean Cloud · 云海平台
-          <span>连接海洋，探索无限。</span>
-        </footer>
       </div>
     </div>
   )

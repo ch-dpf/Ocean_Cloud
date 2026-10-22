@@ -101,7 +101,7 @@ export const DATA_PROCESSING_GROUPS: readonly SubNavSection[] = [
 
 /**
  * 数据处理下层导航：任务类型分类。全部任务已上移为上层「原始数据处理任务」，
- * 影像/矢量/地形按 processingType 过滤；倾斜模型与电子海图暂无对应枚举，置灰不可点。
+ * 影像/地形/矢量按 processingType 过滤；倾斜模型与电子海图暂无对应枚举，置灰不可点。
  */
 export const DATA_PROCESSING_SECTIONS: readonly SubNavSection[] = [
   {
@@ -111,16 +111,16 @@ export const DATA_PROCESSING_SECTIONS: readonly SubNavSection[] = [
     activeIcon: ImageryBlueIcon,
   },
   {
-    path: '/data-processing/vector',
-    label: '矢量任务',
-    icon: VectorIcon,
-    activeIcon: VectorBlueIcon,
-  },
-  {
     path: '/data-processing/terrain',
     label: '地形任务',
     icon: TerrainIcon,
     activeIcon: TerrainBlueIcon,
+  },
+  {
+    path: '/data-processing/vector',
+    label: '矢量任务',
+    icon: VectorIcon,
+    activeIcon: VectorBlueIcon,
   },
   {
     path: '/data-processing/oblique',
@@ -141,7 +141,7 @@ export const DATA_PROCESSING_SECTIONS: readonly SubNavSection[] = [
 ]
 
 /**
- * 数据发布二级导航：全部服务（地形 + 影像聚合）、地形服务、影像服务已接入；
+ * 数据发布二级导航：全部服务（地形 + 影像聚合）、影像服务、地形服务已接入；
  * 矢量、倾斜模型、电子海图暂无对应接口，置灰不可点。
  */
 export const DATA_PUBLISHING_SECTIONS: readonly SubNavSection[] = [
@@ -158,18 +158,18 @@ export const DATA_PUBLISHING_SECTIONS: readonly SubNavSection[] = [
     activeIcon: ImageryBlueIcon,
   },
   {
+    path: '/data-publishing/terrain',
+    label: '地形服务',
+    icon: TerrainIcon,
+    activeIcon: TerrainBlueIcon,
+  },
+  {
     path: '/data-publishing/vector',
     label: '矢量服务',
     icon: VectorIcon,
     activeIcon: VectorBlueIcon,
     pending: true,
     disabled: true,
-  },
-  {
-    path: '/data-publishing/terrain',
-    label: '地形服务',
-    icon: TerrainIcon,
-    activeIcon: TerrainBlueIcon,
   },
   {
     path: '/data-publishing/oblique',

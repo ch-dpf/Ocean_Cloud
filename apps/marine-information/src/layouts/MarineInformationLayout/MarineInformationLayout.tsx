@@ -38,10 +38,6 @@ export function MarineInformationLayout({
           user={user}
         />
         <main className={styles.main}>{children}</main>
-        <footer className={styles.footer}>
-          © {new Date().getFullYear()} Ocean Cloud · 海洋信息
-          <span>连接海洋，探索无限。</span>
-        </footer>
       </div>
     </div>
   )

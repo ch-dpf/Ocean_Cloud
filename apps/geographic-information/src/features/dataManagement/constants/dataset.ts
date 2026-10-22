@@ -16,11 +16,11 @@ export const DATASET_CATEGORY_IDS = {
   electronicChart: 4,
 } as const
 
-/** 侧边栏展示顺序：影像数据、矢量数据、地形数据、倾斜模型、电子海图 */
+/** 侧边栏展示顺序：影像数据、地形数据、矢量数据、倾斜模型、电子海图 */
 export const DATASET_CATEGORY_ORDER = [
   DATASET_CATEGORY_IDS.image,
-  DATASET_CATEGORY_IDS.vector,
   DATASET_CATEGORY_IDS.terrain,
+  DATASET_CATEGORY_IDS.vector,
   DATASET_CATEGORY_IDS.obliqueModel,
   DATASET_CATEGORY_IDS.electronicChart,
 ] as const

@@ -25,16 +25,6 @@
   overflow: hidden;
 }
 
-.footer {
-  height: 46px;
-  flex: 0 0 auto;
-  display: flex;
-  justify-content: space-between;
-  padding: 13px 38px;
-  font-size: 9px;
-  color: #a5b2bb;
-}
-
 @media (max-width: 760px) {
   .shell {
     display: block;
@@ -49,11 +39,5 @@
   .main {
     display: block;
     overflow: visible;
-  }
-  .footer {
-    padding: 12px 16px;
-  }
-  .footer > span {
-    display: none;
   }
 }
