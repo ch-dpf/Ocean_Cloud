@@ -32,6 +32,7 @@ export interface UploadChunkResult {
 interface UploadGisFilesOptions {
   readonly dataSetId: string
   readonly files: readonly File[]
+  readonly vectorPlacement?: 'AUTO' | 'UNKNOWN'
   /** 第一块上传成功、后端建好任务后回调，调用方据此插「上传中」占位 */
   readonly onTaskCreated?: (taskId: string) => void
   readonly onChunkResult?: (result: UploadChunkResult) => void
@@ -107,7 +108,13 @@ async function sendChunk(
 export async function uploadGisFiles(
   options: UploadGisFilesOptions,
 ): Promise<void> {
-  const { dataSetId, files, onTaskCreated, onChunkResult } = options
+  const {
+    dataSetId,
+    files,
+    vectorPlacement = 'AUTO',
+    onTaskCreated,
+    onChunkResult,
+  } = options
   const requestId = createRequestId()
   const totalSize = files.reduce((sum, file) => sum + file.size, 0)
   let taskId: string | null = null
@@ -132,6 +139,7 @@ export async function uploadGisFiles(
         'Upload-Total-Size': String(totalSize),
         'Upload-Offset': String(offset),
         'Upload-Chunk-Size': String(currentChunkSize),
+        'Upload-Vector-Placement': vectorPlacement,
       }
 
       const result = await sendChunk(headers, chunk)

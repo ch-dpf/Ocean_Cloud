@@ -12,12 +12,11 @@ import VectorSource from 'ol/source/Vector.js'
 import XYZ from 'ol/source/XYZ.js'
 import type {
   VectorFeature,
-  VectorLayer as VectorLayerMetadata,
   VectorGeometry,
-  VectorStyleDefinition,
   VectorRenderContext,
   VectorTileHit,
   VectorClusterHit,
+  VectorViewport,
 } from '../../types/vector'
 import { featureStyleKey, newStyleDefinition } from './vectorStyle'
 import { type VectorRenderSettings } from './vectorMapStyle'
@@ -31,15 +30,14 @@ import 'ol/ol.css'
 import styles from './VectorCartography.module.css'
 
 interface VectorMapProps {
-  readonly layers: readonly VectorLayerMetadata[]
-  readonly contexts: Readonly<Record<string, VectorRenderContext>>
-  readonly definitions: Readonly<Record<string, VectorStyleDefinition>>
+  readonly context: VectorRenderContext | null
   readonly selected: VectorFeature | null
   readonly draft: VectorFeature | null
   readonly focusGeometry: unknown
   readonly zoomTarget: VectorClusterHit | null
   readonly onSelect: (hit: VectorTileHit | null) => void
   readonly onZoomChange: (zoom: number) => void
+  readonly onViewportChange: (viewport: VectorViewport) => void
   readonly onPendingChange: (delta: number) => void
   readonly onTileError: (cause: unknown) => void
   readonly onGeometryChange: (geometry: VectorGeometry) => void
@@ -63,41 +61,34 @@ export function VectorMap(props: VectorMapProps) {
   const channels = useRef<VectorTileChannel[]>([])
   const callbacks = useRef(props)
   const settings = useRef<VectorRenderSettings>({
-    definitions: props.definitions,
+    definitions: {},
     selectedKey: null,
   })
   const overlaySettings = useRef<VectorRenderSettings>({
-    definitions: props.definitions,
+    definitions: {},
     selectedKey: null,
   })
   const [zoom, setZoom] = useState(4)
   const [basemapMode, setBasemapMode] = useState<BasemapMode>('osm')
   const [mapLoading, setMapLoading] = useState(true)
-  const {
-    contexts,
-    definitions,
-    selected,
-    draft,
-    focusGeometry,
-    zoomTarget,
-    layers,
-  } = props
+  const { context, selected, draft, focusGeometry, zoomTarget } = props
   const editing = !!draft
   useEffect(() => {
     callbacks.current = props
     const selectedKey = selected
       ? featureStyleKey(selected.layerId, selected.id)
       : null
-    settings.current = { definitions, selectedKey }
+    settings.current = { definitions: {}, selectedKey }
+    const overlayRecord = draft ?? selected
     overlaySettings.current = {
-      definitions: draft
-        ? { ...definitions, [draft.layerId]: editDefinition }
-        : definitions,
+      definitions: overlayRecord
+        ? { [overlayRecord.layerId]: editDefinition }
+        : {},
       selectedKey,
     }
     channels.current.forEach((channel) => channel.layer.changed())
     overlayRef.current?.changed()
-  }, [props, definitions, selected, draft])
+  }, [props, selected, draft])
 
   useEffect(() => {
     if (!target.current) return
@@ -196,17 +187,16 @@ export function VectorMap(props: VectorMapProps) {
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
-    const current = Object.values(contexts).map((context) =>
-      createVectorTileChannel(
-        map,
-        context,
-        settings,
-        (delta) => callbacks.current.onPendingChange(delta),
-        (cause) => callbacks.current.onTileError(cause),
-        layers.find((layer) => layer.layerId === context.layerId)?.extent ??
-          null,
-      ),
-    )
+    const current = context
+      ? [
+          createVectorTileChannel(
+            context,
+            settings,
+            (delta) => callbacks.current.onPendingChange(delta),
+            (cause) => callbacks.current.onTileError(cause),
+          ),
+        ]
+      : []
     channels.current = current
     current.forEach((channel) => map.addLayer(channel.layer))
     return () => {
@@ -216,7 +206,7 @@ export function VectorMap(props: VectorMapProps) {
       })
       channels.current = []
     }
-  }, [contexts, layers])
+  }, [context])
 
   useEffect(() => {
     source.current.clear()

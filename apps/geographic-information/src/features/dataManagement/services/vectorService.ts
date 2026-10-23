@@ -4,10 +4,8 @@ import { RequestError } from '@ocean-cloud/http'
 import type { HttpResponse } from '@ocean-cloud/http'
 import type {
   VectorStyle,
-  VectorGeneralization,
-  VectorGeneralizationPolicy,
-  VersionedVectorGeneralization,
   VectorRenderContext,
+  VectorRenderContextInput,
   VectorClusterMembers,
   VersionedVectorFeature,
   VectorFeature,
@@ -18,10 +16,18 @@ import type {
   VectorFeatureCollection,
   VectorLayer,
   VectorLayerPage,
+  VectorGroup,
+  DatasetVectorStyle,
+  EffectiveVectorStyle,
+  VersionedVectorGroups,
+  VersionedVectorLayer,
+  VectorLayerPresentationInput,
 } from '../types/vector'
 
 const layerPath = (layerId: string) =>
   `/vector/layers/${encodeURIComponent(layerId)}`
+const datasetVectorPath = (dataSetId: string) =>
+  `/vector/datasets/${encodeURIComponent(dataSetId)}`
 
 export async function getVectorLayers(
   dataSetId: string,
@@ -55,21 +61,81 @@ export async function getVectorFeatures(
   )
 }
 
-export async function getVectorLayer(layerId: string): Promise<VectorLayer> {
-  const result = await httpClient.get<ApiResult<VectorLayer>>(
+export async function getVectorLayer(
+  layerId: string,
+  signal?: AbortSignal,
+): Promise<VersionedVectorLayer> {
+  const response = await httpClient.getWithResponse<ApiResult<VectorLayer>>(
     layerPath(layerId),
+    { signal, silentError: true },
   )
-  return result.data
+  const etag = response.headers.get('etag')
+  if (!etag) throw new Error('未收到图层版本，请重新加载图层。')
+  return { layer: response.data.data, etag }
 }
 
 /** 删除图层；要素由服务端一并删除，源文件保持不变。 */
 export async function deleteVectorLayer(
   layerId: string,
-  version: string | number,
+  etag: string,
 ): Promise<void> {
   await httpClient.delete(layerPath(layerId), {
-    headers: { 'If-Match': `"layer-${layerId}-v${version}"` },
+    headers: { 'If-Match': etag },
   })
+}
+
+export async function getVectorGroups(
+  dataSetId: string,
+  signal?: AbortSignal,
+): Promise<VersionedVectorGroups> {
+  const response = await httpClient.getWithResponse<
+    ApiResult<readonly VectorGroup[]>
+  >(datasetVectorPath(dataSetId) + '/groups', { signal, silentError: true })
+  const etag = response.headers.get('etag')
+  if (!etag) throw new Error('未收到分类树版本，请重新加载分类树。')
+  return { groups: response.data.data, etag }
+}
+
+export async function getDatasetVectorStyle(
+  dataSetId: string,
+  signal?: AbortSignal,
+): Promise<DatasetVectorStyle> {
+  const result = await httpClient.get<ApiResult<DatasetVectorStyle>>(
+    datasetVectorPath(dataSetId) + '/style',
+    { signal, silentError: true },
+  )
+  return result.data
+}
+
+export async function updateVectorGroupVisibility(
+  dataSetId: string,
+  groupId: string,
+  enabled: boolean,
+  etag: string,
+): Promise<void> {
+  await httpClient.patch<ApiResult<unknown>>(
+    datasetVectorPath(dataSetId) +
+      '/groups/' +
+      encodeURIComponent(groupId) +
+      '/visibility',
+    { enabled },
+    { headers: { 'If-Match': etag }, silentError: true },
+  )
+}
+
+export async function updateVectorLayerPresentation(
+  layerId: string,
+  input: VectorLayerPresentationInput,
+  etag: string,
+): Promise<VersionedVectorLayer> {
+  const response = await httpClient.putWithResponse<ApiResult<VectorLayer>>(
+    layerPath(layerId) + '/presentation',
+    input,
+    { headers: { 'If-Match': etag }, silentError: true },
+  )
+  const nextEtag = response.headers.get('etag')
+  if (!nextEtag) throw new Error('未收到更新后的图层版本，请重新加载图层。')
+  return { layer: response.data.data, etag: nextEtag }
 }
 
 const stylePath = (layerId: string, styleId?: string) =>
@@ -110,16 +176,15 @@ export async function getVectorStyle(
   )
 }
 
-export async function getDefaultVectorStyle(
+export async function getEffectiveVectorStyle(
   layerId: string,
   signal?: AbortSignal,
-): Promise<VersionedVectorStyle> {
-  return versionedStyle(
-    await httpClient.getWithResponse<ApiResult<VectorStyle>>(
-      layerPath(layerId) + '/default-style',
-      { signal, silentError: true },
-    ),
+): Promise<EffectiveVectorStyle> {
+  const result = await httpClient.get<ApiResult<EffectiveVectorStyle>>(
+    layerPath(layerId) + '/default-style',
+    { signal, silentError: true },
   )
+  return result.data
 }
 
 export async function saveVectorStyle(
@@ -190,15 +255,13 @@ export async function matchSavedVectorStyle(
 }
 
 export async function createVectorRenderContext(
-  layerId: string,
-  fields: readonly string[],
-  aggregatePoints: boolean,
-  bufferPixels: number,
+  dataSetId: string,
+  input: VectorRenderContextInput,
   signal?: AbortSignal,
 ): Promise<VectorRenderContext> {
   const result = await httpClient.post<ApiResult<VectorRenderContext>>(
-    layerPath(layerId) + '/render-contexts',
-    { fields, aggregatePoints, bufferPixels },
+    datasetVectorPath(dataSetId) + '/render-contexts',
+    input,
     { signal, silentError: true },
   )
   return result.data
@@ -255,7 +318,7 @@ export function getVectorTile(
   const canceled = () => new RequestError('瓦片请求已取消', 'canceled')
   if (signal?.aborted) return Promise.reject(canceled())
   const key =
-    context.layerId + '/' + context.contextId + '/' + z + '/' + x + '/' + y
+    context.dataSetId + '/' + context.contextId + '/' + z + '/' + x + '/' + y
   let job = tileJobs.get(key)
   if (!job) {
     job = {
@@ -265,7 +328,7 @@ export function getVectorTile(
       // 已发出的请求等待真实响应后才释放并发槽。中止XHR并不会停止同步JDBC查询。
       load: () =>
         httpClient.get<ArrayBuffer>(
-          layerPath(context.layerId) +
+          datasetVectorPath(context.dataSetId) +
             '/tiles/' +
             z +
             '/' +
@@ -305,8 +368,8 @@ export function getVectorTile(
 }
 export async function getVectorClusterMembers(
   hit: {
-    readonly layerId: string
-    readonly kind: 'cluster' | 'aggregate'
+    readonly dataSetId: string
+    readonly kind: 'cluster'
     readonly clusterId: string
     readonly contextId: string
   },
@@ -314,8 +377,8 @@ export async function getVectorClusterMembers(
   signal?: AbortSignal,
 ): Promise<VectorClusterMembers> {
   const result = await httpClient.get<ApiResult<VectorClusterMembers>>(
-    layerPath(hit.layerId) +
-      (hit.kind === 'aggregate' ? '/representations/' : '/clusters/') +
+    datasetVectorPath(hit.dataSetId) +
+      '/clusters/' +
       encodeURIComponent(hit.clusterId) +
       '/features',
     {
@@ -365,7 +428,14 @@ export async function updateVectorFeature(
         geometry: draft.geometry,
         properties: draft.properties,
       },
-      { headers: { 'If-Match': existing.etag }, signal, silentError: true },
+      {
+        headers: {
+          'If-Match': existing.etag,
+          'Content-Type': 'application/geo+json',
+        },
+        signal,
+        silentError: true,
+      },
     ),
   )
 }
@@ -378,49 +448,5 @@ export async function deleteVectorFeature(
       '/features/' +
       encodeURIComponent(existing.feature.id),
     { headers: { 'If-Match': existing.etag }, signal, silentError: true },
-  )
-}
-
-function versionedGeneralization(
-  response: HttpResponse<ApiResult<VectorGeneralization>>,
-): VersionedVectorGeneralization {
-  const etag = response.headers.get('etag')
-  if (!etag) throw new Error('未收到概化策略版本，请检查代理是否传递 ETag。')
-  return { state: response.data.data, etag }
-}
-export async function getVectorGeneralization(
-  layerId: string,
-  signal?: AbortSignal,
-) {
-  return versionedGeneralization(
-    await httpClient.getWithResponse<ApiResult<VectorGeneralization>>(
-      layerPath(layerId) + '/generalization',
-      { signal, silentError: true },
-    ),
-  )
-}
-export async function saveVectorGeneralization(
-  layerId: string,
-  policy: VectorGeneralizationPolicy,
-  etag: string,
-) {
-  return versionedGeneralization(
-    await httpClient.putWithResponse<ApiResult<VectorGeneralization>>(
-      layerPath(layerId) + '/generalization',
-      { policy },
-      { headers: { 'If-Match': etag }, silentError: true },
-    ),
-  )
-}
-export async function rebuildVectorGeneralization(
-  layerId: string,
-  etag: string,
-) {
-  return versionedGeneralization(
-    await httpClient.postWithResponse<ApiResult<VectorGeneralization>>(
-      layerPath(layerId) + '/generalization/builds',
-      undefined,
-      { headers: { 'If-Match': etag }, silentError: true },
-    ),
   )
 }

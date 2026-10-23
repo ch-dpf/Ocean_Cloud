@@ -10,6 +10,13 @@ export interface VectorLayer {
   readonly extent: unknown
   readonly geometryTypes: unknown
   readonly dataVersion: string | number
+  readonly groupId: string | null
+  readonly originalGroupId: string | null
+  readonly geometryType: VectorGeometryType | null
+  readonly assignmentMode: 'AUTO' | 'MANUAL'
+  readonly enabled: boolean
+  readonly styleMode: 'INHERIT_TARGET_GROUP' | 'CUSTOM' | 'UNCONFIGURED'
+  readonly presentationVersion: string | number
 }
 
 export interface VectorLayerPage {
@@ -32,6 +39,14 @@ export interface VectorFeature {
   readonly geometry: VectorGeometry
   readonly properties: Record<string, unknown> | null
   readonly version: string | number
+  readonly source?: VectorSourceReference | null
+}
+
+export interface VectorSourceReference {
+  readonly featureIndex: string | number
+  readonly featureId: unknown
+  readonly geometryPath: string
+  readonly classificationRuleKey: string | null
 }
 
 export interface VectorFeatureCollection {
@@ -63,6 +78,7 @@ export interface VectorSymbol {
   readonly strokeColor?: string
   readonly strokeWidth?: number
   readonly strokeOpacity?: number
+  readonly dashArray?: readonly number[]
 }
 
 export interface VectorStyleRule {
@@ -119,26 +135,102 @@ export interface VectorStyleMatch {
 
 export interface VectorRenderContext {
   readonly contextId: string
-  readonly layerId: string
-  readonly dataVersion: string
-  readonly fields: readonly string[]
-  readonly aggregatePoints: boolean
+  readonly dataSetId: string
+  readonly styleVersion: string | number
+  readonly dataRevision: string | number
+  readonly displayRevision: string | number
+  readonly bbox: readonly [number, number, number, number]
+  readonly displayZoom: number
+  readonly widthPixels: number
+  readonly heightPixels: number
+  readonly budget: string | number
+  readonly objectCount: string | number
   readonly gridPixels: number
-  readonly bufferPixels: number
+  readonly forceAggregation: boolean
   readonly maxZoom: number
-  readonly generalizationBuildId: string
-  readonly policyVersion: string
-  readonly overviewMaxZoom: number
-  readonly overviewAvailable: boolean
-  readonly overviewStatus: string
-  readonly overviewMessage: string | null
   readonly expiresAt: string
+  readonly plans?: unknown
+  readonly policy?: unknown
+}
+
+export interface VectorViewport {
+  readonly bbox: readonly [number, number, number, number]
+  readonly displayZoom: number
+  readonly widthPixels: number
+  readonly heightPixels: number
+}
+
+export interface VectorGroup {
+  readonly id: string
+  readonly parentId: string | null
+  readonly groupKey: string
+  readonly name: string
+  readonly nodeType: string
+  readonly geometryType: VectorGeometryType | null
+  readonly assignable: boolean
+  readonly defaultStyleKey: string | null
+  readonly enabled: boolean
+  readonly version: string | number
+  readonly layerCount: string | number
+  readonly featureCount: string | number
+  readonly children: readonly VectorGroup[]
+}
+
+export interface DatasetVectorStyle {
+  readonly snapshotId: string
+  readonly dataSetId: string
+  readonly templateId: string
+  readonly templateVersion: string | number
+  readonly styleVersion: string | number
+  readonly dataRevision: string | number
+  readonly displayRevision: string | number
+  readonly definition: unknown
+}
+
+export interface EffectiveVectorStyle {
+  readonly layerId: string
+  readonly source: 'GROUP' | 'CUSTOM' | 'UNCONFIGURED'
+  readonly groupId: string | null
+  readonly styleId: string | null
+  readonly version: string | number
+  readonly presentationVersion: string | number
+  readonly configured: boolean
+  readonly definition: unknown
+}
+
+export interface VectorCustomStyle {
+  readonly minZoom: number
+  readonly maxZoom: number
+  readonly symbol: VectorSymbol
+}
+
+export interface VectorLayerPresentationInput {
+  readonly groupId: string
+  readonly styleMode: 'INHERIT_TARGET_GROUP' | 'CUSTOM'
+  readonly enabled: boolean
+  readonly customStyle?: VectorCustomStyle
+}
+
+export interface VersionedVectorLayer {
+  readonly layer: VectorLayer
+  readonly etag: string
+}
+
+export interface VersionedVectorGroups {
+  readonly groups: readonly VectorGroup[]
+  readonly etag: string
+}
+
+export interface VectorRenderContextInput extends VectorViewport {
+  readonly enabledGroupIds?: readonly string[]
+  readonly enabledLayerIds?: readonly string[]
 }
 export interface VersionedVectorFeature {
   readonly feature: VectorFeature
   readonly etag: string
 }
 export interface VectorClusterMember {
+  readonly layerId: string
   readonly featureId: string
   readonly properties: Record<string, unknown> | null
   readonly version: string | number
@@ -158,51 +250,14 @@ export type VectorTileHit =
       readonly featureId: string
     }
   | {
-      readonly kind: 'cluster' | 'aggregate'
-      readonly layerId: string
+      readonly kind: 'cluster'
+      readonly dataSetId: string
       readonly clusterId: string
       readonly contextId: string
-      readonly pointCount: string
       readonly featureCount: string
       readonly coordinate: readonly [number, number]
     }
 export type VectorClusterHit = Extract<
   VectorTileHit,
-  { readonly kind: 'cluster' | 'aggregate' }
+  { readonly kind: 'cluster' }
 >
-
-export interface VectorGeneralizationPolicy {
-  readonly enabled: boolean
-  readonly detailMinZoom: number
-  readonly groupFields: readonly string[]
-  readonly lineClassField: string | null
-  readonly lineMinZoom: Readonly<Record<string, number>>
-  readonly defaultLineMinZoom: number
-  readonly polygonMode: 'SIMPLIFY' | 'BUILDINGS' | 'COVERAGE'
-  readonly tolerancePixels: number
-  readonly cellPixels: number
-  readonly aggregationPixels: number
-  readonly minPolygonPixels: number
-  readonly maxBufferPixels: number
-}
-export interface VectorGeneralizationBuild {
-  readonly buildId: string
-  readonly dataVersion: string
-  readonly policyVersion: string
-  readonly status: string
-  readonly completedZoom: number
-  readonly maxTileBytes: number
-  readonly errorMessage: string | null
-}
-export interface VectorGeneralization {
-  readonly layerId: string
-  readonly policy: VectorGeneralizationPolicy
-  readonly policyVersion: string
-  readonly dataVersion: string
-  readonly latestBuild: VectorGeneralizationBuild | null
-  readonly publishedBuild: VectorGeneralizationBuild | null
-}
-export interface VersionedVectorGeneralization {
-  readonly state: VectorGeneralization
-  readonly etag: string
-}
