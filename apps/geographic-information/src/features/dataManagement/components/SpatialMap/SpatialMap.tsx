@@ -11,6 +11,7 @@ import TileLayer from 'ol/layer/Tile.js'
 import VectorLayer from 'ol/layer/Vector.js'
 import OSM from 'ol/source/OSM.js'
 import VectorSource from 'ol/source/Vector.js'
+import XYZ from 'ol/source/XYZ.js'
 import Feature from 'ol/Feature.js'
 import type Geometry from 'ol/geom/Geometry.js'
 import { fromExtent } from 'ol/geom/Polygon.js'
@@ -20,6 +21,11 @@ import Fill from 'ol/style/Fill.js'
 import Stroke from 'ol/style/Stroke.js'
 import CircleStyle from 'ol/style/Circle.js'
 import type { GeographicBounds } from '../../types/fileMeta'
+import {
+  LOCAL_TILE_URL,
+  OSM_TILE_URL,
+  type BasemapMode,
+} from '../../constants/map'
 import 'ol/ol.css'
 import styles from './SpatialMap.module.css'
 
@@ -50,6 +56,12 @@ interface SpatialMapProps {
   readonly onBoundsChange?: (bounds: GeographicBounds | null) => void
   /** 嵌入卡片预览等小容器：地图占满容器，不渲染工具栏、说明与告警条 */
   readonly embedded?: boolean
+  /** 显示底图切换与层级控制（用于点击数据进入的文件空间信息地图） */
+  readonly showControls?: boolean
+  /** 外部经纬度变化时是否自动缩放到该范围；框选弹窗内只画矩形，不改变视窗 */
+  readonly fitBounds?: boolean
+  /** 撑满父容器高度（框选弹窗左侧地图） */
+  readonly fill?: boolean
 }
 
 interface MapState {
@@ -92,12 +104,18 @@ export function SpatialMap({
   bounds = null,
   onBoundsChange,
   embedded = false,
+  showControls = false,
+  fitBounds = true,
+  fill = false,
 }: SpatialMapProps) {
   const target = useRef<HTMLDivElement>(null)
   const state = useRef<MapState | null>(null)
+  const baseLayerRef = useRef<TileLayer | null>(null)
   const onChange = useRef(onBoundsChange)
   const [drawing, setDrawing] = useState(false)
   const [baseMapFailed, setBaseMapFailed] = useState(false)
+  const [basemapMode, setBasemapMode] = useState<BasemapMode>('osm')
+  const [zoom, setZoom] = useState(3)
   const editable = onBoundsChange !== undefined
   const geometryKey = JSON.stringify(geometries)
   // GeoJSON 与点只在变化时重新解析，键与 boundsKey 同为序列化结果
@@ -148,13 +166,20 @@ export function SpatialMap({
     if (target.current === null) return
     const red = new VectorSource<Feature<Geometry>>({ wrapX: true })
     const blue = new VectorSource<Feature<Geometry>>({ wrapX: false })
-    const osm = new OSM({ crossOrigin: 'anonymous' })
-    osm.on('tileloaderror', () => setBaseMapFailed(true))
     const dragBox = new DragBox({
       condition: always,
       className: styles.drawBox,
     })
     dragBox.setActive(false)
+    const tileLayer = new TileLayer({ zIndex: 0 })
+    // 使用经纬度视图，保证框选始终对应后端的经纬度矩形，并能展示极区范围。
+    const view = new View({
+      projection: 'EPSG:4326',
+      center: [105, 30],
+      zoom: 3,
+      multiWorld: true,
+      enableRotation: false,
+    })
     const map = new OlMap({
       target: target.current,
       // 嵌在卡片里时关掉滚轮缩放：否则光标停在卡片上就滚不动卡片墙，
@@ -163,7 +188,7 @@ export function SpatialMap({
         ? defaultInteractions({ mouseWheelZoom: false, pinchRotate: false })
         : undefined,
       layers: [
-        new TileLayer({ source: osm }),
+        tileLayer,
         new VectorLayer({
           source: red,
           style: new Style({
@@ -188,15 +213,11 @@ export function SpatialMap({
           }),
         }),
       ],
-      // 使用经纬度视图，保证框选始终对应后端的经纬度矩形，并能展示极区范围。
-      view: new View({
-        projection: 'EPSG:4326',
-        center: [105, 30],
-        zoom: 3,
-        multiWorld: true,
-        enableRotation: false,
-      }),
+      view,
     })
+    baseLayerRef.current = tileLayer
+    const updateZoom = () => setZoom(view.getZoom() ?? 0)
+    view.on('change:resolution', updateZoom)
     if (editable) {
       map.addInteraction(dragBox)
       dragBox.on('boxend', () => {
@@ -210,12 +231,36 @@ export function SpatialMap({
     resize.observe(target.current)
     state.current = { map, coverage: red, selection: blue, dragBox }
     return () => {
+      view.un('change:resolution', updateZoom)
+      baseLayerRef.current = null
       resize.disconnect()
       state.current = null
       map.setTarget(undefined)
       map.dispose()
     }
   }, [editable, embedded])
+
+  // 底图切换：OSM / 本地 / 关。
+  useEffect(() => {
+    const layer = baseLayerRef.current
+    if (!layer) return
+    if (basemapMode === 'off') {
+      layer.setVisible(false)
+      return
+    }
+    layer.setVisible(true)
+    if (basemapMode === 'local') {
+      layer.setSource(new XYZ({ url: LOCAL_TILE_URL }))
+      return
+    }
+    const osm = new OSM({ url: OSM_TILE_URL, crossOrigin: 'anonymous' })
+    const fail = () => setBaseMapFailed(true)
+    osm.on('tileloaderror', fail)
+    layer.setSource(osm)
+    return () => {
+      osm.un('tileloaderror', fail)
+    }
+  }, [basemapMode])
 
   useEffect(() => {
     const current = state.current
@@ -245,11 +290,12 @@ export function SpatialMap({
     )
     current.selection.addFeature(feature)
     current.map.updateSize()
+    if (!fitBounds) return
     current.map.getView().fit(feature.getGeometry()!.getExtent(), {
       padding: [36, 36, 36, 36],
       maxZoom: 14,
     })
-  }, [boundsKey, editable])
+  }, [boundsKey, editable, fitBounds])
 
   function toggleDrawing() {
     const active = !drawing
@@ -268,9 +314,18 @@ export function SpatialMap({
     setDrawing(false)
   }
 
+  function zoomBy(delta: number) {
+    const view = state.current?.map.getView()
+    if (!view) return
+    const current = view.getZoom() ?? 0
+    // 层级按钮按整数步进：4.5 点击 + 后为 5，点击 − 后为 4。
+    const next = delta > 0 ? Math.floor(current) + 1 : Math.ceil(current) - 1
+    view.animate({ zoom: Math.min(22, Math.max(0, next)), duration: 180 })
+  }
+
   return (
     <div
-      className={[styles.root, embedded && styles.embedded]
+      className={[styles.root, embedded && styles.embedded, fill && styles.fill]
         .filter(Boolean)
         .join(' ')}
     >
@@ -304,19 +359,57 @@ export function SpatialMap({
       {!embedded && coverage.error !== null && (
         <Alert type="error" showIcon message={coverage.error} />
       )}
-      {!embedded && baseMapFailed && (
+      {!embedded && basemapMode === 'osm' && baseMapFailed && (
         <Alert
           type="warning"
           showIcon
           message="底图加载失败，已绘制的文件范围和框选仍可使用。"
         />
       )}
-      <div
-        ref={target}
-        className={styles.map}
-        role="region"
-        aria-label={editable ? '文件范围筛选地图' : '文件覆盖范围地图'}
-      />
+      <div className={styles.mapShell}>
+        <div
+          ref={target}
+          className={styles.map}
+          role="region"
+          aria-label={editable ? '文件范围筛选地图' : '文件覆盖范围地图'}
+        />
+        {showControls && !embedded && (
+          <>
+            <select
+              className={styles.basemapSelect}
+              aria-label="底图"
+              value={basemapMode}
+              onChange={(event) => {
+                setBaseMapFailed(false)
+                setBasemapMode(event.target.value as BasemapMode)
+              }}
+            >
+              <option value="osm">OSM</option>
+              <option value="local">本地</option>
+              <option value="off">关</option>
+            </select>
+            <div className={styles.zoomControls}>
+              <button
+                type="button"
+                onClick={() => zoomBy(1)}
+                aria-label="放大地图"
+              >
+                +
+              </button>
+              <span className={styles.zoomLevel}>
+                Z{Number.isInteger(zoom) ? zoom : zoom.toFixed(1)}
+              </span>
+              <button
+                type="button"
+                onClick={() => zoomBy(-1)}
+                aria-label="缩小地图"
+              >
+                −
+              </button>
+            </div>
+          </>
+        )}
+      </div>
       {!editable && !embedded && (
         <p className={styles.hint}>
           红色半透明区域表示文件登记的覆盖范围；矢量数据展示包围范围。

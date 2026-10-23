@@ -17,6 +17,11 @@ import type {
   VectorTileHit,
   VectorViewport,
 } from '../../types/vector'
+import {
+  LOCAL_TILE_URL,
+  OSM_TILE_URL,
+  type BasemapMode,
+} from '../../constants/map'
 import { featureStyleKey, newStyleDefinition } from './vectorStyle'
 import { type VectorRenderSettings } from './vectorMapStyle'
 import {
@@ -44,14 +49,8 @@ interface VectorMapProps {
 }
 const format = new GeoJSON()
 const editDefinition = newStyleDefinition()
-// OSM 标准瓦片地址：Web 墨卡托 XYZ 规则，256px 瓦片，{z}/{x}/{y}.png
-const OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-// OSM 不可用时切换到本地发布影像底图，同样使用 {z}/{x}/{y}.png 规则
-const FALLBACK_TILE_URL =
-  'http://192.168.14.65:8090/gis/publications/IMAGERY/IMG_BA9590FA78774A86976B/{z}/{x}/{y}.png'
 const BASEMAP_TIMEOUT_MS = 8000
 const BASEMAP_ERROR_LIMIT = 3
-type BasemapMode = 'osm' | 'local' | 'off'
 export function VectorMap(props: VectorMapProps) {
   const target = useRef<HTMLDivElement>(null)
   const mapRef = useRef<OlMap | null>(null)
@@ -69,8 +68,9 @@ export function VectorMap(props: VectorMapProps) {
     selectedKey: null,
   })
   const [zoom, setZoom] = useState(4)
-  const [basemapMode, setBasemapMode] = useState<BasemapMode>('osm')
-  const [mapLoading, setMapLoading] = useState(true)
+  // 矢量地图进入时默认不显示底图
+  const [basemapMode, setBasemapMode] = useState<BasemapMode>('off')
+  const [mapLoading, setMapLoading] = useState(false)
   const { context, selected, draft, focusGeometry, minZoom, maxZoom } = props
   const editing = !!draft
   useEffect(() => {
@@ -135,7 +135,7 @@ export function VectorMap(props: VectorMapProps) {
     const hideTimer = setTimeout(() => setMapLoading(false), 12000)
     const finishLoading = () => setMapLoading(false)
     if (basemapMode === 'local') {
-      const local = new XYZ({ url: FALLBACK_TILE_URL })
+      const local = new XYZ({ url: LOCAL_TILE_URL })
       layer.setSource(local)
       local.on('tileloadend', finishLoading)
       return () => {

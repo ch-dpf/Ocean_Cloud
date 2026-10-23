@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import { CloseOutlined, EnvironmentOutlined } from '@ant-design/icons'
+import { EnvironmentOutlined } from '@ant-design/icons'
 import {
   Alert,
   Button,
@@ -9,7 +9,6 @@ import {
   Form,
   Input,
   Select,
-  Space,
   Spin,
   Tooltip,
   Typography,
@@ -37,10 +36,11 @@ import type {
   ApiNumber,
   FileMeta,
   FileMetaFilters,
-  GeographicBounds,
   MetadataStatus,
   SpatialReference,
 } from '../../types/fileMeta'
+import { MapFilterDialog } from '../MapFilterDialog/MapFilterDialog'
+import type { ManagedSubmitInput } from '../ProcessingCreateDialog/ProcessingCreateDialog'
 import detailStyles from '../TransferDetailDialog/TransferDetailDialog.module.css'
 
 const SpatialMap = lazy(() =>
@@ -76,6 +76,10 @@ interface FileMetaTableProps {
   readonly onReset: () => void
   readonly onRetryMetadata?: (record: FileMeta) => Promise<void>
   readonly retryingMetadataId?: string | null
+  /** 框选结果批量处理回调；不传时框选弹窗不显示批量处理 */
+  readonly onBatchProcess?: (input: ManagedSubmitInput) => void
+  /** 当前数据集；传入后才提供地图框选入口，查询限定在该数据集内 */
+  readonly dataSetId?: string
 }
 
 const METADATA_TONES: Readonly<Record<string, StatusTone>> = {
@@ -249,6 +253,7 @@ function SpatialMetadataDialog({
                       ? []
                       : [layer.geographicExtent],
                   )}
+                  showControls
                 />
               </Suspense>
             )}
@@ -510,10 +515,7 @@ function buildColumns(
   ]
 }
 
-function toFilters(
-  values: Record<string, unknown>,
-  bounds: GeographicBounds | null,
-): FileMetaFilters {
+function toFilters(values: Record<string, unknown>): FileMetaFilters {
   const originalName =
     typeof values.originalName === 'string' ? values.originalName.trim() : ''
   return {
@@ -525,7 +527,6 @@ function toFilters(
     values.metadataStatus !== ''
       ? { metadataStatus: values.metadataStatus as MetadataStatus }
       : {}),
-    ...(bounds ? { ...bounds, spatialRelation: 'INTERSECTS' as const } : {}),
   }
 }
 
@@ -543,13 +544,13 @@ export function FileMetaTable({
   onReset,
   onRetryMetadata,
   retryingMetadataId,
+  onBatchProcess,
+  dataSetId,
   recycleBin = false,
 }: FileMetaTableProps) {
   const [form] = Form.useForm()
   const [detailId, setDetailId] = useState<string | null>(null)
   const [mapOpen, setMapOpen] = useState(false)
-  const [mapBounds, setMapBounds] = useState<GeographicBounds | null>(null)
-  const [draftBounds, setDraftBounds] = useState<GeographicBounds | null>(null)
   return (
     <>
       <SearchTable<FileMeta>
@@ -564,9 +565,8 @@ export function FileMetaTable({
         pageSize={pageSize}
         onPageChange={onPageChange}
         searchForm={form}
-        onSearch={(values) => onSearch(toFilters(values, mapBounds))}
+        onSearch={(values) => onSearch(toFilters(values))}
         onReset={() => {
-          setMapBounds(null)
           onReset()
         }}
         scrollX={2160}
@@ -599,70 +599,25 @@ export function FileMetaTable({
                 options={METADATA_STATUS_OPTIONS}
               />
             </Form.Item>
-            <Form.Item label="范围">
-              <Space size={4}>
+            {dataSetId !== undefined && (
+              <Form.Item label="范围">
                 <Button
                   icon={<EnvironmentOutlined />}
-                  type={mapBounds ? 'dashed' : 'default'}
-                  onClick={() => {
-                    setDraftBounds(mapBounds)
-                    setMapOpen(true)
-                  }}
+                  onClick={() => setMapOpen(true)}
                 >
-                  {mapBounds ? '已框选' : '地图框选'}
+                  地图框选
                 </Button>
-                {mapBounds && (
-                  <Button
-                    type="text"
-                    icon={<CloseOutlined />}
-                    aria-label="清除范围筛选"
-                    onClick={() => setMapBounds(null)}
-                  />
-                )}
-              </Space>
-            </Form.Item>
+              </Form.Item>
+            )}
           </>
         }
       />
-      {mapOpen && (
-        <AppDialog
-          title="地图范围筛选"
+      {mapOpen && dataSetId !== undefined && (
+        <MapFilterDialog
+          dataSetId={dataSetId}
           onClose={() => setMapOpen(false)}
-          closeOutside
-          className={detailStyles.dialog}
-        >
-          <div className={detailStyles.body}>
-            <Suspense
-              fallback={
-                <Spin tip="正在加载地图">
-                  <div style={{ minHeight: 300 }} />
-                </Spin>
-              }
-            >
-              <SpatialMap
-                bounds={draftBounds}
-                onBoundsChange={setDraftBounds}
-              />
-            </Suspense>
-            <Typography.Paragraph type="secondary" style={{ marginTop: 12 }}>
-              框选后点击“使用此范围”，再点击页面“搜索”，检索与所选范围相交的文件。
-            </Typography.Paragraph>
-            <div style={{ textAlign: 'right' }}>
-              <Space>
-                <Button onClick={() => setMapOpen(false)}>取消</Button>
-                <Button
-                  type="primary"
-                  onClick={() => {
-                    setMapBounds(draftBounds)
-                    setMapOpen(false)
-                  }}
-                >
-                  使用此范围
-                </Button>
-              </Space>
-            </div>
-          </div>
-        </AppDialog>
+          onBatchProcess={onBatchProcess}
+        />
       )}
       {detailId !== null && (
         <SpatialMetadataDialog

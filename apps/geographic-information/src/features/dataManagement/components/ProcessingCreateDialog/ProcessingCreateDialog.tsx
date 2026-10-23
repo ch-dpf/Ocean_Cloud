@@ -65,6 +65,8 @@ interface ProcessingCreateDialogProps {
    * 不传入时该页签在影像切片下可用，可在数据管理数据里勾选多个文件。
    */
   readonly presetFile?: ManagedFileRef
+  /** 批量入口预选的数据管理文件；不锁定页签，用户仍可继续增减 */
+  readonly initialManagedFiles?: readonly FileMeta[]
   /**
    * 锁定的处理类型：传入时处理类型不可切换（其余选项置灰），
    * 预处理参数也按该类型初始化。数据管理页按文件分类锁定用。
@@ -104,6 +106,7 @@ function buildDefaultTaskName(
 export function ProcessingCreateDialog({
   onClose,
   presetFile,
+  initialManagedFiles,
   lockedProcessingType,
   onSubmitLocal,
   onSubmitManaged,
@@ -113,9 +116,10 @@ export function ProcessingCreateDialog({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pathInputId = useId()
   const hasPresetFile = presetFile !== undefined
-  // 从数据管理页进入时锁定在「数据管理数据」，否则只用本地上传
+  // 批量入口带入了已选文件时，同样默认停在「数据管理数据」
+  const hasInitialManagedFiles = (initialManagedFiles?.length ?? 0) > 0
   const [sourceTab, setSourceTab] = useState<SourceTabKey>(
-    hasPresetFile ? 'managed' : 'local',
+    hasPresetFile || hasInitialManagedFiles ? 'managed' : 'local',
   )
   // 处理类型锁定后不可切换，只允许匹配的那一项
   const isTypeLocked = lockedProcessingType !== undefined
@@ -128,8 +132,10 @@ export function ProcessingCreateDialog({
   // 用户是否手改过任务名称：没改过时名称跟随处理类型与已选文件自动更新
   const [isNameEdited, setIsNameEdited] = useState(false)
   const [files, setFiles] = useState<readonly File[]>([])
-  // 数据管理数据页签选中的文件：由入口页预置（单条）或在选择浮层里多选
-  const [managedFiles, setManagedFiles] = useState<readonly FileMeta[]>([])
+  // 数据管理数据页签选中的文件：由入口页预置或批量入口带入，也可在选择浮层里多选
+  const [managedFiles, setManagedFiles] = useState<readonly FileMeta[]>(
+    initialManagedFiles ?? [],
+  )
   // 是否正在选择数据：为 true 时整层让位给选择浮层
   const [isSelecting, setIsSelecting] = useState(false)
   // 服务器文件页签的相对路径：留空时提交会被拦下
