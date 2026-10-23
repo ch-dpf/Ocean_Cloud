@@ -12,20 +12,17 @@ export function useVectorTiles(
 ) {
   const [pending, setPending] = useState(0)
   const [tileError, setTileError] = useState<string | null>(null)
-  const [resolvedContext, setResolvedContext] = useState<{
-    readonly key: string
-    readonly value: VectorRenderContext
-  } | null>(null)
+  const [context, setContext] = useState<VectorRenderContext | null>(null)
   const [loading, setLoading] = useState(false)
   const [revision, setRevision] = useState(0)
-  const contextKey = viewport
-    ? JSON.stringify([dataSetId, viewport, enabledLayerIds, revision])
-    : null
-  // 视窗、图层或版本变化后立刻停用旧上下文，避免继续显示上一视窗的裁剪/聚合结果。
-  const context =
-    resolvedContext?.key === contextKey ? resolvedContext.value : null
+  const viewportKey = JSON.stringify(viewport)
+  const layerKey = [...enabledLayerIds].sort().join(',')
+
   useEffect(() => {
-    if (!viewport || !contextKey) return
+    if (!viewport) {
+      setContext(null)
+      return
+    }
     const controller = new AbortController()
     const timer = window.setTimeout(() => {
       setLoading(true)
@@ -36,17 +33,19 @@ export function useVectorTiles(
         controller.signal,
       )
         .then((value) => {
-          if (!controller.signal.aborted)
-            setResolvedContext({ key: contextKey, value })
+          if (!controller.signal.aborted) setContext(value)
         })
         .catch((cause: unknown) => {
           if (controller.signal.aborted) return
+          setContext(null)
           setTileError(
             cause instanceof RequestError && cause.status === 409
               ? '数据集显示配置已变化或尚未初始化，请刷新后重试。'
-              : cause instanceof Error
-                ? cause.message
-                : '渲染上下文加载失败',
+              : cause instanceof RequestError && cause.status === 422
+                ? '当前视窗无法满足保形显示预算，请放大或减少启用图层；点要素不聚合。'
+                : cause instanceof Error
+                  ? cause.message
+                  : '渲染上下文加载失败',
           )
         })
         .finally(() => {
@@ -57,7 +56,7 @@ export function useVectorTiles(
       window.clearTimeout(timer)
       controller.abort()
     }
-  }, [contextKey, dataSetId, viewport, enabledLayerIds])
+  }, [dataSetId, viewportKey, layerKey, revision])
 
   const refresh = useCallback(() => setRevision((value) => value + 1), [])
   const handleTileError = (cause: unknown) => {

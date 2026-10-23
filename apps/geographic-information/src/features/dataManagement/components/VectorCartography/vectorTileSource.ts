@@ -2,7 +2,7 @@ import type { FeatureLike } from 'ol/Feature.js'
 import { RequestError } from '@ocean-cloud/http'
 import View from 'ol/View.js'
 import { createXYZ } from 'ol/tilegrid.js'
-import { fromLonLat, transformExtent } from 'ol/proj.js'
+import { fromLonLat, transformExtent, get as getProjection } from 'ol/proj.js'
 import VectorLayer from 'ol/layer/Vector.js'
 import type VectorSource from 'ol/source/Vector.js'
 import type Feature from 'ol/Feature.js'
@@ -109,7 +109,6 @@ export function createVectorTileChannel(
     declutter: true,
     style: createVectorTileStyleFunction(settings),
   })
-  layer.set('__vectorContext', context)
   const abort = (controller: AbortController, tile: Tile<RenderFeature>) => {
     controller.abort()
     tile.setState(TileState.ERROR)
@@ -146,6 +145,28 @@ export function createVectorTileChannel(
   }
 }
 
+/** wrapX=false：仅请求当前世界与视窗的交集，不能将超界经度取模到另一半球。 */
+export function normalizedVectorBbox(
+  extent: Extent,
+): [number, number, number, number] | null {
+  const world = getProjection('EPSG:3857')!.getExtent()
+  const clipped = [
+    Math.max(world[0], extent[0]),
+    Math.max(world[1], extent[1]),
+    Math.min(world[2], extent[2]),
+    Math.min(world[3], extent[3]),
+  ]
+  if (clipped[0] >= clipped[2] || clipped[1] >= clipped[3]) return null
+  const bbox = transformExtent(clipped, 'EPSG:3857', 'EPSG:4326')
+  const latitudeLimit = 85.0511287798066
+  return [
+    Math.max(-180, bbox[0]),
+    Math.max(-latitudeLimit, bbox[1]),
+    Math.min(180, bbox[2]),
+    Math.min(latitudeLimit, bbox[3]),
+  ]
+}
+
 /** XYZ 顶点可拖动；新增顶点需要显式输入高程，避免 OL 自动补零。 */
 export function geometryHasZ(value: unknown): boolean {
   if (!value || typeof value !== 'object') return false
@@ -166,6 +187,8 @@ export function sourceRecord(feature: FeatureLike) {
 }
 
 interface MapCallbacks {
+  readonly minZoom: number
+  readonly maxZoom: number
   readonly draft: VectorFeature | null
   readonly onSelect: (hit: VectorTileHit | null) => void
   readonly onZoomChange: (zoom: number) => void
@@ -187,8 +210,11 @@ export function createVectorMapSession(
   const view = new View({
     center: fromLonLat([105, 35]),
     zoom: 4,
-    minZoom: 0,
-    maxZoom: 22,
+    minZoom: callbacks.current.minZoom,
+    maxZoom: callbacks.current.maxZoom,
+    extent: getProjection('EPSG:3857')!.getExtent(),
+    showFullExtent: true,
+    multiWorld: false,
   })
   const overlay = new VectorLayer({
     source,
@@ -207,7 +233,7 @@ export function createVectorMapSession(
     const hits: { hit: VectorTileHit; priority: number }[] = []
     map.forEachFeatureAtPixel(
       event.pixel,
-      (feature, layer) => {
+      (feature) => {
         const record = sourceRecord(feature)
         if (record) {
           hits.push({
@@ -220,10 +246,7 @@ export function createVectorMapSession(
           })
           return
         }
-        const context = layer?.get('__vectorContext') as
-          VectorRenderContext | undefined
-        const hit =
-          context && readVectorTileHit(feature, context, event.coordinate)
+        const hit = readVectorTileHit(feature)
         if (hit)
           hits.push({
             hit,
@@ -246,14 +269,10 @@ export function createVectorMapSession(
     if (!size || size[0] < 1 || size[1] < 1) return
     const extent = view.calculateExtent(map.getSize())
     channels.current.forEach((channel) => channel.cancelOutside(extent))
-    const bbox = transformExtent(extent, 'EPSG:3857', 'EPSG:4326')
+    const bbox = normalizedVectorBbox(extent)
+    if (!bbox) return
     callbacks.current.onViewportChange({
-      bbox: [
-        bbox[0],
-        Math.max(-85.05112878, bbox[1]),
-        bbox[2],
-        Math.min(85.05112878, bbox[3]),
-      ],
+      bbox,
       displayZoom: view.getZoom() ?? 0,
       widthPixels: Math.round(size[0]),
       heightPixels: Math.round(size[1]),

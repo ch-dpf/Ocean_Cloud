@@ -6,7 +6,6 @@ import type {
   VectorStyle,
   VectorRenderContext,
   VectorRenderContextInput,
-  VectorClusterMembers,
   VersionedVectorFeature,
   VectorFeature,
   VectorStyleSummary,
@@ -365,33 +364,6 @@ export function getVectorTile(
     signal?.addEventListener('abort', cancel, { once: true })
     pumpTileRequests()
   })
-}
-export async function getVectorClusterMembers(
-  hit: {
-    readonly dataSetId: string
-    readonly kind: 'cluster'
-    readonly clusterId: string
-    readonly contextId: string
-  },
-  cursor?: string,
-  signal?: AbortSignal,
-): Promise<VectorClusterMembers> {
-  const result = await httpClient.get<ApiResult<VectorClusterMembers>>(
-    datasetVectorPath(hit.dataSetId) +
-      '/clusters/' +
-      encodeURIComponent(hit.clusterId) +
-      '/features',
-    {
-      params: {
-        contextId: hit.contextId,
-        limit: 50,
-        ...(cursor ? { cursor } : {}),
-      },
-      signal,
-      silentError: true,
-    },
-  )
-  return result.data
 }
 function versionedFeature(
   response: HttpResponse<VectorFeature>,

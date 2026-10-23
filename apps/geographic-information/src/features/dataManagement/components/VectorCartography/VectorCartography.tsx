@@ -9,7 +9,6 @@ import { VectorLayerList } from './VectorLayerList'
 import { VectorMap } from './VectorMap'
 import { VectorPresentationPanel } from '../VectorPresentationPanel/VectorPresentationPanel'
 import { VectorFeatureEditor } from '../VectorFeatureEditor/VectorFeatureEditor'
-import { VectorClusterPanel } from '../VectorClusterPanel/VectorClusterPanel'
 import styles from './VectorCartography.module.css'
 
 export function VectorCartography(props: { readonly dataSetId: string }) {
@@ -19,7 +18,7 @@ export function VectorCartography(props: { readonly dataSetId: string }) {
   const [viewport, setViewport] = useState<VectorViewport | null>(null)
   const [editingLayer, setEditingLayer] = useState<VectorLayer | null>(null)
   const [deletingLayer, setDeletingLayer] = useState<VectorLayer | null>(null)
-  const { draft, cluster, zoomTarget } = workspace
+  const { draft } = workspace
   const selected = workspace.selected?.feature ?? null
   const tiles = useVectorTiles(
     dataSetId,
@@ -37,7 +36,6 @@ export function VectorCartography(props: { readonly dataSetId: string }) {
     workspace.refreshLayers()
     tiles.refresh()
     tiles.clearError()
-    workspace.setCluster(null)
   }
   const errors = [workspace.error, tiles.tileError].filter(Boolean)
   /** 删除图层；要素与样式随图层一并移除，源文件不受影响。 */
@@ -99,7 +97,7 @@ export function VectorCartography(props: { readonly dataSetId: string }) {
           />
         ) : (
           <p className={styles.hint}>
-            点击地图要素查看属性；聚合标记可展开成员。
+            点击地图要素查看原始属性；显示几何保持点、线、面类型。
           </p>
         )}
       </aside>
@@ -107,8 +105,8 @@ export function VectorCartography(props: { readonly dataSetId: string }) {
         <div className={styles.toolbar}>
           <span>
             {tiles.context
-              ? tiles.context.forceAggregation
-                ? `当前视窗已由服务端聚合 · 对象 ${tiles.context.objectCount}/${tiles.context.budget}（可放大或减少图层）`
+              ? tiles.context.detailReduced
+                ? `保形细节筛选 · 对象 ${tiles.context.objectCount}/${tiles.context.budget}（候选 ${tiles.context.candidateCount}）`
                 : `视窗对象 ${tiles.context.objectCount}/${tiles.context.budget}`
               : '等待创建视窗上下文'}
           </span>
@@ -143,7 +141,10 @@ export function VectorCartography(props: { readonly dataSetId: string }) {
           selected={selected}
           draft={draft}
           focusGeometry={activeLayer?.extent ?? null}
-          zoomTarget={zoomTarget}
+          minZoom={workspace.datasetStyle?.definition.renderPolicy.minZoom ?? 0}
+          maxZoom={
+            workspace.datasetStyle?.definition.renderPolicy.maxZoom ?? 18
+          }
           onSelect={workspace.handleSelect}
           onZoomChange={setZoom}
           onViewportChange={setViewport}
@@ -178,16 +179,6 @@ export function VectorCartography(props: { readonly dataSetId: string }) {
           onSave={workspace.saveFeature}
           onDelete={workspace.removeFeature}
           onClose={() => workspace.setDraft(null)}
-        />
-      )}
-      {cluster && (
-        <VectorClusterPanel
-          key={cluster.contextId + cluster.clusterId}
-          hit={cluster}
-          onClose={() => workspace.setCluster(null)}
-          onRefresh={refresh}
-          onZoom={workspace.zoomCluster}
-          onSelect={workspace.selectClusterMember}
         />
       )}
       {deletingLayer && (

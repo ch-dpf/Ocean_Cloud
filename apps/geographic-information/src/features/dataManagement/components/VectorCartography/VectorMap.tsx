@@ -15,7 +15,6 @@ import type {
   VectorGeometry,
   VectorRenderContext,
   VectorTileHit,
-  VectorClusterHit,
   VectorViewport,
 } from '../../types/vector'
 import { featureStyleKey, newStyleDefinition } from './vectorStyle'
@@ -34,7 +33,8 @@ interface VectorMapProps {
   readonly selected: VectorFeature | null
   readonly draft: VectorFeature | null
   readonly focusGeometry: unknown
-  readonly zoomTarget: VectorClusterHit | null
+  readonly minZoom: number
+  readonly maxZoom: number
   readonly onSelect: (hit: VectorTileHit | null) => void
   readonly onZoomChange: (zoom: number) => void
   readonly onViewportChange: (viewport: VectorViewport) => void
@@ -71,7 +71,7 @@ export function VectorMap(props: VectorMapProps) {
   const [zoom, setZoom] = useState(4)
   const [basemapMode, setBasemapMode] = useState<BasemapMode>('osm')
   const [mapLoading, setMapLoading] = useState(true)
-  const { context, selected, draft, focusGeometry, zoomTarget } = props
+  const { context, selected, draft, focusGeometry, minZoom, maxZoom } = props
   const editing = !!draft
   useEffect(() => {
     callbacks.current = props
@@ -260,20 +260,21 @@ export function VectorMap(props: VectorMapProps) {
       })
   }, [focusKey])
   useEffect(() => {
-    if (zoomTarget)
-      mapRef.current?.getView().animate({
-        center: [...zoomTarget.coordinate],
-        zoom: Math.min(22, (mapRef.current?.getView().getZoom() ?? 0) + 2),
-        duration: 180,
-      })
-  }, [zoomTarget])
+    const view = mapRef.current?.getView()
+    if (!view) return
+    view.setMinZoom(minZoom)
+    view.setMaxZoom(maxZoom)
+  }, [minZoom, maxZoom])
   const zoomBy = (delta: number) => {
     const view = mapRef.current?.getView()
     if (!view) return
     const current = view.getZoom() ?? 0
     // 层级按钮按整数步进：4.5 点击 + 后为 5，点击 − 后为 4。
     const next = delta > 0 ? Math.floor(current) + 1 : Math.ceil(current) - 1
-    view.animate({ zoom: Math.min(22, Math.max(0, next)), duration: 180 })
+    view.animate({
+      zoom: Math.min(view.getMaxZoom(), Math.max(view.getMinZoom(), next)),
+      duration: 180,
+    })
   }
   return (
     <div className={styles.mapShell}>

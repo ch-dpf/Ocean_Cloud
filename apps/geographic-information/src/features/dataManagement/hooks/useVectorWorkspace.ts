@@ -16,7 +16,6 @@ import type {
   VectorLayer,
   VersionedVectorFeature,
   VectorTileHit,
-  VectorClusterHit,
   VectorGeometry,
   VectorGroup,
   DatasetVectorStyle,
@@ -61,8 +60,6 @@ export function useVectorWorkspace(dataSetId: string) {
   const [loadingFeature, setLoadingFeature] = useState(false)
   const [savingFeature, setSavingFeature] = useState(false)
   const [draft, setDraft] = useState<VectorFeature | null>(null)
-  const [cluster, setCluster] = useState<VectorClusterHit | null>(null)
-  const [zoomTarget, setZoomTarget] = useState<VectorClusterHit | null>(null)
   const selectionRequest = useRef<AbortController | null>(null)
   const editRequest = useRef<AbortController | null>(null)
   useEffect(() => {
@@ -151,7 +148,6 @@ export function useVectorWorkspace(dataSetId: string) {
       previous?.feature.layerId === layerId ? null : previous,
     )
     setDraft((previous) => (previous?.layerId === layerId ? null : previous))
-    setCluster(null)
     setLayerRevision((value) => value + 1)
     setError(null)
   }, [])
@@ -256,34 +252,15 @@ export function useVectorWorkspace(dataSetId: string) {
   )
   const handleSelect = (hit: VectorTileHit | null) => {
     if (draft) return
-    if (hit && hit.kind !== 'feature') {
-      setCluster(hit)
-      clearSelection()
-    } else {
-      setCluster(null)
-      if (hit) void selectFeature(hit.layerId, hit.featureId)
-      else clearSelection()
-    }
-  }
-  const selectClusterMember = (layerId: string, featureId: string) => {
-    setCluster(null)
-    void selectFeature(layerId, featureId)
-  }
-  const zoomCluster = () => {
-    if (cluster) setZoomTarget({ ...cluster })
-    setCluster(null)
+    if (hit) void selectFeature(hit.layerId, hit.featureId)
+    else clearSelection()
   }
   const changeGeometry = (geometry: VectorGeometry) =>
     setDraft((value) => (value ? { ...value, geometry } : null))
   return {
     draft,
     setDraft,
-    cluster,
-    setCluster,
-    zoomTarget,
     handleSelect,
-    selectClusterMember,
-    zoomCluster,
     changeGeometry,
     layerKinds,
     layers,
