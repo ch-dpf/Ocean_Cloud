@@ -145,8 +145,10 @@ export interface VectorRenderContext {
   readonly heightPixels: number
   readonly budget: string | number
   readonly objectCount: string | number
-  readonly gridPixels: number
-  readonly forceAggregation: boolean
+  readonly candidateCount: string | number
+  readonly detailReduced: boolean
+  readonly cutoffMinZoom: number | null
+  readonly cutoffPixelSize: number | null
   readonly maxZoom: number
   readonly expiresAt: string
   readonly plans?: unknown
@@ -184,7 +186,12 @@ export interface DatasetVectorStyle {
   readonly styleVersion: string | number
   readonly dataRevision: string | number
   readonly displayRevision: string | number
-  readonly definition: unknown
+  readonly definition: {
+    readonly renderPolicy: {
+      readonly minZoom: number
+      readonly maxZoom: number
+    }
+  }
 }
 
 export interface EffectiveVectorStyle {
@@ -229,35 +236,8 @@ export interface VersionedVectorFeature {
   readonly feature: VectorFeature
   readonly etag: string
 }
-export interface VectorClusterMember {
+export interface VectorTileHit {
+  readonly kind: 'feature'
   readonly layerId: string
   readonly featureId: string
-  readonly properties: Record<string, unknown> | null
-  readonly version: string | number
 }
-export interface VectorClusterMembers {
-  readonly clusterId?: string
-  readonly representationId?: string
-  readonly members: readonly VectorClusterMember[]
-  readonly hasMore: boolean
-  readonly nextCursor: string | null
-  readonly dataVersion: string
-}
-export type VectorTileHit =
-  | {
-      readonly kind: 'feature'
-      readonly layerId: string
-      readonly featureId: string
-    }
-  | {
-      readonly kind: 'cluster'
-      readonly dataSetId: string
-      readonly clusterId: string
-      readonly contextId: string
-      readonly featureCount: string
-      readonly coordinate: readonly [number, number]
-    }
-export type VectorClusterHit = Extract<
-  VectorTileHit,
-  { readonly kind: 'cluster' }
->

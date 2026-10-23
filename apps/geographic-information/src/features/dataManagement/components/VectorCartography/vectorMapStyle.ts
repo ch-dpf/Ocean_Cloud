@@ -11,7 +11,6 @@ import Style, { type StyleFunction } from 'ol/style/Style.js'
 import type {
   VectorFeature,
   VectorTileHit,
-  VectorRenderContext,
   VectorGeometryType,
   VectorRuleMatch,
   VectorStyleDefinition,
@@ -167,39 +166,36 @@ export function createVectorTileStyleFunction(settings: {
       return undefined
     }
     const geometryType = feature.get('_vector_category') as VectorGeometryType
+    const role = String(feature.get('_vector_render_role') ?? '')
+    if (!['FILL', 'OUTLINE', 'GEOMETRY', 'LABEL'].includes(role))
+      return undefined
     const label = String(feature.get('_vector_label') ?? '')
     const order = Number(feature.get('_vector_render_order') ?? 0)
-    const key = rawSymbol + ':' + geometryType + ':' + label + ':' + order
+    const key =
+      rawSymbol + ':' + role + ':' + geometryType + ':' + label + ':' + order
     let entry = cache.get(feature)
     if (!entry || entry.key !== key) {
-      const style = symbolStyle(
-        {
-          geometryPath: '',
-          geometryType,
-          ruleId: String(feature.get('_vector_rule_id') ?? ''),
-          visible: true,
-          symbol: value,
-        },
-        undefined,
-        false,
+      const style =
+        role === 'LABEL'
+          ? new Style()
+          : symbolStyle(
+              {
+                geometryPath: '',
+                geometryType,
+                ruleId: String(feature.get('_vector_rule_id') ?? ''),
+                visible: true,
+                symbol: value,
+              },
+              undefined,
+              false,
+            )
+      if (role === 'FILL') style.setStroke(null)
+      style.setZIndex(
+        order + (role === 'LABEL' ? 1000 : role === 'OUTLINE' ? 0.1 : 0),
       )
-      style.setZIndex(order)
       if (value.dashArray && geometryType === 'LINE')
         style.getStroke()?.setLineDash([...value.dashArray])
-      const clusterId = feature.get('_vector_cluster_id')
-      if (clusterId != null) {
-        const count = String(feature.get('_vector_feature_count') ?? '')
-        // 聚合点同样使用后端 _vector_symbol；前端只补充数量文本，不另造放大圆点。
-        style.setText(
-          new Text({
-            declutterMode: 'none',
-            text: count,
-            fill: new Fill({ color: '#ffffff' }),
-            stroke: new Stroke({ color: '#253858', width: 2 }),
-            font: 'bold 12px sans-serif',
-          }),
-        )
-      } else if (label) {
+      if (role === 'LABEL' && label) {
         style.setText(
           new Text({
             text: label,
@@ -217,21 +213,7 @@ export function createVectorTileStyleFunction(settings: {
   }
 }
 
-export function readVectorTileHit(
-  feature: FeatureLike,
-  context: VectorRenderContext,
-  coordinate: readonly number[],
-): VectorTileHit | null {
-  const clusterId = feature.get('_vector_cluster_id')
-  if (clusterId != null)
-    return {
-      kind: 'cluster',
-      dataSetId: context.dataSetId,
-      contextId: context.contextId,
-      clusterId: String(clusterId),
-      featureCount: String(feature.get('_vector_feature_count')),
-      coordinate: [coordinate[0], coordinate[1]],
-    }
+export function readVectorTileHit(feature: FeatureLike): VectorTileHit | null {
   const featureId = feature.get('_vector_feature_id') as string | undefined
   const layerId = feature.get('_vector_layer_id') as string | undefined
   return featureId && layerId ? { kind: 'feature', layerId, featureId } : null
