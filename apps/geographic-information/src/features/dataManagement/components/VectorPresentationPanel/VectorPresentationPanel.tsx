@@ -84,7 +84,7 @@ export function VectorPresentationPanel({
   )
   const [enabled, setEnabled] = useState(layer.enabled)
   const [minZoom, setMinZoom] = useState(0)
-  const [maxZoom, setMaxZoom] = useState(18)
+  const [maxZoom, setMaxZoom] = useState(25)
   const [symbol, setSymbol] = useState<VectorSymbol>(() => defaultSymbol(layer))
   const [etag, setEtag] = useState<string | null>(null)
   const [busy, setBusy] = useState(true)
@@ -132,7 +132,7 @@ export function VectorPresentationPanel({
     minZoom < 0 ||
     minZoom > 18 ||
     maxZoom <= minZoom ||
-    maxZoom > 22
+    maxZoom > 25
 
   const setNumber = (key: keyof VectorSymbol, value: number | null) =>
     setSymbol((current) => ({ ...current, [key]: value ?? 0 }))
@@ -231,9 +231,9 @@ export function VectorPresentationPanel({
                 结束层级
                 <InputNumber
                   min={0.5}
-                  max={22}
+                  max={25}
                   value={maxZoom}
-                  onChange={(v) => setMaxZoom(v ?? 22)}
+                  onChange={(v) => setMaxZoom(v ?? 25)}
                 />
               </label>
             </Space>

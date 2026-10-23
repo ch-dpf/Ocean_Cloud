@@ -1,89 +1,101 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { RequestError } from '@ocean-cloud/http'
-import { createVectorRenderContext } from '../services/vectorService'
-import type { VectorRenderContext, VectorViewport } from '../types/vector'
+import {
+  getVectorMapDefinition,
+  getVectorCartography,
+} from '../services/vectorService'
+import type {
+  VectorMapDefinition,
+  VectorCartographyDefinition,
+} from '../types/vector'
 
-/** 整个数据集只维护一个当前视窗上下文；过时请求不会覆盖最新视窗。 */
+/** 视窗移动、连续zoom和临时显隐均不改变地图数据源。 */
 export function useVectorTiles(
   dataSetId: string,
-  viewport: VectorViewport | null,
-  enabledLayerIds: readonly string[],
+  dataRevision: number,
   onDataStale: () => void,
 ) {
   const [pending, setPending] = useState(0)
   const [tileError, setTileError] = useState<string | null>(null)
-  const [context, setContext] = useState<VectorRenderContext | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [context, setContext] = useState<VectorMapDefinition | null>(null)
+  const [cartography, setCartography] =
+    useState<VectorCartographyDefinition | null>(null)
+  const [cartographyEtag, setCartographyEtag] = useState('')
+  const [loading, setLoading] = useState(true)
   const [revision, setRevision] = useState(0)
-  const viewportKey = JSON.stringify(viewport)
-  const layerKey = JSON.stringify([...enabledLayerIds].sort())
-
-  useEffect(() => {
-    const currentViewport = JSON.parse(viewportKey) as VectorViewport | null
-    if (!currentViewport) return
-    const currentLayerIds = JSON.parse(layerKey) as string[]
-    const controller = new AbortController()
-    const timer = window.setTimeout(() => {
-      setLoading(true)
-      setTileError(null)
-      void createVectorRenderContext(
-        dataSetId,
-        { ...currentViewport, enabledLayerIds: currentLayerIds },
-        controller.signal,
-      )
-        .then((value) => {
-          if (!controller.signal.aborted) setContext(value)
-        })
-        .catch((cause: unknown) => {
-          if (controller.signal.aborted) return
-          setContext(null)
-          setTileError(
-            cause instanceof RequestError && cause.status === 409
-              ? '数据集显示配置已变化或尚未初始化，请刷新后重试。'
-              : cause instanceof RequestError && cause.status === 422
-                ? '当前视窗无法满足保形显示预算，请放大或减少启用图层；点要素不聚合。'
-                : cause instanceof Error
-                  ? cause.message
-                  : '渲染上下文加载失败',
-          )
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) setLoading(false)
-        })
-    }, 180)
-    return () => {
-      window.clearTimeout(timer)
-      controller.abort()
-    }
-  }, [dataSetId, viewportKey, layerKey, revision])
-
+  const recoveringVersion = useRef<string | null>(null)
   const refresh = useCallback(() => setRevision((value) => value + 1), [])
+  useEffect(() => {
+    const controller = new AbortController()
+    void Promise.all([
+      getVectorMapDefinition(dataSetId, controller.signal),
+      getVectorCartography(dataSetId, controller.signal),
+    ])
+      .then(([definition, config]) => {
+        if (controller.signal.aborted) return
+        setContext((previous) =>
+          previous?.tileVersion === definition.tileVersion
+            ? previous
+            : definition,
+        )
+        setCartography((previous) =>
+          previous?.dataSetId === config.definition.dataSetId &&
+          previous.styleVersion === config.definition.styleVersion
+            ? previous
+            : config.definition,
+        )
+        setCartographyEtag(config.etag)
+        setTileError(null)
+      })
+      .catch((cause: unknown) => {
+        if (!controller.signal.aborted)
+          setTileError(
+            cause instanceof Error ? cause.message : '地图定义加载失败',
+          )
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+    return () => controller.abort()
+  }, [dataSetId, dataRevision, revision])
+  useEffect(() => {
+    const focus = () => refresh()
+    window.addEventListener('focus', focus)
+    return () => window.removeEventListener('focus', focus)
+  }, [refresh])
   const handleTileError = (cause: unknown) => {
-    if (cause instanceof RequestError && cause.status === 409) {
+    if (
+      cause instanceof RequestError &&
+      cause.status === 410 &&
+      context &&
+      recoveringVersion.current !== context.tileVersion
+    ) {
+      recoveringVersion.current = context.tileVersion
       onDataStale()
-      refresh()
-      return
-    }
-    if (cause instanceof RequestError && cause.status === 410) {
       refresh()
       return
     }
     setTileError(
       cause instanceof RequestError && cause.status === 422
-        ? '当前视窗超出安全显示预算，请缩小视窗或减少启用图层。'
+        ? '当前瓦片超过完整几何预算，请放大地图；服务端未截断要素。'
         : cause instanceof Error
           ? cause.message
-          : '瓦片加载失败，请重试',
+          : '瓦片加载失败',
     )
   }
   return {
-    context: viewport === null ? null : context,
+    context: context?.dataSetId === dataSetId ? context : null,
+    cartography: cartography?.dataSetId === dataSetId ? cartography : null,
+    retryRevision: revision,
+    cartographyEtag,
     loading,
     pending,
     tileError,
     handleTileError,
-    changePending: (delta: number) =>
-      setPending((value) => Math.max(0, value + delta)),
+    changePending: useCallback(
+      (delta: number) => setPending((value) => Math.max(0, value + delta)),
+      [],
+    ),
     clearError: () => setTileError(null),
     refresh,
   }

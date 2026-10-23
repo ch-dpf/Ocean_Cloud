@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { RequestError } from '@ocean-cloud/http'
 import {
-  getVectorLayers,
   getVectorFeature,
   getVectorLayer,
   updateVectorFeature,
@@ -9,7 +8,6 @@ import {
   deleteVectorLayer,
   getVectorGroups,
   getDatasetVectorStyle,
-  updateVectorGroupVisibility,
 } from '../services/vectorService'
 import type {
   VectorFeature,
@@ -21,8 +19,6 @@ import type {
   DatasetVectorStyle,
 } from '../types/vector'
 
-import { parseLayerGeometryKinds } from '../components/VectorCartography/geometryTypes'
-
 function errorText(cause: unknown): string {
   if (cause instanceof RequestError && cause.status === 412)
     return '要素已被其他人修改，草稿已保留，请重新加载后编辑。'
@@ -30,29 +26,17 @@ function errorText(cause: unknown): string {
     return '数据集显示配置已变化或尚未初始化，请刷新后重试。'
   return cause instanceof Error ? cause.message : '请求失败，请稍后重试'
 }
-async function loadAllLayers(
-  dataSetId: string,
-  signal: AbortSignal,
-): Promise<VectorLayer[]> {
-  const all: VectorLayer[] = []
-  for (let pageNo = 1; ; pageNo += 1) {
-    const page = await getVectorLayers(dataSetId, pageNo, 100, signal)
-    all.push(...page.records)
-    if (page.records.length === 0 || all.length >= Number(page.total))
-      return all
-  }
-}
 
 /** 图层目录与原始要素编辑；地图展示交给独立瓦片通道。 */
 export function useVectorWorkspace(dataSetId: string) {
   const [layers, setLayers] = useState<readonly VectorLayer[]>([])
   const [groups, setGroups] = useState<readonly VectorGroup[]>([])
-  const [groupsEtag, setGroupsEtag] = useState<string | null>(null)
   const [datasetStyle, setDatasetStyle] = useState<DatasetVectorStyle | null>(
     null,
   )
-  const [visibleIds, setVisibleIds] = useState<readonly string[]>([])
-  const [activeLayerId, setActiveLayerId] = useState<string | null>(null)
+  const [hiddenGroupIds, setHiddenGroupIds] = useState<ReadonlySet<string>>(
+    new Set(),
+  )
   const [loadingLayers, setLoadingLayers] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [layerRevision, setLayerRevision] = useState(0)
@@ -67,45 +51,13 @@ export function useVectorWorkspace(dataSetId: string) {
     void (async () => {
       setLoadingLayers(true)
       try {
-        const [records, groupResult, styleResult] = await Promise.all([
-          loadAllLayers(dataSetId, controller.signal),
+        const [groupResult, styleResult] = await Promise.all([
           getVectorGroups(dataSetId, controller.signal),
           getDatasetVectorStyle(dataSetId, controller.signal),
         ])
         if (controller.signal.aborted) return
-        setLayers(records)
         setGroups(groupResult.groups)
-        setGroupsEtag(groupResult.etag)
         setDatasetStyle(styleResult)
-        setVisibleIds((previous) => {
-          const valid = previous.filter((id) =>
-            records.some(
-              (item) =>
-                item.layerId === id &&
-                item.status === 'READY' &&
-                item.enabled &&
-                item.styleMode !== 'UNCONFIGURED',
-            ),
-          )
-          return previous.length === 0
-            ? records
-                .filter(
-                  (item) =>
-                    item.status === 'READY' &&
-                    item.enabled &&
-                    item.styleMode !== 'UNCONFIGURED',
-                )
-                .map((item) => item.layerId)
-            : valid
-        })
-        setActiveLayerId((previous) =>
-          records.some(
-            (item) => item.layerId === previous && item.status === 'READY',
-          )
-            ? previous
-            : (records.find((item) => item.status === 'READY')?.layerId ??
-              null),
-        )
         setError(null)
       } catch (cause) {
         if (!controller.signal.aborted) setError(errorText(cause))
@@ -123,15 +75,6 @@ export function useVectorWorkspace(dataSetId: string) {
     },
     [],
   )
-  const toggleVisible = useCallback((layerId: string, visible: boolean) => {
-    setVisibleIds((previous) =>
-      visible
-        ? previous.includes(layerId)
-          ? previous
-          : [...previous, layerId]
-        : previous.filter((id) => id !== layerId),
-    )
-  }, [])
   const refreshLayers = useCallback(
     () => setLayerRevision((value) => value + 1),
     [],
@@ -142,8 +85,6 @@ export function useVectorWorkspace(dataSetId: string) {
     const latest = await getVectorLayer(layerId)
     await deleteVectorLayer(latest.layer.layerId, latest.etag)
     setLayers((previous) => previous.filter((item) => item.layerId !== layerId))
-    setVisibleIds((previous) => previous.filter((id) => id !== layerId))
-    setActiveLayerId((previous) => (previous === layerId ? null : previous))
     setSelected((previous) =>
       previous?.feature.layerId === layerId ? null : previous,
     )
@@ -153,22 +94,27 @@ export function useVectorWorkspace(dataSetId: string) {
   }, [])
 
   const setGroupVisibility = useCallback(
-    async (groupId: string, enabled: boolean) => {
-      if (!groupsEtag) return
-      try {
-        await updateVectorGroupVisibility(
-          dataSetId,
-          groupId,
-          enabled,
-          groupsEtag,
-        )
-        setLayerRevision((value) => value + 1)
-      } catch (cause) {
-        setError(errorText(cause))
-      }
+    (groupId: string, enabled: boolean) => {
+      setHiddenGroupIds((previous) => {
+        const next = new Set(previous)
+        if (enabled) next.delete(groupId)
+        else next.add(groupId)
+        return next
+      })
     },
-    [dataSetId, groupsEtag],
+    [],
   )
+  const hiddenGroups = useMemo(() => {
+    const hidden = new Set<string>()
+    const visit = (nodes: readonly VectorGroup[], ancestorHidden: boolean) =>
+      nodes.forEach((group) => {
+        const disabled = ancestorHidden || hiddenGroupIds.has(group.id)
+        if (disabled) hidden.add(group.id)
+        visit(group.children, disabled)
+      })
+    visit(groups, false)
+    return hidden
+  }, [groups, hiddenGroupIds])
 
   const selectFeature = useCallback(
     async (layerId: string, featureId: string) => {
@@ -179,12 +125,17 @@ export function useVectorWorkspace(dataSetId: string) {
       setSelected(null)
       setError(null)
       try {
-        const value = await getVectorFeature(
-          layerId,
-          featureId,
-          controller.signal,
-        )
-        if (!controller.signal.aborted) setSelected(value)
+        const [value, layer] = await Promise.all([
+          getVectorFeature(layerId, featureId, controller.signal),
+          getVectorLayer(layerId, controller.signal),
+        ])
+        if (!controller.signal.aborted) {
+          setSelected(value)
+          setLayers((previous) => [
+            ...previous.filter((item) => item.layerId !== layerId),
+            layer.layer,
+          ])
+        }
       } catch (cause) {
         if (!controller.signal.aborted) setError(errorText(cause))
       } finally {
@@ -240,16 +191,6 @@ export function useVectorWorkspace(dataSetId: string) {
       if (!controller.signal.aborted) setSavingFeature(false)
     }
   }
-  const layerKinds = useMemo(
-    () =>
-      Object.fromEntries(
-        layers.map((layer) => [
-          layer.layerId,
-          parseLayerGeometryKinds(layer.geometryTypes),
-        ]),
-      ),
-    [layers],
-  )
   const handleSelect = (hit: VectorTileHit | null) => {
     if (draft) return
     if (hit) void selectFeature(hit.layerId, hit.featureId)
@@ -262,18 +203,15 @@ export function useVectorWorkspace(dataSetId: string) {
     setDraft,
     handleSelect,
     changeGeometry,
-    layerKinds,
+    layerRevision,
+    hiddenGroups,
     layers,
     groups,
     datasetStyle,
     setGroupVisibility,
-    visibleIds,
-    activeLayerId,
-    setActiveLayerId,
     loadingLayers,
     error,
     clearError,
-    toggleVisible,
     refreshLayers,
     removeLayer,
     selected,

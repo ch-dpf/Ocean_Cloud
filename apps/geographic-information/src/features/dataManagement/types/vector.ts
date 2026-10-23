@@ -133,33 +133,83 @@ export interface VectorStyleMatch {
   readonly matches: readonly VectorRuleMatch[]
 }
 
-export interface VectorRenderContext {
-  readonly contextId: string
+export interface VectorMapDefinition {
   readonly dataSetId: string
-  readonly styleVersion: string | number
+  readonly tileVersion: string
   readonly dataRevision: string | number
-  readonly displayRevision: string | number
-  readonly bbox: readonly [number, number, number, number]
-  readonly displayZoom: number
-  readonly widthPixels: number
-  readonly heightPixels: number
-  readonly budget: string | number
-  readonly objectCount: string | number
-  readonly candidateCount: string | number
-  readonly detailReduced: boolean
-  readonly cutoffMinZoom: number | null
-  readonly cutoffPixelSize: number | null
-  readonly maxZoom: number
-  readonly expiresAt: string
-  readonly plans?: unknown
-  readonly policy?: unknown
+  readonly minZoom: number
+  readonly nativeMaxZoom: number
+  readonly displayMaxZoom: number
+  readonly tileSize: number
+  readonly tiles: string
+  readonly extent: VectorGeometry | null
 }
 
-export interface VectorViewport {
-  readonly bbox: readonly [number, number, number, number]
-  readonly displayZoom: number
-  readonly widthPixels: number
-  readonly heightPixels: number
+export type ZoomStops = readonly (readonly [number, number])[]
+export interface CartographyFilter {
+  readonly op: string
+  readonly field?: string
+  readonly value?: unknown
+  readonly conditions?: readonly CartographyFilter[]
+  readonly condition?: CartographyFilter
+}
+export interface CartographyOverride {
+  readonly symbol: VectorSymbol
+  readonly visible?: boolean
+}
+export interface CartographyStyle {
+  readonly id: string
+  readonly geometryType: VectorGeometryType
+  readonly enabled: boolean
+  readonly minZoom: number
+  readonly maxZoom: number
+  readonly renderOrder: number
+  readonly symbol: VectorSymbol
+  readonly zoomStops?: Readonly<Record<string, ZoomStops>>
+  readonly labels: {
+    readonly enabled: boolean
+    readonly minZoom: number
+    readonly field: string
+    readonly fallbackField?: string
+    readonly fontSizeStops?: ZoomStops
+  }
+  readonly casing?: { readonly color: string; readonly widthStops: ZoomStops }
+  readonly overrides: readonly {
+    readonly filter: CartographyFilter
+    readonly minZoom: number
+    readonly maxZoom: number
+    readonly symbol: VectorSymbol
+    readonly zoomStops?: Readonly<Record<string, ZoomStops>>
+  }[]
+}
+export interface VectorCartographyDefinition {
+  readonly dataSetId: string
+  readonly styleVersion: string | number
+  readonly displayRevision: string | number
+  readonly defaults: { readonly styles: readonly CartographyStyle[] }
+  readonly hasFeatureOverrides: boolean
+  readonly groups: Readonly<
+    Record<
+      string,
+      {
+        readonly id: string
+        readonly enabled: boolean
+        readonly styleKey: string
+        readonly override?: CartographyOverride
+      }
+    >
+  >
+  readonly layers: Readonly<
+    Record<
+      string,
+      {
+        readonly enabled: boolean
+        readonly automatic: boolean
+        readonly configured: boolean
+        readonly definition?: VectorStyleDefinition
+      }
+    >
+  >
 }
 
 export interface VectorGroup {
@@ -187,9 +237,10 @@ export interface DatasetVectorStyle {
   readonly dataRevision: string | number
   readonly displayRevision: string | number
   readonly definition: {
-    readonly renderPolicy: {
+    readonly tilePolicy: {
       readonly minZoom: number
-      readonly maxZoom: number
+      readonly nativeMaxZoom: number
+      readonly displayMaxZoom: number
     }
   }
 }
@@ -228,10 +279,6 @@ export interface VersionedVectorGroups {
   readonly etag: string
 }
 
-export interface VectorRenderContextInput extends VectorViewport {
-  readonly enabledGroupIds?: readonly string[]
-  readonly enabledLayerIds?: readonly string[]
-}
 export interface VersionedVectorFeature {
   readonly feature: VectorFeature
   readonly etag: string

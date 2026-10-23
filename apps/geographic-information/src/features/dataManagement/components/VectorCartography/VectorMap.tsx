@@ -13,9 +13,9 @@ import XYZ from 'ol/source/XYZ.js'
 import type {
   VectorFeature,
   VectorGeometry,
-  VectorRenderContext,
+  VectorMapDefinition,
+  VectorCartographyDefinition,
   VectorTileHit,
-  VectorViewport,
 } from '../../types/vector'
 import {
   LOCAL_TILE_URL,
@@ -34,7 +34,10 @@ import 'ol/ol.css'
 import styles from './VectorCartography.module.css'
 
 interface VectorMapProps {
-  readonly context: VectorRenderContext | null
+  readonly context: VectorMapDefinition | null
+  readonly cartography: VectorCartographyDefinition | null
+  readonly hiddenGroups: ReadonlySet<string>
+  readonly retryRevision: number
   readonly selected: VectorFeature | null
   readonly draft: VectorFeature | null
   readonly focusGeometry: unknown
@@ -42,7 +45,6 @@ interface VectorMapProps {
   readonly maxZoom: number
   readonly onSelect: (hit: VectorTileHit | null) => void
   readonly onZoomChange: (zoom: number) => void
-  readonly onViewportChange: (viewport: VectorViewport) => void
   readonly onPendingChange: (delta: number) => void
   readonly onTileError: (cause: unknown) => void
   readonly onGeometryChange: (geometry: VectorGeometry) => void
@@ -75,10 +77,25 @@ export function VectorMap(props: VectorMapProps) {
   const editing = !!draft
   useEffect(() => {
     callbacks.current = props
+  }, [props])
+  useEffect(() => {
+    settings.current = {
+      ...settings.current,
+      cartography: props.cartography,
+      featureOverrides: new Map(),
+    }
+    channels.current.forEach((channel) => channel.refreshCartography())
+  }, [props.cartography])
+  useEffect(() => {
     const selectedKey = selected
       ? featureStyleKey(selected.layerId, selected.id)
       : null
-    settings.current = { definitions: {}, selectedKey }
+    settings.current = {
+      ...settings.current,
+      definitions: {},
+      selectedKey,
+      hiddenGroups: props.hiddenGroups,
+    }
     const overlayRecord = draft ?? selected
     overlaySettings.current = {
       definitions: overlayRecord
@@ -88,7 +105,7 @@ export function VectorMap(props: VectorMapProps) {
     }
     channels.current.forEach((channel) => channel.layer.changed())
     overlayRef.current?.changed()
-  }, [props, selected, draft])
+  }, [selected, draft, props.hiddenGroups])
 
   useEffect(() => {
     if (!target.current) return
@@ -108,6 +125,10 @@ export function VectorMap(props: VectorMapProps) {
       overlayRef.current = null
     }
   }, [])
+
+  useEffect(() => {
+    channels.current.forEach((channel) => channel.retryFailed())
+  }, [props.retryRevision])
 
   // 底图图层：具体瓦片源由下拉选项切换。
   useEffect(() => {

@@ -4,8 +4,9 @@ import { RequestError } from '@ocean-cloud/http'
 import type { HttpResponse } from '@ocean-cloud/http'
 import type {
   VectorStyle,
-  VectorRenderContext,
-  VectorRenderContextInput,
+  VectorMapDefinition,
+  VectorCartographyDefinition,
+  CartographyOverride,
   VersionedVectorFeature,
   VectorFeature,
   VectorStyleSummary,
@@ -253,17 +254,87 @@ export async function matchSavedVectorStyle(
   return result.data
 }
 
-export async function createVectorRenderContext(
+export async function getVectorMapDefinition(
   dataSetId: string,
-  input: VectorRenderContextInput,
   signal?: AbortSignal,
-): Promise<VectorRenderContext> {
-  const result = await httpClient.post<ApiResult<VectorRenderContext>>(
-    datasetVectorPath(dataSetId) + '/render-contexts',
-    input,
+): Promise<VectorMapDefinition> {
+  const result = await httpClient.get<ApiResult<VectorMapDefinition>>(
+    datasetVectorPath(dataSetId) + '/map-definition',
     { signal, silentError: true },
   )
   return result.data
+}
+export async function getVectorCartography(
+  dataSetId: string,
+  signal?: AbortSignal,
+) {
+  const response = await httpClient.getWithResponse<
+    ApiResult<VectorCartographyDefinition>
+  >(datasetVectorPath(dataSetId) + '/cartography', {
+    signal,
+    silentError: true,
+  })
+  return {
+    definition: response.data.data,
+    etag: response.headers.get('etag') ?? '',
+  }
+}
+export async function getFeatureCartography(
+  dataSetId: string,
+  featureIds: readonly string[],
+  signal?: AbortSignal,
+) {
+  const result = await httpClient.post<
+    ApiResult<Record<string, CartographyOverride>>
+  >(
+    datasetVectorPath(dataSetId) + '/feature-cartography/query',
+    { featureIds },
+    { signal, silentError: true },
+  )
+  return result.data
+}
+export async function saveGroupCartography(
+  dataSetId: string,
+  groupId: string,
+  patch: CartographyOverride,
+  etag: string,
+) {
+  await httpClient.put(
+    datasetVectorPath(dataSetId) +
+      '/groups/' +
+      encodeURIComponent(groupId) +
+      '/cartography',
+    patch,
+    { headers: { 'If-Match': etag } },
+  )
+}
+export async function saveFeatureCartography(
+  dataSetId: string,
+  featureId: string,
+  patch: CartographyOverride,
+  etag: string,
+) {
+  await httpClient.put(
+    datasetVectorPath(dataSetId) +
+      '/features/' +
+      encodeURIComponent(featureId) +
+      '/cartography',
+    patch,
+    { headers: { 'If-Match': etag } },
+  )
+}
+export async function deleteFeatureCartography(
+  dataSetId: string,
+  featureId: string,
+  etag: string,
+) {
+  await httpClient.delete(
+    datasetVectorPath(dataSetId) +
+      '/features/' +
+      encodeURIComponent(featureId) +
+      '/cartography',
+    { headers: { 'If-Match': etag } },
+  )
 }
 
 interface TileWaiter {
@@ -277,12 +348,45 @@ interface TileJob {
   readonly load: () => Promise<ArrayBuffer>
   readonly waiters: Set<TileWaiter>
   started: boolean
+  readonly coordinates: readonly [number, number, number]
+  readonly sourceKey: string
+  priority: number
 }
 // OpenLayers 控制的是渲染任务；在HTTP入口单独限制整页的真实在途请求。
-const TILE_HTTP_CONCURRENCY = 2
+const TILE_HTTP_CONCURRENCY = 4
 const tileJobs = new Map<string, TileJob>()
 const tileQueue: TileJob[] = []
 let activeTileRequests = 0
+const tileViews = new Map<string, readonly [number, number, number]>()
+const sourceKey = (context: VectorMapDefinition) =>
+  context.dataSetId + '/' + context.tileVersion
+function requestPriority(
+  coordinates: readonly [number, number, number],
+  view?: readonly [number, number, number],
+) {
+  return view
+    ? Math.abs(coordinates[0] - view[0]) * 1000000 +
+        Math.abs(coordinates[1] - view[1]) +
+        Math.abs(coordinates[2] - view[2])
+    : 0
+}
+export function prioritizeVectorTileRequests(
+  context: VectorMapDefinition,
+  z: number,
+  x: number,
+  y: number,
+) {
+  const key = sourceKey(context),
+    view = [z, x, y] as const
+  if (tileViews.size >= 32 && !tileViews.has(key))
+    tileViews.delete(tileViews.keys().next().value!)
+  tileViews.set(key, view)
+  tileQueue.forEach((job) => {
+    if (job.sourceKey === key)
+      job.priority = requestPriority(job.coordinates, view)
+  })
+  tileQueue.sort((a, b) => a.priority - b.priority)
+}
 
 function pumpTileRequests() {
   while (activeTileRequests < TILE_HTTP_CONCURRENCY && tileQueue.length) {
@@ -308,7 +412,7 @@ function pumpTileRequests() {
   }
 }
 export function getVectorTile(
-  context: VectorRenderContext,
+  context: VectorMapDefinition,
   z: number,
   x: number,
   y: number,
@@ -317,18 +421,23 @@ export function getVectorTile(
   const canceled = () => new RequestError('瓦片请求已取消', 'canceled')
   if (signal?.aborted) return Promise.reject(canceled())
   const key =
-    context.dataSetId + '/' + context.contextId + '/' + z + '/' + x + '/' + y
+    context.dataSetId + '/' + context.tileVersion + '/' + z + '/' + x + '/' + y
   let job = tileJobs.get(key)
   if (!job) {
     job = {
       key,
       started: false,
+      coordinates: [z, x, y],
+      sourceKey: sourceKey(context),
+      priority: requestPriority([z, x, y], tileViews.get(sourceKey(context))),
       waiters: new Set(),
       // 已发出的请求等待真实响应后才释放并发槽。中止XHR并不会停止同步JDBC查询。
       load: () =>
         httpClient.get<ArrayBuffer>(
           datasetVectorPath(context.dataSetId) +
             '/tiles/' +
+            context.tileVersion +
+            '/' +
             z +
             '/' +
             x +
@@ -336,7 +445,6 @@ export function getVectorTile(
             y +
             '.mvt',
           {
-            params: { contextId: context.contextId },
             responseType: 'arraybuffer',
             silentError: true,
             retry: false,
@@ -346,6 +454,7 @@ export function getVectorTile(
     }
     tileJobs.set(key, job)
     tileQueue.push(job)
+    tileQueue.sort((a, b) => a.priority - b.priority)
   }
   const current = job
   return new Promise((resolve, reject) => {
