@@ -16,20 +16,19 @@ export function useVectorTiles(
   const [loading, setLoading] = useState(false)
   const [revision, setRevision] = useState(0)
   const viewportKey = JSON.stringify(viewport)
-  const layerKey = [...enabledLayerIds].sort().join(',')
+  const layerKey = JSON.stringify([...enabledLayerIds].sort())
 
   useEffect(() => {
-    if (!viewport) {
-      setContext(null)
-      return
-    }
+    const currentViewport = JSON.parse(viewportKey) as VectorViewport | null
+    if (!currentViewport) return
+    const currentLayerIds = JSON.parse(layerKey) as string[]
     const controller = new AbortController()
     const timer = window.setTimeout(() => {
       setLoading(true)
       setTileError(null)
       void createVectorRenderContext(
         dataSetId,
-        { ...viewport, enabledLayerIds },
+        { ...currentViewport, enabledLayerIds: currentLayerIds },
         controller.signal,
       )
         .then((value) => {
@@ -78,7 +77,7 @@ export function useVectorTiles(
     )
   }
   return {
-    context,
+    context: viewport === null ? null : context,
     loading,
     pending,
     tileError,

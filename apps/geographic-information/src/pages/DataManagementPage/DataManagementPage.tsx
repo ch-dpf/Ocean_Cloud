@@ -531,6 +531,15 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
     }
   }
 
+  /** 框选结果批量处理：按勾选文件直接发起处理任务 */
+  async function handleBatchProcess(input: ManagedSubmitInput) {
+    try {
+      await createManagedProcessingTask(input)
+    } catch {
+      // 失败提示由 RequestErrorNotice 统一展示
+    }
+  }
+
   /** 删除数据集：成功后统一刷新各列表；若正选中该数据集则回到「全部数据」 */
   async function confirmDeleteDataset() {
     if (deletingDataset === null) return
@@ -891,6 +900,8 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
                 onReset={handleFileReset}
                 onRetryMetadata={handleRetryMetadata}
                 retryingMetadataId={retryingMetadataId}
+                onBatchProcess={handleBatchProcess}
+                dataSetId={selectedDataset.dataSetId}
                 actions={[
                   {
                     label: '处理',
