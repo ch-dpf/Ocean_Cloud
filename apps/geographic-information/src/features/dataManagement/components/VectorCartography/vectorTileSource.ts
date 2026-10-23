@@ -1,7 +1,6 @@
 import type { FeatureLike } from 'ol/Feature.js'
 import { RequestError } from '@ocean-cloud/http'
 import View from 'ol/View.js'
-import GeoJSON from 'ol/format/GeoJSON.js'
 import { createXYZ } from 'ol/tilegrid.js'
 import { fromLonLat, transformExtent } from 'ol/proj.js'
 import VectorLayer from 'ol/layer/Vector.js'
@@ -12,7 +11,7 @@ import OlMap from 'ol/Map.js'
 import TileState from 'ol/TileState.js'
 import type Tile from 'ol/VectorTile.js'
 import type { Extent } from 'ol/extent.js'
-import { intersects, extend, buffer } from 'ol/extent.js'
+import { intersects, extend } from 'ol/extent.js'
 import MVT from 'ol/format/MVT.js'
 import VectorTileLayer from 'ol/layer/VectorTile.js'
 import type RenderFeature from 'ol/render/Feature.js'
@@ -37,32 +36,13 @@ export interface VectorTileChannel {
 }
 /** 每个上下文独立 source；请求走统一 HTTP；离开视窗及卸载取消订阅，由调度器管理实际在途请求。 */
 export function createVectorTileChannel(
-  map: OlMap,
   context: VectorRenderContext,
   settings: { current: VectorRenderSettings },
   onPending: (delta: number) => void,
   onError: (cause: unknown) => void,
-  extentGeometry: unknown,
 ): VectorTileChannel {
-  const format = new MVT()
+  const format = new MVT({ layers: ['features'] })
   const grid = createXYZ({ tileSize: 256, maxZoom: context.maxZoom })
-  const geographic = extentGeometry
-    ? (new GeoJSON().readGeometry(extentGeometry)?.getExtent() ?? null)
-    : null
-  const clampLatitude = (latitude: number) =>
-    Math.max(-85.0511287798066, Math.min(85.0511287798066, latitude))
-  const coverage = geographic
-    ? transformExtent(
-        [
-          geographic[0],
-          clampLatitude(geographic[1]),
-          geographic[2],
-          clampLatitude(geographic[3]),
-        ],
-        'EPSG:4326',
-        'EPSG:3857',
-      )
-    : null
   const pending = new Map<
     AbortController,
     { extent: Extent; tile: Tile<RenderFeature> }
@@ -78,16 +58,8 @@ export function createVectorTileChannel(
     wrapX: false,
     transition: 0,
     tileUrlFunction: (coord) => {
-      if (!coord || !coverage) return undefined
-      if (coord[0] <= context.overviewMaxZoom && !context.overviewAvailable)
-        return undefined
-      const extent = buffer(
-        grid.getTileCoordExtent(coord),
-        context.bufferPixels * grid.getResolution(coord[0]),
-      )
-      return intersects(extent, coverage)
-        ? context.contextId + '/' + requestEpoch + '/' + coord.join('/')
-        : undefined
+      if (!coord || coord[0] > context.maxZoom) return undefined
+      return context.contextId + '/' + requestEpoch + '/' + coord.join('/')
     },
     tileLoadFunction: (baseTile) => {
       const tile = baseTile as Tile<RenderFeature>
@@ -130,13 +102,12 @@ export function createVectorTileChannel(
   })
   const layer = new VectorTileLayer({
     source,
-    renderMode: 'hybrid',
-    renderBuffer: context.bufferPixels,
-    style: createVectorTileStyleFunction(
-      map.getView(),
-      settings,
-      context.layerId,
-    ),
+    // vector 模式在同一画布中绘制相邻瓦片，避免 hybrid 离屏栅格化放大
+    // 面/线裁剪边界的抗锯齿，形成可见的瓦片接缝。
+    renderMode: 'vector',
+    renderBuffer: 64,
+    declutter: true,
+    style: createVectorTileStyleFunction(settings),
   })
   layer.set('__vectorContext', context)
   const abort = (controller: AbortController, tile: Tile<RenderFeature>) => {
@@ -198,6 +169,12 @@ interface MapCallbacks {
   readonly draft: VectorFeature | null
   readonly onSelect: (hit: VectorTileHit | null) => void
   readonly onZoomChange: (zoom: number) => void
+  readonly onViewportChange: (viewport: {
+    readonly bbox: readonly [number, number, number, number]
+    readonly displayZoom: number
+    readonly widthPixels: number
+    readonly heightPixels: number
+  }) => void
 }
 export function createVectorMapSession(
   target: HTMLDivElement,
@@ -264,10 +241,30 @@ export function createVectorMapSession(
       hits.sort((a, b) => b.priority - a.priority)[0]?.hit ?? null,
     )
   })
-  map.on('moveend', () => {
+  const reportViewport = () => {
+    const size = map.getSize()
+    if (!size || size[0] < 1 || size[1] < 1) return
     const extent = view.calculateExtent(map.getSize())
     channels.current.forEach((channel) => channel.cancelOutside(extent))
+    const bbox = transformExtent(extent, 'EPSG:3857', 'EPSG:4326')
+    callbacks.current.onViewportChange({
+      bbox: [
+        bbox[0],
+        Math.max(-85.05112878, bbox[1]),
+        bbox[2],
+        Math.min(85.05112878, bbox[3]),
+      ],
+      displayZoom: view.getZoom() ?? 0,
+      widthPixels: Math.round(size[0]),
+      heightPixels: Math.round(size[1]),
+    })
+  }
+  map.on('moveend', reportViewport)
+  const resizeObserver = new ResizeObserver(() => {
+    map.updateSize()
+    reportViewport()
   })
+  resizeObserver.observe(target)
   const changedZoom = () => {
     const value = view.getZoom() ?? 0
     updateZoom(value)
@@ -275,11 +272,14 @@ export function createVectorMapSession(
   }
   view.on('change:resolution', changedZoom)
   changedZoom()
+  reportViewport()
   return {
     map,
     overlay,
     dispose: () => {
       view.un('change:resolution', changedZoom)
+      map.un('moveend', reportViewport)
+      resizeObserver.disconnect()
       map.setTarget(undefined)
       map.dispose()
     },

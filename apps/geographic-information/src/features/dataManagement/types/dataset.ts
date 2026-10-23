@@ -54,12 +54,23 @@ export interface GeoDataset {
   readonly fileCount: number
   readonly createTime: string
   readonly updateTime: string
+  /** 矢量数据集详情返回的默认样式快照摘要；列表和创建响应可能不返回。 */
+  readonly vectorStyle?: DatasetVectorStyleSummary | null
   /** 数据集内文件总大小（字节，字符串）；仅在分页接口返回 */
   readonly totalSizeBytes?: string
   /** 文件统计；仅在分页接口返回 */
   readonly fileSummary?: DatasetFileSummary | null
   /** 各文件中心点；分页接口直接返回，卡片地图用它直接画点 */
   readonly filePoints?: readonly DatasetFilePoint[] | null
+}
+
+export interface DatasetVectorStyleSummary {
+  readonly snapshotId: string
+  readonly templateId: string
+  readonly templateVersion: string | number
+  readonly styleVersion: string | number
+  readonly dataRevision: string | number
+  readonly displayRevision: string | number
 }
 
 /** 新增数据集的提交内容，记录 id 由后端生成 */

@@ -15,13 +15,9 @@ import type {
   VectorGeometryType,
   VectorRuleMatch,
   VectorStyleDefinition,
+  VectorSymbol,
 } from '../../types/vector'
-import {
-  featureStyleKey,
-  matchVectorStyle,
-  matchVectorRule,
-  withAlpha,
-} from './vectorStyle'
+import { featureStyleKey, matchVectorStyle, withAlpha } from './vectorStyle'
 
 export interface VectorRenderSettings {
   readonly definitions: Readonly<Record<string, VectorStyleDefinition>>
@@ -54,7 +50,7 @@ function symbolStyle(
           : 0,
   })
   if (match.geometryType === 'POINT') {
-    const color = symbol.color!
+    const color = symbol.color ?? '#3388ff'
     style.setImage(
       new CircleStyle({
         declutterMode: 'none',
@@ -69,20 +65,23 @@ function symbolStyle(
   } else if (match.geometryType === 'LINE') {
     style.setStroke(
       new Stroke({
-        color: withAlpha(symbol.color!, symbol.opacity ?? 1),
+        color: withAlpha(symbol.color ?? '#3388ff', symbol.opacity ?? 1),
         width: (symbol.width ?? 2) + extra,
       }),
     )
   } else {
     style.setFill(
       new Fill({
-        color: withAlpha(symbol.fillColor!, symbol.fillOpacity ?? 0.25),
+        color: withAlpha(
+          symbol.fillColor ?? '#3388ff',
+          symbol.fillOpacity ?? 0.25,
+        ),
       }),
     )
     style.setStroke(
       new Stroke({
         color: withAlpha(
-          symbol.strokeColor ?? symbol.fillColor!,
+          symbol.strokeColor ?? symbol.fillColor ?? '#3388ff',
           symbol.strokeOpacity ?? 1,
         ),
         width: (symbol.strokeWidth ?? 1) + extra,
@@ -145,79 +144,53 @@ export function createVectorStyleFunction(
   }
 }
 
-const tileProperties = new WeakMap<object, Record<string, unknown>>()
-function projectedProperties(feature: FeatureLike): Record<string, unknown> {
-  let properties = tileProperties.get(feature)
-  if (!properties) {
-    properties = JSON.parse(
-      String(feature.get('_vector_properties') ?? '{}'),
-    ) as Record<string, unknown>
-    tileProperties.set(feature, properties)
-  }
-  return properties
-}
-
-/** RenderFeature 直接制图，原始属性类型及集合路径由 MVT 元数据保留。 */
-export function createVectorTileStyleFunction(
-  view: View,
-  settings: { current: VectorRenderSettings },
-  layerId: string,
-): StyleFunction {
-  const cache = new WeakMap<
-    object,
-    { definition: VectorStyleDefinition; symbols: Map<string, Style> }
-  >()
-  return (feature, resolution) => {
-    const definition = settings.current.definitions[layerId]
-    if (!definition) return undefined
+/** MVT 已完成规则匹配与密度控制，客户端只消费服务端下发的符号。 */
+export function createVectorTileStyleFunction(settings: {
+  current: VectorRenderSettings
+}): StyleFunction {
+  const cache = new WeakMap<object, { key: string; style: Style }>()
+  return (feature) => {
+    const layerId = String(feature.get('_vector_layer_id') ?? '')
     const featureId = feature.get('_vector_feature_id') as string | undefined
     if (
       featureId &&
       featureStyleKey(layerId, featureId) === settings.current.selectedKey
     )
       return undefined
-    const geometryType = feature.get('_vector_category') as VectorGeometryType
-    const rule = matchVectorRule(
-      definition,
-      geometryType,
-      projectedProperties(feature),
-      view.getZoomForResolution(resolution) ?? 0,
-    )
-    if (!rule || rule.visible === false || !rule.symbol) return undefined
-    let entry = cache.get(feature)
-    if (!entry || entry.definition !== definition) {
-      entry = { definition, symbols: new Map() }
-      cache.set(feature, entry)
+    const rawSymbol = feature.get('_vector_symbol')
+    if (typeof rawSymbol !== 'string' || rawSymbol.length === 0)
+      return undefined
+    let value: VectorSymbol
+    try {
+      value = JSON.parse(rawSymbol) as VectorSymbol
+    } catch {
+      return undefined
     }
-    let symbol = entry.symbols.get(rule.id)
-    if (!symbol) {
-      symbol = symbolStyle(
+    const geometryType = feature.get('_vector_category') as VectorGeometryType
+    const label = String(feature.get('_vector_label') ?? '')
+    const order = Number(feature.get('_vector_render_order') ?? 0)
+    const key = rawSymbol + ':' + geometryType + ':' + label + ':' + order
+    let entry = cache.get(feature)
+    if (!entry || entry.key !== key) {
+      const style = symbolStyle(
         {
           geometryPath: '',
           geometryType,
-          ruleId: rule.id,
+          ruleId: String(feature.get('_vector_rule_id') ?? ''),
           visible: true,
-          symbol: rule.symbol,
+          symbol: value,
         },
         undefined,
         false,
       )
-      if (feature.get('_vector_kind') === 'cluster') {
-        const count = String(feature.get('_vector_count'))
-        symbol.setImage(
-          new CircleStyle({
-            declutterMode: 'none',
-            radius: Math.min(24, 12 + Math.log10(Number(count)) * 3),
-            fill: new Fill({
-              color: withAlpha(
-                rule.symbol.color ?? '#3388ff',
-                rule.symbol.opacity ?? 1,
-              ),
-            }),
-            stroke: new Stroke({ color: '#ffffff', width: 2 }),
-          }),
-        )
-        symbol.setText(
+      style.setZIndex(order)
+      if (value.dashArray && geometryType === 'LINE')
+        style.getStroke()?.setLineDash([...value.dashArray])
+      const clusterId = feature.get('_vector_cluster_id')
+      if (clusterId != null) {
+        const count = String(feature.get('_vector_feature_count') ?? '')
+        // 聚合点同样使用后端 _vector_symbol；前端只补充数量文本，不另造放大圆点。
+        style.setText(
           new Text({
             declutterMode: 'none',
             text: count,
@@ -226,10 +199,21 @@ export function createVectorTileStyleFunction(
             font: 'bold 12px sans-serif',
           }),
         )
+      } else if (label) {
+        style.setText(
+          new Text({
+            text: label,
+            font: '11px sans-serif',
+            fill: new Fill({ color: '#202124' }),
+            stroke: new Stroke({ color: '#ffffff', width: 3 }),
+            overflow: false,
+          }),
+        )
       }
-      entry.symbols.set(rule.id, symbol)
+      entry = { key, style }
+      cache.set(feature, entry)
     }
-    return symbol
+    return entry.style
   }
 }
 
@@ -238,28 +222,17 @@ export function readVectorTileHit(
   context: VectorRenderContext,
   coordinate: readonly number[],
 ): VectorTileHit | null {
-  if (feature.get('_vector_kind') === 'aggregate')
-    return {
-      kind: 'aggregate',
-      layerId: context.layerId,
-      contextId: context.contextId,
-      clusterId: String(feature.get('_vector_representation_id')),
-      pointCount: '0',
-      featureCount: String(feature.get('_vector_feature_count')),
-      coordinate: [coordinate[0], coordinate[1]],
-    }
-  if (feature.get('_vector_kind') === 'cluster')
+  const clusterId = feature.get('_vector_cluster_id')
+  if (clusterId != null)
     return {
       kind: 'cluster',
-      layerId: context.layerId,
+      dataSetId: context.dataSetId,
       contextId: context.contextId,
-      clusterId: String(feature.get('_vector_cluster_id')),
-      pointCount: String(feature.get('_vector_count')),
+      clusterId: String(clusterId),
       featureCount: String(feature.get('_vector_feature_count')),
       coordinate: [coordinate[0], coordinate[1]],
     }
   const featureId = feature.get('_vector_feature_id') as string | undefined
-  return featureId
-    ? { kind: 'feature', layerId: context.layerId, featureId }
-    : null
+  const layerId = feature.get('_vector_layer_id') as string | undefined
+  return featureId && layerId ? { kind: 'feature', layerId, featureId } : null
 }

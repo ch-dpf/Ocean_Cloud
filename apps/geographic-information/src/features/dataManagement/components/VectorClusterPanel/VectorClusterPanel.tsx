@@ -52,8 +52,7 @@ export function VectorClusterPanel({
     <Drawer open title="聚合成员" width={420} mask={false} onClose={onClose}>
       <Space direction="vertical" style={{ width: '100%' }} size="middle">
         <Typography.Text>
-          {hit.kind === 'aggregate' ? '概化对象' : hit.pointCount + ' 个点位'}
-          ，来自 {hit.featureCount} 个原始要素
+          当前显示对象代表 {hit.featureCount} 个要素
         </Typography.Text>
         <Button onClick={onZoom}>放大查看聚合区域</Button>
         {error && (
@@ -72,7 +71,7 @@ export function VectorClusterPanel({
           <div key={member.featureId}>
             <Button
               block
-              onClick={() => onSelect(hit.layerId, member.featureId)}
+              onClick={() => onSelect(member.layerId, member.featureId)}
               aria-label={'查看原始要素 ' + member.featureId}
             >
               查看要素 {member.featureId}

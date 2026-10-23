@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { RequestError } from '@ocean-cloud/http'
 import {
   deleteVectorStyle,
-  getDefaultVectorStyle,
   getVectorStyle,
   getVectorStyles,
   matchSavedVectorStyle,
@@ -111,13 +110,20 @@ export function useVectorStyleEditor(layerId: string, onPersist: () => void) {
     void Promise.resolve().then(() => {
       if (!active) return
       return run(async (signal) => {
-        const [list, value] = await Promise.all([
-          getVectorStyles(layerId, signal),
-          getDefaultVectorStyle(layerId, signal),
-        ])
+        const list = await getVectorStyles(layerId, signal)
         if (signal.aborted) return
         setSummaries(list)
-        install(value)
+        const initial = list.find((item) => item.isDefault) ?? list[0]
+        if (initial)
+          install(await getVectorStyle(layerId, initial.styleId, signal))
+        else {
+          const next = drafts(newStyleDefinition())
+          setExisting(null)
+          setName('')
+          setRules(next)
+          setBaseline('')
+          setReady(true)
+        }
       })
     })
     return () => {
@@ -143,15 +149,13 @@ export function useVectorStyleEditor(layerId: string, onPersist: () => void) {
     })
   const reload = () =>
     run(async (signal) => {
-      const [list, value] = await Promise.all([
-        getVectorStyles(layerId, signal),
-        existing
-          ? getVectorStyle(layerId, existing.style.styleId, signal)
-          : getDefaultVectorStyle(layerId, signal),
-      ])
+      const list = await getVectorStyles(layerId, signal)
+      const target = existing
+        ? existing.style.styleId
+        : (list.find((item) => item.isDefault)?.styleId ?? list[0]?.styleId)
       if (signal.aborted) return
       setSummaries(list)
-      install(value)
+      if (target) install(await getVectorStyle(layerId, target, signal))
       persistRef.current()
     })
   const createDraft = (copy: boolean) => {
@@ -200,13 +204,12 @@ export function useVectorStyleEditor(layerId: string, onPersist: () => void) {
       await deleteVectorStyle(layerId, existing, signal)
       if (signal.aborted) return
       persistRef.current()
-      const [list, value] = await Promise.all([
-        getVectorStyles(layerId, signal),
-        getDefaultVectorStyle(layerId, signal),
-      ])
+      const list = await getVectorStyles(layerId, signal)
       if (signal.aborted) return
       setSummaries(list)
-      install(value)
+      const target = list.find((item) => item.isDefault) ?? list[0]
+      if (target) install(await getVectorStyle(layerId, target.styleId, signal))
+      else createDraft(false)
       setNotice('样式方案已删除')
     })
   const verify = (featureId: string, zoom: number) =>

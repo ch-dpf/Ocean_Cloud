@@ -450,6 +450,7 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
   async function handleImport(input: {
     readonly dataSetId: string
     readonly files: readonly File[]
+    readonly vectorPlacement: 'AUTO' | 'UNKNOWN'
   }) {
     setIsImportOpen(false)
     let taskId: string | null = null
@@ -457,6 +458,7 @@ export function DataManagementPage({ activePath }: DataManagementPageProps) {
       await uploadGisFiles({
         dataSetId: input.dataSetId,
         files: input.files,
+        vectorPlacement: input.vectorPlacement,
         onTaskCreated(createdTaskId) {
           taskId = createdTaskId
           addPendingTask(createdTaskId, input.files.length)

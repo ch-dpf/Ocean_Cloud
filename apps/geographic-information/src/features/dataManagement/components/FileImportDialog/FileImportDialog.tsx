@@ -35,6 +35,7 @@ interface FileImportDialogProps {
   readonly onSubmit: (input: {
     readonly dataSetId: string
     readonly files: readonly File[]
+    readonly vectorPlacement: 'AUTO' | 'UNKNOWN'
   }) => void
   /** 筛选框初始关键字：全部数据为空、分类为分类名、数据集为数据集名 */
   readonly initialKeyword: string
@@ -65,6 +66,9 @@ export function FileImportDialog({
   const [keyword, setKeyword] = useState(initialKeyword)
   const [selected, setSelected] = useState(initialDataset)
   const [files, setFiles] = useState<readonly File[]>([])
+  const [vectorPlacement, setVectorPlacement] = useState<'AUTO' | 'UNKNOWN'>(
+    'AUTO',
+  )
   const [validationError, setValidationError] = useState<string | null>(null)
   const { datasets, hasMore, loadMore } = useDatasetOptions(
     allDatasets,
@@ -130,8 +134,12 @@ export function FileImportDialog({
       return
     }
     setValidationError(null)
-    onSubmit({ dataSetId: selected.id, files })
+    onSubmit({ dataSetId: selected.id, files, vectorPlacement })
   }
+
+  const selectedDataset = allDatasets.find(
+    (dataset) => dataset.id === selected?.id,
+  )
 
   return (
     <AppDialog title="导入GIS数据" onClose={onClose} className={styles.dialog}>
@@ -198,6 +206,31 @@ export function FileImportDialog({
             )}
           </ul>
         </div>
+
+        {Number(selectedDataset?.categoryId) === 2 && (
+          <div className={styles.field}>
+            <label
+              className={styles.label}
+              htmlFor={`${datasetInputId}-placement`}
+            >
+              矢量归组方式
+            </label>
+            <select
+              id={`${datasetInputId}-placement`}
+              className={styles.input}
+              value={vectorPlacement}
+              onChange={(event) =>
+                setVectorPlacement(event.target.value as 'AUTO' | 'UNKNOWN')
+              }
+            >
+              <option value="AUTO">自动识别业务分类</option>
+              <option value="UNKNOWN">强制归入未知分类</option>
+            </select>
+            <p className={styles.hint}>
+              自动识别按要素几何和属性分类；强制未知适合不希望套用当前规则的来源。
+            </p>
+          </div>
+        )}
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor={fileInputId}>

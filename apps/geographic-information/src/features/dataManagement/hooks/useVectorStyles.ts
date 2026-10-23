@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import { getDefaultVectorStyle } from '../services/vectorService'
-import type { VectorLayer, VectorStyle } from '../types/vector'
-import { validateStyleDefinition } from '../components/VectorCartography/vectorStyleValidation'
+import { getEffectiveVectorStyle } from '../services/vectorService'
+import type { EffectiveVectorStyle, VectorLayer } from '../types/vector'
 
-/** 每个数据图层独立加载默认方案；失败时明确提示，不用本地颜色掩盖错误。 */
+/** 有效样式仅供配置面板展示；地图显示由数据集上下文和 MVT 中的符号驱动。 */
 export function useVectorStyles(layers: readonly VectorLayer[]) {
   const [defaults, setDefaults] = useState<
-    Readonly<Record<string, VectorStyle>>
+    Readonly<Record<string, EffectiveVectorStyle>>
   >({})
   const [errors, setErrors] = useState<readonly string[]>([])
   const [loading, setLoading] = useState(false)
@@ -25,24 +24,14 @@ export function useVectorStyles(layers: readonly VectorLayer[]) {
       setErrors([])
       setLoading(true)
       const results = await Promise.allSettled(
-        ids.map((id) => getDefaultVectorStyle(id, controller.signal)),
+        ids.map((id) => getEffectiveVectorStyle(id, controller.signal)),
       )
       if (controller.signal.aborted) return
-      const next: Record<string, VectorStyle> = {}
+      const next: Record<string, EffectiveVectorStyle> = {}
       const failures: string[] = []
       results.forEach((result, index) => {
         if (result.status === 'fulfilled') {
-          try {
-            validateStyleDefinition(result.value.style.definition)
-            next[ids[index]] = result.value.style
-          } catch (error) {
-            failures.push(
-              '图层 ' +
-                ids[index] +
-                '：' +
-                (error instanceof Error ? error.message : '样式定义无效'),
-            )
-          }
+          next[ids[index]] = result.value
         } else
           failures.push(
             '图层 ' +

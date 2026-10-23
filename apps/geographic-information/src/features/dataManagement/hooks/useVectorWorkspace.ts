@@ -7,6 +7,9 @@ import {
   updateVectorFeature,
   deleteVectorFeature,
   deleteVectorLayer,
+  getVectorGroups,
+  getDatasetVectorStyle,
+  updateVectorGroupVisibility,
 } from '../services/vectorService'
 import type {
   VectorFeature,
@@ -15,6 +18,8 @@ import type {
   VectorTileHit,
   VectorClusterHit,
   VectorGeometry,
+  VectorGroup,
+  DatasetVectorStyle,
 } from '../types/vector'
 
 import { parseLayerGeometryKinds } from '../components/VectorCartography/geometryTypes'
@@ -22,6 +27,8 @@ import { parseLayerGeometryKinds } from '../components/VectorCartography/geometr
 function errorText(cause: unknown): string {
   if (cause instanceof RequestError && cause.status === 412)
     return '要素已被其他人修改，草稿已保留，请重新加载后编辑。'
+  if (cause instanceof RequestError && cause.status === 409)
+    return '数据集显示配置已变化或尚未初始化，请刷新后重试。'
   return cause instanceof Error ? cause.message : '请求失败，请稍后重试'
 }
 async function loadAllLayers(
@@ -40,6 +47,11 @@ async function loadAllLayers(
 /** 图层目录与原始要素编辑；地图展示交给独立瓦片通道。 */
 export function useVectorWorkspace(dataSetId: string) {
   const [layers, setLayers] = useState<readonly VectorLayer[]>([])
+  const [groups, setGroups] = useState<readonly VectorGroup[]>([])
+  const [groupsEtag, setGroupsEtag] = useState<string | null>(null)
+  const [datasetStyle, setDatasetStyle] = useState<DatasetVectorStyle | null>(
+    null,
+  )
   const [visibleIds, setVisibleIds] = useState<readonly string[]>([])
   const [activeLayerId, setActiveLayerId] = useState<string | null>(null)
   const [loadingLayers, setLoadingLayers] = useState(false)
@@ -58,18 +70,34 @@ export function useVectorWorkspace(dataSetId: string) {
     void (async () => {
       setLoadingLayers(true)
       try {
-        const records = await loadAllLayers(dataSetId, controller.signal)
+        const [records, groupResult, styleResult] = await Promise.all([
+          loadAllLayers(dataSetId, controller.signal),
+          getVectorGroups(dataSetId, controller.signal),
+          getDatasetVectorStyle(dataSetId, controller.signal),
+        ])
         if (controller.signal.aborted) return
         setLayers(records)
+        setGroups(groupResult.groups)
+        setGroupsEtag(groupResult.etag)
+        setDatasetStyle(styleResult)
         setVisibleIds((previous) => {
           const valid = previous.filter((id) =>
             records.some(
-              (item) => item.layerId === id && item.status === 'READY',
+              (item) =>
+                item.layerId === id &&
+                item.status === 'READY' &&
+                item.enabled &&
+                item.styleMode !== 'UNCONFIGURED',
             ),
           )
           return previous.length === 0
             ? records
-                .filter((item) => item.status === 'READY')
+                .filter(
+                  (item) =>
+                    item.status === 'READY' &&
+                    item.enabled &&
+                    item.styleMode !== 'UNCONFIGURED',
+                )
                 .map((item) => item.layerId)
             : valid
         })
@@ -115,7 +143,7 @@ export function useVectorWorkspace(dataSetId: string) {
   /** 删除图层：先取最新版本号再删，成功后立即清掉该图层的选择与草稿。 */
   const removeLayer = useCallback(async (layerId: string) => {
     const latest = await getVectorLayer(layerId)
-    await deleteVectorLayer(latest.layerId, latest.dataVersion)
+    await deleteVectorLayer(latest.layer.layerId, latest.etag)
     setLayers((previous) => previous.filter((item) => item.layerId !== layerId))
     setVisibleIds((previous) => previous.filter((id) => id !== layerId))
     setActiveLayerId((previous) => (previous === layerId ? null : previous))
@@ -123,10 +151,28 @@ export function useVectorWorkspace(dataSetId: string) {
       previous?.feature.layerId === layerId ? null : previous,
     )
     setDraft((previous) => (previous?.layerId === layerId ? null : previous))
-    setCluster((previous) => (previous?.layerId === layerId ? null : previous))
+    setCluster(null)
     setLayerRevision((value) => value + 1)
     setError(null)
   }, [])
+
+  const setGroupVisibility = useCallback(
+    async (groupId: string, enabled: boolean) => {
+      if (!groupsEtag) return
+      try {
+        await updateVectorGroupVisibility(
+          dataSetId,
+          groupId,
+          enabled,
+          groupsEtag,
+        )
+        setLayerRevision((value) => value + 1)
+      } catch (cause) {
+        setError(errorText(cause))
+      }
+    },
+    [dataSetId, groupsEtag],
+  )
 
   const selectFeature = useCallback(
     async (layerId: string, featureId: string) => {
@@ -198,14 +244,6 @@ export function useVectorWorkspace(dataSetId: string) {
       if (!controller.signal.aborted) setSavingFeature(false)
     }
   }
-  const visibleLayers = useMemo(
-    () =>
-      layers.filter(
-        (layer) =>
-          layer.status === 'READY' && visibleIds.includes(layer.layerId),
-      ),
-    [layers, visibleIds],
-  )
   const layerKinds = useMemo(
     () =>
       Object.fromEntries(
@@ -247,9 +285,11 @@ export function useVectorWorkspace(dataSetId: string) {
     selectClusterMember,
     zoomCluster,
     changeGeometry,
-    visibleLayers,
     layerKinds,
     layers,
+    groups,
+    datasetStyle,
+    setGroupVisibility,
     visibleIds,
     activeLayerId,
     setActiveLayerId,

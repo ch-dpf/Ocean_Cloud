@@ -1,45 +1,31 @@
-import { useMemo, useState } from 'react'
-import { Alert, Button, Spin, Switch } from 'antd'
+import { useState } from 'react'
+import { Alert, Button, Spin } from 'antd'
 import { ConfirmDialog } from '@ocean-cloud/ui'
 import { useVectorWorkspace } from '../../hooks/useVectorWorkspace'
-import { useVectorStyles } from '../../hooks/useVectorStyles'
 import { useVectorTiles } from '../../hooks/useVectorTiles'
-import type { VectorLayer, VectorStyleDefinition } from '../../types/vector'
+import type { VectorLayer, VectorViewport } from '../../types/vector'
 import { VectorFeaturePanel } from './VectorFeaturePanel'
 import { VectorLayerList } from './VectorLayerList'
 import { VectorMap } from './VectorMap'
-import { VectorGeneralizationPanel } from '../VectorGeneralizationPanel/VectorGeneralizationPanel'
-import { VectorStylePanel } from '../VectorStylePanel/VectorStylePanel'
+import { VectorPresentationPanel } from '../VectorPresentationPanel/VectorPresentationPanel'
 import { VectorFeatureEditor } from '../VectorFeatureEditor/VectorFeatureEditor'
 import { VectorClusterPanel } from '../VectorClusterPanel/VectorClusterPanel'
-import { matchVectorStyle } from './vectorStyle'
 import styles from './VectorCartography.module.css'
 
 export function VectorCartography(props: { readonly dataSetId: string }) {
   const { dataSetId } = props
   const workspace = useVectorWorkspace(dataSetId)
-  const styleState = useVectorStyles(workspace.layers)
   const [zoom, setZoom] = useState(4)
+  const [viewport, setViewport] = useState<VectorViewport | null>(null)
   const [editingLayer, setEditingLayer] = useState<VectorLayer | null>(null)
-  const [preview, setPreview] = useState<VectorStyleDefinition | null>(null)
   const [deletingLayer, setDeletingLayer] = useState<VectorLayer | null>(null)
   const { draft, cluster, zoomTarget } = workspace
   const selected = workspace.selected?.feature ?? null
-  const definitions = useMemo(() => {
-    const result = Object.fromEntries(
-      Object.keys(styleState.defaults).map((id) => [
-        id,
-        styleState.defaults[id].definition,
-      ]),
-    )
-    if (editingLayer && preview) result[editingLayer.layerId] = preview
-    return result
-  }, [styleState.defaults, editingLayer, preview])
   const tiles = useVectorTiles(
-    workspace.visibleLayers,
-    definitions,
+    dataSetId,
+    viewport,
+    workspace.visibleIds,
     workspace.refreshLayers,
-    zoom,
   )
   const activeLayer = workspace.layers.find(
     (layer) => layer.layerId === workspace.activeLayerId,
@@ -47,28 +33,18 @@ export function VectorCartography(props: { readonly dataSetId: string }) {
   const selectedLayer = workspace.layers.find(
     (layer) => layer.layerId === selected?.layerId,
   )
-  const matches =
-    selected && definitions[selected.layerId]
-      ? matchVectorStyle(definitions[selected.layerId], selected, zoom)
-      : []
   const refresh = () => {
     workspace.refreshLayers()
     tiles.refresh()
     tiles.clearError()
     workspace.setCluster(null)
   }
-  const errors = [
-    workspace.error,
-    tiles.tileError,
-    ...tiles.errors,
-    ...styleState.errors,
-  ].filter(Boolean)
+  const errors = [workspace.error, tiles.tileError].filter(Boolean)
   /** 删除图层；要素与样式随图层一并移除，源文件不受影响。 */
   async function handleDeleteLayer(layer: VectorLayer) {
     await workspace.removeLayer(layer.layerId)
     if (editingLayer?.layerId === layer.layerId) {
       setEditingLayer(null)
-      setPreview(null)
     }
   }
   return (
@@ -76,22 +52,27 @@ export function VectorCartography(props: { readonly dataSetId: string }) {
       <aside className={styles.sidebar}>
         <VectorLayerList
           layers={workspace.layers}
+          groups={workspace.groups}
           visibleIds={workspace.visibleIds}
           activeLayerId={workspace.activeLayerId}
           loading={workspace.loadingLayers}
           layerKinds={workspace.layerKinds}
           onToggleVisible={workspace.toggleVisible}
+          onToggleGroup={workspace.setGroupVisibility}
           onActivate={workspace.setActiveLayerId}
           onDelete={setDeletingLayer}
           onRefresh={() => {
             refresh()
-            styleState.refresh()
           }}
         />
         <div className={styles.panelTitle}>图层样式</div>
         <p className={styles.hint}>
           {activeLayer
-            ? (styleState.defaults[activeLayer.layerId]?.name ?? '等待加载样式')
+            ? activeLayer.styleMode === 'UNCONFIGURED'
+              ? '尚未配置，当前图层不会显示'
+              : activeLayer.styleMode === 'CUSTOM'
+                ? '自定义样式'
+                : '继承分类默认样式'
             : '请选择图层'}
         </p>
         <Button
@@ -100,14 +81,8 @@ export function VectorCartography(props: { readonly dataSetId: string }) {
             if (activeLayer) setEditingLayer(activeLayer)
           }}
         >
-          管理样式方案
+          配置分类与样式
         </Button>
-        <VectorGeneralizationPanel
-          key={activeLayer?.layerId}
-          layer={activeLayer}
-          disabled={!!draft}
-          onChange={refresh}
-        />
         <div className={styles.sectionTitle}>要素</div>
         {workspace.loadingFeature && <Spin size="small" />}
         {selected ? (
@@ -115,7 +90,7 @@ export function VectorCartography(props: { readonly dataSetId: string }) {
             feature={selected}
             layerName={selectedLayer?.layerName ?? selected.layerId}
             editingStyle={!!editingLayer || !!draft}
-            matches={matches}
+            matches={[]}
             zoom={zoom}
             onEditStyle={() => {
               if (selectedLayer) setEditingLayer(selectedLayer)
@@ -130,31 +105,21 @@ export function VectorCartography(props: { readonly dataSetId: string }) {
       </aside>
       <section className={styles.mapPanel}>
         <div className={styles.toolbar}>
-          <span>显示 {Object.keys(tiles.contexts).length} 个图层</span>
-          <Switch
-            aria-label="点聚合"
-            checked={tiles.aggregatePoints}
-            onChange={(value) => {
-              tiles.setAggregate(value)
-              workspace.setCluster(null)
-              tiles.clearError()
-            }}
-            checkedChildren="点聚合"
-            unCheckedChildren="逐点显示"
-          />
-          {(tiles.pending > 0 || tiles.loading || styleState.loading) && (
-            <Spin size="small" />
+          <span>
+            {tiles.context
+              ? tiles.context.forceAggregation
+                ? `当前视窗已由服务端聚合 · 对象 ${tiles.context.objectCount}/${tiles.context.budget}（可放大或减少图层）`
+                : `视窗对象 ${tiles.context.objectCount}/${tiles.context.budget}`
+              : '等待创建视窗上下文'}
+          </span>
+          {workspace.datasetStyle && (
+            <span>
+              模板 v{workspace.datasetStyle.templateVersion} · 样式 v
+              {workspace.datasetStyle.styleVersion}
+            </span>
           )}
-          {editingLayer && preview && <span>正在预览样式草稿</span>}
+          {(tiles.pending > 0 || tiles.loading) && <Spin size="small" />}
         </div>
-        {tiles.overviewMessages.length > 0 && (
-          <Alert
-            type="info"
-            showIcon
-            message="概览状态"
-            description={tiles.overviewMessages.join('；')}
-          />
-        )}
         {errors.length > 0 && (
           <Alert
             type="error"
@@ -166,7 +131,6 @@ export function VectorCartography(props: { readonly dataSetId: string }) {
                 size="small"
                 onClick={() => {
                   refresh()
-                  if (styleState.errors.length) styleState.refresh()
                 }}
               >
                 重试
@@ -175,32 +139,32 @@ export function VectorCartography(props: { readonly dataSetId: string }) {
           />
         )}
         <VectorMap
-          layers={workspace.visibleLayers}
-          contexts={tiles.contexts}
-          definitions={definitions}
+          context={tiles.context}
           selected={selected}
           draft={draft}
           focusGeometry={activeLayer?.extent ?? null}
           zoomTarget={zoomTarget}
           onSelect={workspace.handleSelect}
           onZoomChange={setZoom}
+          onViewportChange={setViewport}
           onPendingChange={tiles.changePending}
           onTileError={tiles.handleTileError}
           onGeometryChange={workspace.changeGeometry}
         />
       </section>
       {editingLayer && (
-        <VectorStylePanel
+        <VectorPresentationPanel
           key={editingLayer.layerId}
           layer={editingLayer}
-          feature={selected}
-          zoom={zoom}
-          onPreview={setPreview}
-          onPersist={styleState.refresh}
-          onClose={() => {
-            setEditingLayer(null)
-            setPreview(null)
+          groups={workspace.groups}
+          onSaved={(updated) => {
+            workspace.toggleVisible(
+              updated.layerId,
+              updated.enabled && updated.styleMode !== 'UNCONFIGURED',
+            )
+            refresh()
           }}
+          onClose={() => setEditingLayer(null)}
         />
       )}
       {draft && selected && (

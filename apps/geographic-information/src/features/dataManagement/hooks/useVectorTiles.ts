@@ -1,105 +1,65 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { RequestError } from '@ocean-cloud/http'
 import { createVectorRenderContext } from '../services/vectorService'
-import type {
-  VectorLayer,
-  VectorRenderContext,
-  VectorStyleDefinition,
-} from '../types/vector'
-import {
-  vectorRenderBuffer,
-  vectorRenderFields,
-} from '../components/VectorCartography/vectorStyle'
+import type { VectorRenderContext, VectorViewport } from '../types/vector'
 
+/** 整个数据集只维护一个当前视窗上下文；过时请求不会覆盖最新视窗。 */
 export function useVectorTiles(
-  layers: readonly VectorLayer[],
-  definitions: Readonly<Record<string, VectorStyleDefinition>>,
+  dataSetId: string,
+  viewport: VectorViewport | null,
+  enabledLayerIds: readonly string[],
   onDataStale: () => void,
-  zoom: number,
 ) {
-  const [aggregatePoints, setAggregate] = useState(true)
   const [pending, setPending] = useState(0)
   const [tileError, setTileError] = useState<string | null>(null)
-  const [contexts, setContexts] = useState<
-    Readonly<Record<string, VectorRenderContext>>
-  >({})
-  const [errors, setErrors] = useState<readonly string[]>([])
+  const [resolvedContext, setResolvedContext] = useState<{
+    readonly key: string
+    readonly value: VectorRenderContext
+  } | null>(null)
   const [loading, setLoading] = useState(false)
   const [revision, setRevision] = useState(0)
-  const plan = layers
-    .filter((layer) =>
-      definitions[layer.layerId]?.rules.some(
-        (rule) =>
-          rule.visible !== false &&
-          !!rule.symbol &&
-          (rule.minZoom == null || zoom >= rule.minZoom) &&
-          (rule.maxZoom == null || zoom < rule.maxZoom),
-      ),
-    )
-    .map((layer) => ({
-      id: layer.layerId,
-      version: String(layer.dataVersion),
-      fields: vectorRenderFields(definitions[layer.layerId]),
-      buffer: vectorRenderBuffer(definitions[layer.layerId]),
-    }))
-  // 颜色、透明度与层级变化不会重载瓦片；仅字段、缓冲范围、数据版本和聚合方式影响显示数据。
-  const planKey = JSON.stringify([plan, aggregatePoints, revision])
+  const contextKey = viewport
+    ? JSON.stringify([dataSetId, viewport, enabledLayerIds, revision])
+    : null
+  // 视窗、图层或版本变化后立刻停用旧上下文，避免继续显示上一视窗的裁剪/聚合结果。
+  const context =
+    resolvedContext?.key === contextKey ? resolvedContext.value : null
   useEffect(() => {
+    if (!viewport || !contextKey) return
     const controller = new AbortController()
-    const [items, aggregate] = JSON.parse(planKey) as [typeof plan, boolean]
-    void (async () => {
-      await Promise.resolve()
-      if (controller.signal.aborted) return
+    const timer = window.setTimeout(() => {
       setLoading(true)
-      setErrors([])
-      // 轮询构建状态时保留仍有效的图层通道。
-      const results = await Promise.allSettled(
-        items.map((item) =>
-          createVectorRenderContext(
-            item.id,
-            item.fields,
-            aggregate,
-            item.buffer,
-            controller.signal,
-          ),
-        ),
+      setTileError(null)
+      void createVectorRenderContext(
+        dataSetId,
+        { ...viewport, enabledLayerIds },
+        controller.signal,
       )
-      if (controller.signal.aborted) return
-      const next: Record<string, VectorRenderContext> = {},
-        failures: string[] = []
-      results.forEach((result, index) => {
-        if (result.status === 'fulfilled') next[items[index].id] = result.value
-        else
-          failures.push(
-            '图层 ' +
-              items[index].id +
-              '：' +
-              (result.reason instanceof Error
-                ? result.reason.message
-                : '渲染上下文加载失败'),
+        .then((value) => {
+          if (!controller.signal.aborted)
+            setResolvedContext({ key: contextKey, value })
+        })
+        .catch((cause: unknown) => {
+          if (controller.signal.aborted) return
+          setTileError(
+            cause instanceof RequestError && cause.status === 409
+              ? '数据集显示配置已变化或尚未初始化，请刷新后重试。'
+              : cause instanceof Error
+                ? cause.message
+                : '渲染上下文加载失败',
           )
-      })
-      setContexts(next)
-      setErrors(failures)
-      setLoading(false)
-    })()
-    return () => controller.abort()
-  }, [planKey])
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setLoading(false)
+        })
+    }, 180)
+    return () => {
+      window.clearTimeout(timer)
+      controller.abort()
+    }
+  }, [contextKey, dataSetId, viewport, enabledLayerIds])
+
   const refresh = useCallback(() => setRevision((value) => value + 1), [])
-  // 版本变化的一帧中也不继续展示已失效的旧上下文。
-  const currentContexts = useMemo(
-    () =>
-      Object.fromEntries(
-        Object.entries(contexts).filter(([id, context]) =>
-          layers.some(
-            (layer) =>
-              layer.layerId === id &&
-              String(layer.dataVersion) === context.dataVersion,
-          ),
-        ),
-      ),
-    [contexts, layers],
-  )
   const handleTileError = (cause: unknown) => {
     if (cause instanceof RequestError && cause.status === 409) {
       onDataStale()
@@ -112,46 +72,21 @@ export function useVectorTiles(
     }
     setTileError(
       cause instanceof RequestError && cause.status === 422
-        ? '当前层级超出显示预算，请调整概化策略或放大查看明细。'
+        ? '当前视窗超出安全显示预算，请缩小视窗或减少启用图层。'
         : cause instanceof Error
           ? cause.message
           : '瓦片加载失败，请重试',
     )
   }
-  const building = Object.values(contexts).some((c) =>
-    ['QUEUED', 'RUNNING'].includes(c.overviewStatus),
-  )
-  useEffect(() => {
-    if (!building) return
-    const timer = window.setInterval(refresh, 5000)
-    return () => window.clearInterval(timer)
-  }, [building, refresh])
-  const overviewMessages = Object.values(currentContexts)
-    .filter(
-      (c) =>
-        zoom <= c.overviewMaxZoom && !c.overviewAvailable && c.overviewMessage,
-    )
-    .map(
-      (c) =>
-        (layers.find((l) => l.layerId === c.layerId)?.layerName ?? c.layerId) +
-        '：' +
-        c.overviewMessage,
-    )
-  const changePending = (delta: number) =>
-    setPending((value) => Math.max(0, value + delta))
-  const clearError = () => setTileError(null)
   return {
-    aggregatePoints,
-    overviewMessages,
-    setAggregate,
+    context,
+    loading,
     pending,
     tileError,
     handleTileError,
-    changePending,
-    clearError,
-    contexts: currentContexts,
-    errors,
-    loading,
+    changePending: (delta: number) =>
+      setPending((value) => Math.max(0, value + delta)),
+    clearError: () => setTileError(null),
     refresh,
   }
 }
